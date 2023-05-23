@@ -24,7 +24,7 @@ import {
   ArrowRepeatAll20Regular,
   ArrowRepeatAllOff20Regular,
 } from "@fluentui/react-icons";
-import { Tooltip } from "@mui/material";
+import { Collapse, Tooltip } from "@mui/material";
 import { useCallback, useMemo, useState } from "react";
 import { makeStyles } from "tss-react/mui";
 
@@ -40,6 +40,7 @@ import {
   MessagePipelineContext,
   useMessagePipeline,
 } from "@foxglove/studio-base/components/MessagePipeline";
+import { Timeline } from "@foxglove/studio-base/components/PlaybackControls/Timeline";
 import PlaybackSpeedControls from "@foxglove/studio-base/components/PlaybackSpeedControls";
 import Stack from "@foxglove/studio-base/components/Stack";
 import { useCurrentUser } from "@foxglove/studio-base/context/CurrentUserContext";
@@ -61,7 +62,7 @@ const useStyles = makeStyles()((theme) => ({
   root: {
     display: "flex",
     flexDirection: "column",
-    padding: theme.spacing(0.5, 1, 1, 1),
+    padding: theme.spacing(1),
     position: "relative",
     backgroundColor: theme.palette.background.paper,
     borderTop: `1px solid ${theme.palette.divider}`,
@@ -92,6 +93,8 @@ export default function PlaybackControls(props: {
   const { play, pause, seek, isPlaying, getTimeInfo, playUntil } = props;
   const presence = useMessagePipeline(selectPresence);
   const [enableNewTopNav = false] = useAppConfigurationValue<boolean>(AppSetting.ENABLE_NEW_TOPNAV);
+  const [showDetailedPlaybackBar = false, setShowDetailedPlaybackBar] =
+    useAppConfigurationValue<boolean>(AppSetting.SHOW_DETAILED_PLAYBACK_BAR);
 
   const { classes } = useStyles();
   const repeat = useWorkspaceStore(selectPlaybackRepeat);
@@ -183,7 +186,7 @@ export default function PlaybackControls(props: {
       <RepeatAdapter play={play} seek={seek} repeatEnabled={repeat} />
       <KeyListener global keyDownHandlers={keyDownHandlers} />
       <div className={classes.root}>
-        <Scrubber onSeek={seek} />
+        {!showDetailedPlaybackBar && <Scrubber onSeek={seek} />}
         <Stack direction="row" alignItems="center" flex={1} gap={1} overflowX="auto">
           <Stack direction="row" flex={1} gap={0.5}>
             {currentUser && eventsSupported && (
@@ -196,21 +199,29 @@ export default function PlaybackControls(props: {
               />
             )}
             {enableNewTopNav && (
-              <Tooltip
-                classes={{ popper: classes.popper }}
-                title={
-                  <Stack paddingY={0.75}>
-                    <DataSourceInfoView disableSource />
-                  </Stack>
-                }
-              >
+              <>
+                <Tooltip
+                  classes={{ popper: classes.popper }}
+                  title={
+                    <Stack paddingY={0.75}>
+                      <DataSourceInfoView disableSource />
+                    </Stack>
+                  }
+                >
+                  <HoverableIconButton
+                    disabled={presence !== PlayerPresence.PRESENT}
+                    size="small"
+                    icon={<Info24Regular />}
+                  />
+                </Tooltip>
                 <HoverableIconButton
                   className={classes.dataSourceInfoButton}
+                  onClick={async () => await setShowDetailedPlaybackBar(!showDetailedPlaybackBar)}
                   disabled={presence !== PlayerPresence.PRESENT}
                   size="small"
                   icon={<Info24Regular />}
                 />
-              </Tooltip>
+              </>
             )}
             <PlaybackTimeDisplay onSeek={seek} onPause={pause} />
           </Stack>
@@ -255,6 +266,9 @@ export default function PlaybackControls(props: {
           <CreateEventDialog onClose={toggleCreateEventDialog} />
         )}
       </div>
+      <Collapse in={showDetailedPlaybackBar} unmountOnExit>
+        {showDetailedPlaybackBar && <Timeline />}
+      </Collapse>
     </>
   );
 }

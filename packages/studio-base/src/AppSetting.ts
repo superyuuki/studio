@@ -21,6 +21,7 @@ export enum AppSetting {
   // Experimental features
   SHOW_DEBUG_PANELS = "showDebugPanels",
   ENABLE_NEW_TOPNAV = "enableNewTopNav",
+  SHOW_DETAILED_PLAYBACK_BAR = "showDetailedPlaybackBar",
 
   // Miscellaneous
   HIDE_SIGN_IN_PROMPT = "hideSignInPrompt",
