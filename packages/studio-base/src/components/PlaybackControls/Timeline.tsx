@@ -4,14 +4,16 @@
 
 import { Fzf, FzfResultItem } from "fzf";
 import { clamp } from "lodash";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useMemo } from "react";
 import { makeStyles } from "tss-react/mui";
 
+import AutoSizingCanvas from "@foxglove/studio-base/components/AutoSizingCanvas";
 import {
   MessagePipelineContext,
   useMessagePipeline,
 } from "@foxglove/studio-base/components/MessagePipeline";
+import Stack from "@foxglove/studio-base/components/Stack";
 import { TopicStats } from "@foxglove/studio-base/players/types";
 import { Topic } from "@foxglove/studio-base/src/players/types";
 
@@ -20,6 +22,9 @@ const useStyles = makeStyles()((theme) => ({
     position: "relative",
     borderTop: `1px solid ${theme.palette.divider}`,
     backgroundColor: theme.palette.background.default,
+  },
+  canvasWrapper: {
+    flex: "auto",
   },
   dragHandle: {
     userSelect: "none",
@@ -60,7 +65,6 @@ export function Timeline(): JSX.Element {
 
   const [drawerHeight, setDrawerHeight] = useState(200);
   const [filterText, setFilterText] = useState<string>("");
-  const [canvas, setCanvas] = useState<HTMLCanvasElement | ReactNull>(ReactNull);
 
   const topics = useMessagePipeline(selectSortedTopics);
 
@@ -76,16 +80,15 @@ export function Timeline(): JSX.Element {
     [filterText, topics],
   );
 
-  useEffect(() => {
-    if (canvas != undefined) {
-      const ctx = canvas.getContext("2d")!;
-
+  const drawCallback = useCallback(
+    (ctx: CanvasRenderingContext2D, width: number, height: number) => {
       filteredTopics.map((topic, idx) => {
         ctx.fillStyle = "lime";
         ctx.fillRect(0, ROW_HEIGHT * idx, 100, ROW_HEIGHT * (idx + 1));
       });
-    }
-  }, [canvas, filteredTopics]);
+    },
+    [filteredTopics],
+  );
 
   const dragStart = useRef({ x: 0, y: 0, height: 0 });
 
@@ -112,17 +115,16 @@ export function Timeline(): JSX.Element {
   }, []);
 
   return (
-    <div className={classes.root} style={{ height: drawerHeight }}>
+    <Stack className={classes.root} style={{ height: drawerHeight }}>
       <div
         className={classes.dragHandle}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
       />
-      <canvas
-        ref={setCanvas}
-        style={{ position: "absolute", top: 0, left: 0, height: "100%", width: "100%" }}
-      />
-    </div>
+      <div className={classes.canvasWrapper}>
+        <AutoSizingCanvas draw={drawCallback} />
+      </div>
+    </Stack>
   );
 }
