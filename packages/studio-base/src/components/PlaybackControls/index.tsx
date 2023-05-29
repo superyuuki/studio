@@ -23,6 +23,7 @@ import {
   Info24Regular,
   ArrowRepeatAll20Regular,
   ArrowRepeatAllOff20Regular,
+  GanttChart24Regular,
 } from "@fluentui/react-icons";
 import { Collapse, Tooltip } from "@mui/material";
 import { useCallback, useMemo, useState } from "react";
@@ -40,7 +41,7 @@ import {
   MessagePipelineContext,
   useMessagePipeline,
 } from "@foxglove/studio-base/components/MessagePipeline";
-import { Timeline } from "@foxglove/studio-base/components/PlaybackControls/Timeline";
+import { TimelineDrawer } from "@foxglove/studio-base/components/PlaybackControls/TimelineDrawer";
 import PlaybackSpeedControls from "@foxglove/studio-base/components/PlaybackSpeedControls";
 import Stack from "@foxglove/studio-base/components/Stack";
 import { useCurrentUser } from "@foxglove/studio-base/context/CurrentUserContext";
@@ -185,6 +186,9 @@ export default function PlaybackControls(props: {
     <>
       <RepeatAdapter play={play} seek={seek} repeatEnabled={repeat} />
       <KeyListener global keyDownHandlers={keyDownHandlers} />
+      <Collapse in={showDetailedPlaybackBar} unmountOnExit>
+        {showDetailedPlaybackBar && <TimelineDrawer onSeek={seek} />}
+      </Collapse>
       <div className={classes.root}>
         {!showDetailedPlaybackBar && <Scrubber onSeek={seek} />}
         <Stack direction="row" alignItems="center" flex={1} gap={1} overflowX="auto">
@@ -219,7 +223,8 @@ export default function PlaybackControls(props: {
                   onClick={async () => await setShowDetailedPlaybackBar(!showDetailedPlaybackBar)}
                   disabled={presence !== PlayerPresence.PRESENT}
                   size="small"
-                  icon={<Info24Regular />}
+                  color={showDetailedPlaybackBar ? "primary" : "inherit"}
+                  icon={<GanttChart24Regular />}
                 />
               </>
             )}
@@ -266,9 +271,6 @@ export default function PlaybackControls(props: {
           <CreateEventDialog onClose={toggleCreateEventDialog} />
         )}
       </div>
-      <Collapse in={showDetailedPlaybackBar} unmountOnExit>
-        {showDetailedPlaybackBar && <Timeline />}
-      </Collapse>
     </>
   );
 }

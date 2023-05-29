@@ -12,7 +12,6 @@ import {
   Skeleton,
   TextField,
   Typography,
-  TypographyProps,
 } from "@mui/material";
 import { Fzf, FzfResultItem } from "fzf";
 import { useMemo, useState } from "react";
@@ -20,6 +19,7 @@ import { makeStyles } from "tss-react/mui";
 
 import { DirectTopicStatsUpdater } from "@foxglove/studio-base/components/DirectTopicStatsUpdater";
 import EmptyState from "@foxglove/studio-base/components/EmptyState";
+import { FzfHighlightChars } from "@foxglove/studio-base/components/FzfHighlightChars";
 import {
   MessagePipelineContext,
   useMessagePipeline,
@@ -39,33 +39,6 @@ const topicToFzfResult = (item: TopicWithStats) =>
     start: 0,
     end: 0,
   } as FzfResultItem<TopicWithStats>);
-
-const HighlightChars = ({
-  str,
-  indices,
-  color,
-  offset = 0,
-}: {
-  str: string;
-  indices: Set<number>;
-  color?: TypographyProps["color"];
-  offset?: number;
-}) => {
-  const chars = str.split("");
-
-  const nodes = chars.map((char, i) => {
-    if (indices.has(i + offset)) {
-      return (
-        <Typography component="b" key={i} variant="inherit" color={color ?? "info.main"}>
-          {char}
-        </Typography>
-      );
-    }
-    return char;
-  });
-
-  return <>{nodes}</>;
-};
 
 const useStyles = makeStyles()((theme) => ({
   appBar: {
@@ -136,13 +109,13 @@ function TopicListItem({
       }
     >
       <ListItemText
-        primary={<HighlightChars str={topic.name} indices={positions} />}
+        primary={<FzfHighlightChars str={topic.name} indices={positions} />}
         primaryTypographyProps={{ noWrap: true, title: topic.name }}
         secondary={
           topic.schemaName == undefined ? (
             "—"
           ) : (
-            <HighlightChars
+            <FzfHighlightChars
               str={topic.schemaName}
               indices={positions}
               offset={topic.name.length + 1}
