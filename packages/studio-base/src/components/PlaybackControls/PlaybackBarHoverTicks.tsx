@@ -29,6 +29,10 @@ const useStyles = makeStyles()((theme) => ({
     transform: "translate(-50%, 0)",
     backgroundColor: theme.palette.warning.main,
   },
+  tickFullHeight: {
+    top: 0,
+    height: "100%",
+  },
   tooltip: {
     '&[data-popper-placement*="top"] .MuiTooltip-tooltip': {
       marginBottom: `${theme.spacing(1)} !important`,
@@ -46,11 +50,12 @@ function getEndTime(ctx: MessagePipelineContext) {
 
 type Props = {
   componentId: string;
+  fullHeight?: boolean;
 };
 
 export default function PlaybackBarHoverTicks(props: Props): JSX.Element {
-  const { componentId } = props;
-  const { classes } = useStyles();
+  const { componentId, fullHeight = false } = props;
+  const { classes, cx } = useStyles();
 
   const startTime = useMessagePipeline(getStartTime);
   const endTime = useMessagePipeline(getEndTime);
@@ -117,7 +122,7 @@ export default function PlaybackBarHoverTicks(props: Props): JSX.Element {
               </Typography>
             }
           >
-            <div className={classes.tick} />
+            <div className={cx(classes.tick, { [classes.tickFullHeight]: fullHeight })} />
           </Tooltip>
         </HoverBar>
       )}

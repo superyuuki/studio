@@ -2,8 +2,8 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { DismissCircle12Filled, Search16Filled } from "@fluentui/react-icons";
-import { Fade, IconButton, TextField, Tooltip, Typography, useTheme } from "@mui/material";
+import { DismissCircle12Filled, Search12Filled } from "@fluentui/react-icons";
+import { Fade, IconButton, Link, TextField, Tooltip, Typography, useTheme } from "@mui/material";
 import { Instance } from "@popperjs/core";
 import { Fzf, FzfResultItem } from "fzf";
 import { clamp, orderBy } from "lodash";
@@ -23,6 +23,7 @@ import {
 import AutoSizingCanvas from "@foxglove/studio-base/components/AutoSizingCanvas";
 import EmptyState from "@foxglove/studio-base/components/EmptyState";
 import { FzfHighlightChars } from "@foxglove/studio-base/components/FzfHighlightChars";
+import useMessagesByPath from "@foxglove/studio-base/components/MessagePathSyntax/useMessagesByPath";
 import {
   MessagePipelineContext,
   useMessagePipeline,
@@ -65,9 +66,18 @@ const useStyles = makeStyles()((theme) => ({
   startAdornment: {
     display: "flex",
   },
+  clearIcon: {
+    fontSize: 12,
+
+    "svg:not(.MuiSvgIcon-root)": {
+      fontSize: "1em",
+      height: "1em",
+      width: "1em",
+    },
+  },
 }));
 
-const ROW_HEIGHT = 50;
+const ROW_HEIGHT = 48;
 
 const DRAWER_HEIGHT_MIN = 100;
 const DRAWER_HEIGHT_MAX = 2044;
@@ -120,9 +130,6 @@ export function TimelineDrawer(props: Props): JSX.Element {
 
   const [hoverStamp, setHoverStamp] = useState<Time | undefined>();
 
-  // const loading =
-  //   playerPresence === PlayerPresence.INITIALIZING || playerPresence === PlayerPresence.BUFFERING;
-
   const topics = useMessagePipeline(selectSortedTopics);
 
   const filteredTopics: FzfResultItem<Topic>[] = useMemo(
@@ -172,108 +179,86 @@ export function TimelineDrawer(props: Props): JSX.Element {
   }, []);
 
   return (
-    <Tooltip
-      title={hoverStamp != undefined ? <PlaybackControlsTooltipContent stamp={hoverStamp} /> : ""}
-      placement="top"
-      arrow={false}
-      disableInteractive
-      TransitionComponent={Fade}
-      TransitionProps={{ timeout: 0 }}
-      PopperProps={{
-        popperRef,
-        modifiers: [
-          {
-            name: "computeStyles",
-            options: {
-              gpuAcceleration: false, // Fixes hairline seam on arrow in chrome.
-            },
-          },
-          {
-            name: "offset",
-            options: {
-              offset: [0, -10], // Offset popper to hug the track better.
-            },
-          },
-        ],
-        anchorEl: {
-          getBoundingClientRect: () => {
-            return new DOMRect(positionRef.current.x, positionRef.current.y, 0, 0);
-          },
-        },
-      }}
+    <Stack
+      onPointerMove={handlePointerMove}
+      className={classes.root}
+      style={{ height: drawerHeight }}
+      overflow="hidden"
+      position="relative"
     >
       <Stack
-        onPointerMove={handlePointerMove}
-        className={classes.root}
-        style={{ height: drawerHeight }}
-        overflow="hidden"
-        position="relative"
+        flex="none"
+        direction="row"
+        justifyContent="space-between"
+        padding={1}
+        className={classes.statusBar}
+        onPointerDown={dragHandleDown}
+        onPointerMove={dragHandleMove}
+        onPointerUp={dragHandleUp}
       >
-        <Stack
-          flex="none"
-          direction="row"
-          justifyContent="space-between"
-          padding={1}
-          className={classes.statusBar}
-          onPointerDown={dragHandleDown}
-          onPointerMove={dragHandleMove}
-          onPointerUp={dragHandleUp}
-        >
-          <TextField
-            id="topic-filter"
-            variant="filled"
-            className={classes.textField}
-            disabled={playerPresence !== PlayerPresence.PRESENT}
-            onChange={(event) => setFilterText(event.target.value)}
-            value={filterText}
-            placeholder="Filter by topic or datatype…"
-            InputProps={{
-              size: "small",
-              startAdornment: (
-                <label htmlFor="topic-filter" className={classes.startAdornment}>
-                  <Search16Filled fontSize="small" />
-                </label>
-              ),
-              endAdornment: filterText && (
-                <IconButton
-                  size="small"
-                  title="Clear search"
-                  onClick={() => setFilterText("")}
-                  edge="end"
-                >
-                  <DismissCircle12Filled fontSize="small" />
-                </IconButton>
-              ),
-            }}
-          />
-        </Stack>
-        {filteredTopics.length > 0 ? (
-          <Timeline
-            topics={orderBy(filteredTopics, (topic) => topic.item.schemaName, ["desc"])}
-            onSeek={onSeek}
-            setHoverStamp={setHoverStamp}
-          />
-        ) : (
-          <EmptyState>
-            {playerPresence === PlayerPresence.PRESENT && filterText
-              ? `No topics or datatypes matching \n “${filterText}”`
-              : "No topics available. "}
-            {playerPresence === PlayerPresence.RECONNECTING && "Waiting for connection"}
-          </EmptyState>
-        )}
+        <TextField
+          id="topic-filter"
+          variant="filled"
+          className={classes.textField}
+          disabled={playerPresence !== PlayerPresence.PRESENT}
+          onChange={(event) => setFilterText(event.target.value)}
+          value={filterText}
+          placeholder="Filter by topic or datatype…"
+          InputProps={{
+            size: "small",
+            startAdornment: (
+              <label htmlFor="topic-filter" className={classes.startAdornment}>
+                <Search12Filled fontSize="small" />
+              </label>
+            ),
+            endAdornment: filterText && (
+              <IconButton
+                className={classes.clearIcon}
+                size="small"
+                title="Clear search"
+                onClick={() => setFilterText("")}
+                edge="end"
+              >
+                <DismissCircle12Filled fontSize="small" />
+              </IconButton>
+            ),
+          }}
+        />
       </Stack>
-    </Tooltip>
+      {filteredTopics.length > 0 ? (
+        <Timeline
+          topics={orderBy(filteredTopics, (topic) => topic.item.schemaName, ["desc"])}
+          onSeek={onSeek}
+          setHoverStamp={setHoverStamp}
+          hoverStamp={hoverStamp}
+        />
+      ) : (
+        <EmptyState>
+          {playerPresence === PlayerPresence.PRESENT && filterText
+            ? `No topics or datatypes matching \n “${filterText}” `
+            : "No topics available. "}
+          {filterText && (
+            <Link color="primary" onClick={() => setFilterText("")}>
+              Clear filters
+            </Link>
+          )}
+          {playerPresence === PlayerPresence.RECONNECTING && "Waiting for connection"}
+        </EmptyState>
+      )}
+    </Stack>
   );
 }
 
 export function TimelineScrubber({
   height,
   onSeek,
+  hoverStamp,
   setHoverStamp,
   drawerWidth,
 }: {
   height: number;
   drawerWidth: number;
+  hoverStamp?: Time;
   setHoverStamp: Dispatch<SetStateAction<Time | undefined>>;
   onSeek: (seekTo: Time) => void;
 }): JSX.Element {
@@ -348,63 +333,142 @@ export function TimelineScrubber({
       ? toSec(subtractTimes(currentTime, startTime)) / toSec(subtractTimes(endTime, startTime))
       : undefined;
 
+  const popperRef = React.useRef<Instance>(ReactNull);
+
+  const positionRef = React.useRef({ x: 0, y: 0 });
+
+  const handlePointerMove = (event: React.PointerEvent) => {
+    positionRef.current = { x: event.clientX, y: event.clientY };
+
+    if (popperRef.current != undefined) {
+      void popperRef.current.update();
+    }
+  };
+
   return (
-    <Stack
-      position="absolute"
-      flex="auto"
-      style={{ top: 0, right: 0, bottom: 0, left: drawerWidth, height }}
-      // ref={hoverElRef}
+    <Tooltip
+      title={hoverStamp != undefined ? <PlaybackControlsTooltipContent stamp={hoverStamp} /> : ""}
+      placement="top"
+      disableInteractive
+      TransitionComponent={Fade}
+      TransitionProps={{ timeout: 0 }}
+      PopperProps={{
+        popperRef,
+        modifiers: [
+          {
+            name: "computeStyles",
+            options: {
+              gpuAcceleration: false, // Fixes hairline seam on arrow in chrome.
+            },
+          },
+          {
+            name: "offset",
+            options: {
+              // Offset popper to hug the track better.
+              offset: [0, 0],
+            },
+          },
+        ],
+        anchorEl: {
+          getBoundingClientRect: () => {
+            return new DOMRect(
+              positionRef.current.x,
+              hoverElRef.current?.getBoundingClientRect().y ?? 0,
+              0,
+              0,
+            );
+          },
+        },
+      }}
     >
-      <Slider
-        disabled={min == undefined || max == undefined}
-        fraction={fraction}
-        onHoverOver={onHoverOver}
-        onHoverOut={onHoverOut}
-        onChange={onChange}
-        renderSlider={renderSlider}
-      />
-      <PlaybackBarHoverTicks componentId={hoverComponentId} />
-    </Stack>
+      <Stack
+        position="absolute"
+        flex="auto"
+        style={{ top: 0, right: 0, bottom: 0, left: drawerWidth, height, minHeight: "100%" }}
+        ref={hoverElRef}
+        onPointerMove={handlePointerMove}
+      >
+        <Slider
+          disabled={min == undefined || max == undefined}
+          fraction={fraction}
+          onHoverOver={onHoverOver}
+          onHoverOut={onHoverOut}
+          onChange={onChange}
+          renderSlider={renderSlider}
+        />
+        <PlaybackBarHoverTicks fullHeight componentId={hoverComponentId} />
+      </Stack>
+    </Tooltip>
   );
 }
 
 export function Timeline({
   topics = [],
+  hoverStamp,
   setHoverStamp,
   onSeek,
 }: {
   topics?: FzfResultItem<Topic>[];
+  hoverStamp?: Time;
   setHoverStamp: Dispatch<SetStateAction<Time | undefined>>;
   onSeek: (seekTo: Time) => void;
 }): JSX.Element {
   const theme = useTheme();
-  const positionRef = useRef({ x: 0, y: 0 });
 
-  const handlePointerMove = useCallback((event: React.PointerEvent) => {
-    positionRef.current = { x: event.clientX, y: event.clientY };
-  }, []);
+  const pathStrings = useMemo(() => topics.map(({ item: { name } }) => name), [topics]);
+
+  const startTime = useMessagePipeline(selectStartTime);
+  const endTime = useMessagePipeline(selectEndTime);
+  const duration = toSec(subtractTimes(endTime!, startTime!));
+
+  const itemsByPath = useMessagesByPath(pathStrings);
 
   const drawCallback = useCallback(
-    (ctx: CanvasRenderingContext2D, width: number, _height: number) => {
+    (ctx: CanvasRenderingContext2D, width: number, _height: number, _canvas: HTMLCanvasElement) => {
       const augmentColor = (color: ColorInput) => {
         const colorMode = theme.palette.mode === "dark" ? "darken" : "lighten";
-        const threshold = theme.palette.mode === "dark" ? 35 : 5;
+        const threshold = theme.palette.mode === "dark" ? 40 : 20;
 
         return tc(color)[colorMode](threshold).toString();
       };
 
       topics.map(({ item: topic }, idx) => {
-        if (topic.schemaName != undefined) {
-          ctx.fillStyle = augmentColor(expandedLineColors[schemaMapping[topic.schemaName]]!);
-          ctx.fillRect(0, ROW_HEIGHT * idx, width, ROW_HEIGHT);
+        ctx.fillStyle = augmentColor(expandedLineColors[schemaMapping[topic.schemaName]]!);
+        ctx.fillRect(0, ROW_HEIGHT * idx, width, ROW_HEIGHT);
 
-          ctx.strokeStyle = theme.palette.background.default;
-          ctx.strokeRect(0, ROW_HEIGHT * idx, width, ROW_HEIGHT);
+        const canvasOffsets: number[] | undefined = itemsByPath[topic.name]?.map(
+          ({ messageEvent }) =>
+            (toSec(subtractTimes(messageEvent.receiveTime, startTime!)) / duration) * width,
+        );
+
+        if (canvasOffsets != undefined) {
+          for (const x of canvasOffsets) {
+            ctx.beginPath();
+            ctx.strokeStyle = tc(expandedLineColors[schemaMapping[topic.schemaName]])
+              .setAlpha(1)
+              .toString();
+            ctx.moveTo(x, ROW_HEIGHT * idx);
+            ctx.lineTo(x, ROW_HEIGHT * idx + ROW_HEIGHT);
+            ctx.stroke();
+          }
         }
       });
+
+      topics.map((_, idx) => {
+        ctx.strokeStyle = theme.palette.background.default;
+        ctx.strokeRect(0, ROW_HEIGHT * idx, width, ROW_HEIGHT);
+      });
+
       ctx.save();
     },
-    [theme, topics],
+    [
+      duration,
+      itemsByPath,
+      startTime,
+      theme.palette.background.default,
+      theme.palette.mode,
+      topics,
+    ],
   );
 
   return (
@@ -429,12 +493,13 @@ export function Timeline({
 
         <TimelineScrubber
           onSeek={onSeek}
+          hoverStamp={hoverStamp}
           setHoverStamp={setHoverStamp}
           drawerWidth={300}
           height={topics.length * ROW_HEIGHT}
         />
 
-        <div onPointerMove={handlePointerMove}>
+        <div>
           {topics.map(({ item: topic, positions }, idx) => (
             <Stack
               overflow="hidden"
@@ -449,7 +514,7 @@ export function Timeline({
                 height: ROW_HEIGHT,
               }}
             >
-              <Typography variant="body2">
+              <Typography variant="caption">
                 <FzfHighlightChars str={topic.name} indices={positions} />
               </Typography>
               <Typography variant="caption" fontFamily={fonts.MONOSPACE} color="text.secondary">
