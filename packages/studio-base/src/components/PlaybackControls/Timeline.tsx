@@ -2,7 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { Divider, Typography, useTheme } from "@mui/material";
+import { Typography, useTheme } from "@mui/material";
 import { FzfResultItem } from "fzf";
 import { useCallback, useMemo, Dispatch, SetStateAction } from "react";
 import tc, { ColorInput } from "tinycolor2";
