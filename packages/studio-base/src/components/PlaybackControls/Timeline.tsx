@@ -2,10 +2,11 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { Typography, useTheme } from "@mui/material";
+import { Divider, Typography, useTheme } from "@mui/material";
 import { FzfResultItem } from "fzf";
 import { useCallback, useMemo, Dispatch, SetStateAction } from "react";
 import tc, { ColorInput } from "tinycolor2";
+import { makeStyles } from "tss-react/mui";
 
 import { subtract as subtractTimes, toSec, Time } from "@foxglove/rostime";
 import AutoSizingCanvas from "@foxglove/studio-base/components/AutoSizingCanvas";
@@ -23,10 +24,23 @@ import { fonts } from "@foxglove/studio-base/util/sharedStyleConstants";
 
 const ROW_HEIGHT = 48;
 
+const useStyles = makeStyles()((theme) => ({
+  topic: {
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+    flex: "none",
+    justifyContent: "center",
+    padding: theme.spacing(1),
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    backgroundColor: theme.palette.background.paper,
+    height: ROW_HEIGHT,
+  },
+}));
+
 enum schemaMapping {
   "diagnostic_msgs/DiagnosticArray" = 0,
   "foxglove_msgs/ImageMarkerArray" = 1,
-  "geometry_msgs/PoseStamped" = 2,
   "nav_msgs/OccupancyGrid" = 3,
   "nav_msgs/Odometry" = 3,
   "sensor_msgs/CameraInfo" = 4,
@@ -37,10 +51,27 @@ enum schemaMapping {
   "tf2_msgs/TFMessage" = 5,
   "visualization_msgs/ImageMarker" = 6,
   "visualization_msgs/MarkerArray" = 6,
+  "geometry_msgs/PoseStamped" = 7,
 }
 
 const selectStartTime = (ctx: MessagePipelineContext) => ctx.playerState.activeData?.startTime;
 const selectEndTime = (ctx: MessagePipelineContext) => ctx.playerState.activeData?.endTime;
+
+const backgroundColor = ({
+  color,
+  prefersDarkMode,
+}: {
+  prefersDarkMode: boolean;
+  color: ColorInput;
+}) => (prefersDarkMode ? tc(color).darken(35).toString() : tc(color).lighten(15).toString());
+
+const foregroundColor = ({
+  color,
+  prefersDarkMode,
+}: {
+  prefersDarkMode: boolean;
+  color: ColorInput;
+}) => (prefersDarkMode ? tc(color).toString() : tc(color).darken(20).toString());
 
 export function Timeline({
   topics = [],
@@ -53,7 +84,9 @@ export function Timeline({
   setHoverStamp: Dispatch<SetStateAction<Time | undefined>>;
   onSeek: (seekTo: Time) => void;
 }): JSX.Element {
+  const { classes } = useStyles();
   const theme = useTheme();
+  const prefersDarkMode = theme.palette.mode === "dark";
 
   const pathStrings = useMemo(() => topics.map(({ item: { name } }) => name), [topics]);
 
@@ -65,50 +98,44 @@ export function Timeline({
 
   const drawCallback = useCallback(
     (ctx: CanvasRenderingContext2D, width: number, _height: number) => {
-      const augmentColor = (color: ColorInput) => {
-        const colorMode = theme.palette.mode === "dark" ? "darken" : "lighten";
-        const threshold = theme.palette.mode === "dark" ? 40 : 20;
-
-        return tc(color)[colorMode](threshold).toString();
-      };
-
       topics.map(({ item: topic }, idx) => {
-        ctx.fillStyle = augmentColor(expandedLineColors[schemaMapping[topic.schemaName]]!);
+        ctx.fillStyle = backgroundColor({
+          color: expandedLineColors[schemaMapping[topic.schemaName]]!,
+          prefersDarkMode,
+        });
         ctx.fillRect(0, ROW_HEIGHT * idx, width, ROW_HEIGHT);
 
         const canvasOffsets: number[] | undefined = itemsByPath[topic.name]?.map(
           ({ messageEvent }) =>
-            (toSec(subtractTimes(messageEvent.receiveTime, startTime!)) / duration) * width,
+            (toSec(subtractTimes(messageEvent.receiveTime, startTime!)) / duration) * width - 1,
         );
 
-        if (canvasOffsets != undefined) {
-          for (const x of canvasOffsets) {
-            ctx.beginPath();
-            ctx.strokeStyle = tc(expandedLineColors[schemaMapping[topic.schemaName]])
-              .setAlpha(1)
-              .toString();
-            ctx.moveTo(x, ROW_HEIGHT * idx);
-            ctx.lineTo(x, ROW_HEIGHT * idx + ROW_HEIGHT);
-            ctx.stroke();
-          }
-        }
-      });
+        canvasOffsets?.map((x) => {
+          ctx.beginPath();
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = foregroundColor({
+            color: expandedLineColors[schemaMapping[topic.schemaName]]!,
+            prefersDarkMode,
+          });
+          ctx.moveTo(x, ROW_HEIGHT * idx);
+          ctx.lineTo(x, ROW_HEIGHT * idx + ROW_HEIGHT);
+          ctx.stroke();
+        });
 
-      topics.map((_, idx) => {
-        ctx.strokeStyle = theme.palette.background.default;
-        ctx.strokeRect(0, ROW_HEIGHT * idx, width, ROW_HEIGHT);
+        ctx.beginPath();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = foregroundColor({
+          color: expandedLineColors[schemaMapping[topic.schemaName]]!,
+          prefersDarkMode,
+        });
+        ctx.moveTo(0, ROW_HEIGHT * idx + ROW_HEIGHT);
+        ctx.lineTo(width, ROW_HEIGHT * idx + ROW_HEIGHT);
+        ctx.stroke();
       });
 
       ctx.save();
     },
-    [
-      duration,
-      itemsByPath,
-      startTime,
-      theme.palette.background.default,
-      theme.palette.mode,
-      topics,
-    ],
+    [duration, itemsByPath, prefersDarkMode, startTime, topics],
   );
 
   return (
@@ -139,21 +166,9 @@ export function Timeline({
           height={topics.length * ROW_HEIGHT}
         />
 
-        <div>
+        <Stack fullWidth>
           {topics.map(({ item: topic, positions }, idx) => (
-            <Stack
-              overflow="hidden"
-              flex="none"
-              key={`${idx}.${topic.name}`}
-              justifyContent="center"
-              padding={1}
-              style={{
-                width: 300,
-                borderBottom: `1px solid ${theme.palette.divider}`,
-                boxSizing: "border-box",
-                height: ROW_HEIGHT,
-              }}
-            >
+            <div className={classes.topic} key={`${idx}.${topic.name}`}>
               <Typography variant="caption">
                 <FzfHighlightChars str={topic.name} indices={positions} />
               </Typography>
@@ -166,9 +181,9 @@ export function Timeline({
                   />
                 )}
               </Typography>
-            </Stack>
+            </div>
           ))}
-        </div>
+        </Stack>
       </Stack>
     </>
   );
