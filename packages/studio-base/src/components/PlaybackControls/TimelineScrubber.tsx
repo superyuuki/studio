@@ -3,7 +3,15 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 import { Fade, Tooltip } from "@mui/material";
 import { Instance } from "@popperjs/core";
-import { useCallback, useRef, useState, useEffect, Dispatch, SetStateAction } from "react";
+import {
+  useCallback,
+  useRef,
+  useState,
+  useEffect,
+  Dispatch,
+  SetStateAction,
+  CSSProperties,
+} from "react";
 import { useLatest } from "react-use";
 import { makeStyles } from "tss-react/mui";
 import { v4 as uuidv4 } from "uuid";
@@ -45,13 +53,15 @@ const selectEndTime = (ctx: MessagePipelineContext) => ctx.playerState.activeDat
 
 export function TimelineScrubber({
   height,
+  zoom,
   onSeek,
   hoverStamp,
   setHoverStamp,
-  drawerWidth,
+  sidebarWidth,
 }: {
-  height: number;
-  drawerWidth: number;
+  zoom: number;
+  height: CSSProperties["height"];
+  sidebarWidth: number;
   hoverStamp?: Time;
   setHoverStamp: Dispatch<SetStateAction<Time | undefined>>;
   onSeek: (seekTo: Time) => void;
@@ -178,7 +188,15 @@ export function TimelineScrubber({
       <Stack
         position="absolute"
         flex="auto"
-        style={{ top: 0, right: 0, bottom: 0, left: drawerWidth, height, minHeight: "100%" }}
+        style={{
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: sidebarWidth,
+          height,
+          minHeight: "100%",
+          width: `calc(${zoom * 100}% - ${sidebarWidth}px)`,
+        }}
         ref={hoverElRef}
         onPointerMove={handlePointerMove}
       >

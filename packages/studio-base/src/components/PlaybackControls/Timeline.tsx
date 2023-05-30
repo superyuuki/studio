@@ -23,8 +23,15 @@ import { expandedLineColors } from "@foxglove/studio-base/util/plotColors";
 import { fonts } from "@foxglove/studio-base/util/sharedStyleConstants";
 
 const ROW_HEIGHT = 48;
+const SIDEBAR_WITDH = 300;
 
 const useStyles = makeStyles()((theme) => ({
+  canvasWrapper: {
+    top: 0,
+    right: 0,
+    left: SIDEBAR_WITDH,
+    position: "absolute",
+  },
   topic: {
     display: "flex",
     flexDirection: "column",
@@ -74,11 +81,13 @@ const foregroundColor = ({
 }) => (prefersDarkMode ? tc(color).toString() : tc(color).darken(20).toString());
 
 export function Timeline({
+  zoom,
   topics = [],
   hoverStamp,
   setHoverStamp,
   onSeek,
 }: {
+  zoom: number;
   topics?: FzfResultItem<Topic>[];
   hoverStamp?: Time;
   setHoverStamp: Dispatch<SetStateAction<Time | undefined>>;
@@ -149,10 +158,10 @@ export function Timeline({
         justifyContent="flex-start"
       >
         <div
+          className={classes.canvasWrapper}
           style={{
-            inset: "0 0 auto 300px",
-            position: "absolute",
             height: topics.length * ROW_HEIGHT,
+            width: `calc(${100 * zoom}% - 300px)`,
           }}
         >
           <AutoSizingCanvas draw={drawCallback} />
@@ -162,11 +171,16 @@ export function Timeline({
           onSeek={onSeek}
           hoverStamp={hoverStamp}
           setHoverStamp={setHoverStamp}
-          drawerWidth={300}
+          sidebarWidth={SIDEBAR_WITDH}
           height={topics.length * ROW_HEIGHT}
+          zoom={zoom}
         />
 
-        <Stack fullWidth>
+        <Stack
+          fullWidth
+          position="sticky"
+          style={{ left: 0, width: SIDEBAR_WITDH, zIndex: theme.zIndex.appBar }}
+        >
           {topics.map(({ item: topic, positions }, idx) => (
             <div className={classes.topic} key={`${idx}.${topic.name}`}>
               <Typography variant="caption">

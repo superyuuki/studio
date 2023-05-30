@@ -2,8 +2,13 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { DismissCircle12Filled, Search12Filled } from "@fluentui/react-icons";
-import { IconButton, Link, TextField } from "@mui/material";
+import {
+  DismissCircle12Filled,
+  Search12Filled,
+  ZoomIn24Regular,
+  ZoomOut24Regular,
+} from "@fluentui/react-icons";
+import { Button, IconButton, Link, Slider, TextField } from "@mui/material";
 import { Instance } from "@popperjs/core";
 import { Fzf, FzfResultItem } from "fzf";
 import { clamp, orderBy } from "lodash";
@@ -30,6 +35,8 @@ const useStyles = makeStyles()((theme) => ({
   statusBar: {
     backgroundColor: theme.palette.background.paper,
     borderBlock: `1px solid ${theme.palette.divider}`,
+  },
+  dragHandle: {
     cursor: "ns-resize",
   },
   textField: {
@@ -70,8 +77,13 @@ export function TimelineDrawer(props: { onSeek: (seekTo: Time) => void }): JSX.E
   const { onSeek } = props;
   const { classes } = useStyles();
 
+  const [zoom, setZoom] = useState<number>(1);
   const [drawerHeight, setDrawerHeight] = useState(200);
   const [filterText, setFilterText] = useState<string>("");
+
+  const handleZoom = (_event: Event, newValue: number | number[]) => {
+    setZoom(newValue as number);
+  };
 
   const playerPresence = useMessagePipeline(selectPresence);
 
@@ -115,6 +127,7 @@ export function TimelineDrawer(props: { onSeek: (seekTo: Time) => void }): JSX.E
 
   const dragHandleDown = useCallback(
     (event: React.PointerEvent) => {
+      event.stopPropagation();
       event.currentTarget.setPointerCapture(event.pointerId);
       dragStart.current = { x: event.clientX, y: event.clientY, height: drawerHeight };
     },
@@ -137,40 +150,53 @@ export function TimelineDrawer(props: { onSeek: (seekTo: Time) => void }): JSX.E
         flex="none"
         direction="row"
         justifyContent="space-between"
-        padding={1}
         className={classes.statusBar}
-        onPointerDown={dragHandleDown}
-        onPointerMove={dragHandleMove}
-        onPointerUp={dragHandleUp}
       >
-        <TextField
-          id="topic-filter"
-          variant="filled"
-          className={classes.textField}
-          disabled={playerPresence !== PlayerPresence.PRESENT}
-          onChange={(event) => setFilterText(event.target.value)}
-          value={filterText}
-          placeholder="Filter by topic or datatype…"
-          InputProps={{
-            size: "small",
-            startAdornment: (
-              <label htmlFor="topic-filter" className={classes.startAdornment}>
-                <Search12Filled fontSize="small" />
-              </label>
-            ),
-            endAdornment: filterText && (
-              <IconButton
-                className={classes.clearIcon}
-                size="small"
-                title="Clear search"
-                onClick={() => setFilterText("")}
-                edge="end"
-              >
-                <DismissCircle12Filled fontSize="small" />
-              </IconButton>
-            ),
-          }}
+        <Stack padding={1}>
+          <TextField
+            id="topic-filter"
+            variant="filled"
+            className={classes.textField}
+            disabled={playerPresence !== PlayerPresence.PRESENT}
+            onChange={(event) => setFilterText(event.target.value)}
+            value={filterText}
+            placeholder="Filter by topic or datatype…"
+            InputProps={{
+              size: "small",
+              startAdornment: (
+                <label htmlFor="topic-filter" className={classes.startAdornment}>
+                  <Search12Filled fontSize="small" />
+                </label>
+              ),
+              endAdornment: filterText && (
+                <IconButton
+                  className={classes.clearIcon}
+                  size="small"
+                  title="Clear search"
+                  onClick={() => setFilterText("")}
+                  edge="end"
+                >
+                  <DismissCircle12Filled fontSize="small" />
+                </IconButton>
+              ),
+            }}
+          />
+        </Stack>
+        <Stack
+          flex="auto"
+          className={classes.dragHandle}
+          onPointerDown={dragHandleDown}
+          onPointerMove={dragHandleMove}
+          onPointerUp={dragHandleUp}
         />
+        <Stack direction="row" alignItems="center" gap={2} padding={1}>
+          {zoom > 1 && <Button onClick={() => setZoom(1)}>Reset</Button>}
+          <ZoomOut24Regular style={{ flex: "none" }} />
+          <div style={{ width: 140 }}>
+            <Slider size="small" value={zoom} min={1} max={5} step={0.5} onChange={handleZoom} />
+          </div>
+          <ZoomIn24Regular style={{ flex: "none" }} />
+        </Stack>
       </Stack>
       {filteredTopics.length > 0 ? (
         <Timeline
@@ -178,6 +204,7 @@ export function TimelineDrawer(props: { onSeek: (seekTo: Time) => void }): JSX.E
           onSeek={onSeek}
           setHoverStamp={setHoverStamp}
           hoverStamp={hoverStamp}
+          zoom={zoom}
         />
       ) : (
         <EmptyState>
