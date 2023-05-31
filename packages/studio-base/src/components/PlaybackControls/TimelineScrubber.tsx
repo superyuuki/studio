@@ -154,6 +154,8 @@ export function TimelineScrubber({
       title={hoverStamp != undefined ? <PlaybackControlsTooltipContent stamp={hoverStamp} /> : ""}
       placement="top"
       disableInteractive
+      followCursor
+      arrow={false}
       TransitionComponent={Fade}
       TransitionProps={{ timeout: 0 }}
       PopperProps={{
@@ -175,12 +177,7 @@ export function TimelineScrubber({
         ],
         anchorEl: {
           getBoundingClientRect: () => {
-            return new DOMRect(
-              positionRef.current.x,
-              hoverElRef.current?.getBoundingClientRect().y ?? 0,
-              0,
-              0,
-            );
+            return new DOMRect(positionRef.current.x, positionRef.current.y, 0, 0);
           },
         },
       }}

@@ -5,10 +5,10 @@
 import {
   DismissCircle12Filled,
   Search12Filled,
-  ZoomIn24Regular,
-  ZoomOut24Regular,
+  ZoomIn16Regular,
+  ZoomOut16Regular,
 } from "@fluentui/react-icons";
-import { Button, IconButton, Link, Slider, TextField } from "@mui/material";
+import { Button, IconButton, Link, Slider, TextField, sliderClasses } from "@mui/material";
 import { Instance } from "@popperjs/core";
 import { Fzf, FzfResultItem } from "fzf";
 import { clamp, orderBy } from "lodash";
@@ -52,6 +52,19 @@ const useStyles = makeStyles()((theme) => ({
       fontSize: "1em",
       height: "1em",
       width: "1em",
+    },
+  },
+  resetButton: {
+    padding: theme.spacing(0.5, 0.75),
+  },
+  slider: {
+    [`.${sliderClasses.thumb}`]: {
+      ":hover": {
+        boxShadow: "none",
+      },
+      [`&.${sliderClasses.focusVisible}`]: {
+        boxShadow: "none",
+      },
     },
   },
 }));
@@ -190,12 +203,24 @@ export function TimelineDrawer(props: { onSeek: (seekTo: Time) => void }): JSX.E
           onPointerUp={dragHandleUp}
         />
         <Stack direction="row" alignItems="center" gap={2} padding={1}>
-          {zoom > 1 && <Button onClick={() => setZoom(1)}>Reset</Button>}
-          <ZoomOut24Regular style={{ flex: "none" }} />
+          {zoom > 1 && (
+            <Button className={classes.resetButton} onClick={() => setZoom(1)}>
+              Reset
+            </Button>
+          )}
+          <ZoomOut16Regular style={{ flex: "none" }} />
           <div style={{ width: 140 }}>
-            <Slider size="small" value={zoom} min={1} max={5} step={0.5} onChange={handleZoom} />
+            <Slider
+              className={classes.slider}
+              size="small"
+              value={zoom}
+              min={1}
+              max={5}
+              step={0.5}
+              onChange={handleZoom}
+            />
           </div>
-          <ZoomIn24Regular style={{ flex: "none" }} />
+          <ZoomIn16Regular style={{ flex: "none" }} />
         </Stack>
       </Stack>
       {filteredTopics.length > 0 ? (
