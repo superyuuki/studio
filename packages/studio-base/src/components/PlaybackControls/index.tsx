@@ -23,7 +23,6 @@ import {
   Info24Regular,
   ArrowRepeatAll20Regular,
   ArrowRepeatAllOff20Regular,
-  GanttChart24Regular,
 } from "@fluentui/react-icons";
 import { Collapse, Tooltip } from "@mui/material";
 import { useCallback, useMemo, useState } from "react";
@@ -225,7 +224,14 @@ export default function PlaybackControls(props: {
                   disabled={presence !== PlayerPresence.PRESENT}
                   size="small"
                   color={showDetailedPlaybackBar ? "primary" : "inherit"}
-                  icon={<GanttChart24Regular />}
+                  icon={
+                    <svg viewBox="0 0 24 24">
+                      <path
+                        d="m18.61,4.13H5.11c-1.79,0-3.25,1.46-3.25,3.25v9.5c0,1.79,1.46,3.25,3.25,3.25h13.5c1.79,0,3.25-1.46,3.25-3.25V7.38c0-1.79-1.46-3.25-3.25-3.25Zm-6.38,6.33h1.47v3.33h-1.47v-3.33Zm-8.88,0h1.47v3.33h-1.47v-3.33Zm3.69,8.17h-1.94c-.97,0-1.75-.78-1.75-1.75v-1.58h3.69v3.33Zm0-4.83h-1.47v-3.33h1.47v3.33Zm4.44,4.83h-3.69v-3.33h3.69v3.33Zm-3.69-4.83v-3.33h1.47v3.33h-1.47Zm3.69,0h-1.47v-3.33h1.47v3.33Zm0-4.83H3.36v-1.58c0-.97.78-1.75,1.75-1.75h6.38v3.33Zm4.44,9.67h-3.69v-3.33h3.69v3.33Zm0-4.83h-1.47v-3.33h1.47v3.33Zm4.44,3.08c0,.97-.78,1.75-1.75,1.75h-1.94v-3.33h3.69v1.58Zm-3.69-3.08v-3.33h1.47v3.33h-1.47Zm3.69,0h-1.47v-3.33h1.47v3.33Zm0-4.83h-8.12v-3.33h6.38c.97,0,1.75.78,1.75,1.75v1.58Z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                  }
                 />
               </>
             )}
