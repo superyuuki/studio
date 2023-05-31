@@ -98,7 +98,7 @@ export default function PlaybackControls(props: {
   const [showDetailedPlaybackBar = false, setShowDetailedPlaybackBar] =
     useAppConfigurationValue<boolean>(AppSetting.SHOW_DETAILED_PLAYBACK_BAR);
 
-  const { classes } = useStyles();
+  const { classes, cx } = useStyles();
   const repeat = useWorkspaceStore(selectPlaybackRepeat);
   const [createEventDialogOpen, setCreateEventDialogOpen] = useState(false);
   const { currentUser } = useCurrentUser();
@@ -214,7 +214,7 @@ export default function PlaybackControls(props: {
                   }
                 >
                   <HoverableIconButton
-                    disabled={presence !== PlayerPresence.PRESENT}
+                    className={cx({ "Mui-disabled": presence !== PlayerPresence.PRESENT })}
                     size="small"
                     icon={<Info24Regular />}
                   />

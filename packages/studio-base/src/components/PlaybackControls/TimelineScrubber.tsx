@@ -11,6 +11,7 @@ import {
   Dispatch,
   SetStateAction,
   CSSProperties,
+  PointerEvent,
 } from "react";
 import { useLatest } from "react-use";
 import { makeStyles } from "tss-react/mui";
@@ -30,7 +31,6 @@ import {
 import PlaybackBarHoverTicks from "@foxglove/studio-base/components/PlaybackControls/PlaybackBarHoverTicks";
 import { PlaybackControlsTooltipContent } from "@foxglove/studio-base/components/PlaybackControls/PlaybackControlsTooltipContent";
 import Slider from "@foxglove/studio-base/components/PlaybackControls/Slider";
-import Stack from "@foxglove/studio-base/components/Stack";
 import {
   useClearHoverValue,
   useSetHoverValue,
@@ -44,6 +44,16 @@ const useStyles = makeStyles()((theme) => ({
     borderRadius: 1,
     width: 2,
     zIndex: theme.zIndex.appBar,
+  },
+  track: {
+    display: "flex",
+    flexDirection: "column",
+    position: "absolute",
+    flex: "auto",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    minHeight: "100%",
   },
 }));
 
@@ -137,11 +147,10 @@ export function TimelineScrubber({
       ? toSec(subtractTimes(currentTime, startTime)) / toSec(subtractTimes(endTime, startTime))
       : undefined;
 
-  const popperRef = React.useRef<Instance>(ReactNull);
+  const popperRef = useRef<Instance>(ReactNull);
+  const positionRef = useRef({ x: 0, y: 0 });
 
-  const positionRef = React.useRef({ x: 0, y: 0 });
-
-  const handlePointerMove = (event: React.PointerEvent) => {
+  const handlePointerMove = (event: PointerEvent) => {
     positionRef.current = { x: event.clientX, y: event.clientY };
 
     if (popperRef.current != undefined) {
@@ -182,20 +191,15 @@ export function TimelineScrubber({
         },
       }}
     >
-      <Stack
-        position="absolute"
-        flex="auto"
-        style={{
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: sidebarWidth,
-          height,
-          minHeight: "100%",
-          width: `calc(${zoom * 100}% - ${sidebarWidth}px)`,
-        }}
-        ref={hoverElRef}
+      <div
+        className={classes.track}
         onPointerMove={handlePointerMove}
+        ref={hoverElRef}
+        style={{
+          left: sidebarWidth,
+          width: `calc(${zoom * 100}% - ${sidebarWidth}px)`,
+          height,
+        }}
       >
         <Slider
           disabled={min == undefined || max == undefined}
@@ -206,7 +210,7 @@ export function TimelineScrubber({
           renderSlider={renderSlider}
         />
         <PlaybackBarHoverTicks fullHeight componentId={hoverComponentId} />
-      </Stack>
+      </div>
     </Tooltip>
   );
 }

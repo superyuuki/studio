@@ -2,7 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { Typography, useTheme } from "@mui/material";
+import { Paper, Typography, useTheme } from "@mui/material";
 import { FzfResultItem } from "fzf";
 import { useCallback, useMemo, Dispatch, SetStateAction } from "react";
 import tc, { ColorInput } from "tinycolor2";
@@ -42,6 +42,14 @@ const useStyles = makeStyles()((theme) => ({
     borderBottom: `1px solid ${theme.palette.divider}`,
     backgroundColor: theme.palette.background.paper,
     height: ROW_HEIGHT,
+  },
+  sidebar: {
+    display: "flex",
+    flexDirection: "column",
+    left: 0,
+    position: "sticky",
+    width: SIDEBAR_WITDH,
+    zIndex: theme.zIndex.appBar,
   },
 }));
 
@@ -176,11 +184,7 @@ export function Timeline({
           zoom={zoom}
         />
 
-        <Stack
-          fullWidth
-          position="sticky"
-          style={{ left: 0, width: SIDEBAR_WITDH, zIndex: theme.zIndex.appBar }}
-        >
+        <Paper className={classes.sidebar}>
           {topics.map(({ item: topic, positions }, idx) => (
             <div className={classes.topic} key={`${idx}.${topic.name}`}>
               <Typography variant="caption">
@@ -197,7 +201,7 @@ export function Timeline({
               </Typography>
             </div>
           ))}
-        </Stack>
+        </Paper>
       </Stack>
     </>
   );
