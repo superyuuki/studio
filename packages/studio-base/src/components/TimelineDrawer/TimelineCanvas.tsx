@@ -20,13 +20,11 @@ import {
   MessagePipelineContext,
   useMessagePipeline,
 } from "@foxglove/studio-base/components/MessagePipeline";
-import {
-  TIMELINE_ROW_HEIGHT,
-  TIMELINE_SIDEBAR_WITDH,
-} from "@foxglove/studio-base/components/PlaybackControls/Timeline";
 import { Topic } from "@foxglove/studio-base/src/players/types";
 import { expandedLineColors } from "@foxglove/studio-base/util/plotColors";
 import { toolsColorScheme } from "@foxglove/studio-base/util/toolsColorScheme";
+
+import { TIMELINE_ROW_HEIGHT, TIMELINE_SIDEBAR_WITDH } from "./constants";
 
 const useStyles = makeStyles()({
   canvasWrapper: {

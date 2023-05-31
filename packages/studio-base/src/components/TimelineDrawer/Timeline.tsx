@@ -9,14 +9,13 @@ import { makeStyles } from "tss-react/mui";
 
 import { Time } from "@foxglove/rostime";
 import { FzfHighlightChars } from "@foxglove/studio-base/components/FzfHighlightChars";
-import { TimelineCanvas } from "@foxglove/studio-base/components/PlaybackControls/TimelineCanvas";
-import { TimelineScrubber } from "@foxglove/studio-base/components/PlaybackControls/TimelineScrubber";
 import Stack from "@foxglove/studio-base/components/Stack";
 import { Topic } from "@foxglove/studio-base/src/players/types";
 import { fonts } from "@foxglove/studio-base/util/sharedStyleConstants";
 
-export const TIMELINE_ROW_HEIGHT = 48;
-export const TIMELINE_SIDEBAR_WITDH = 300;
+import { TimelineCanvas } from "./TimelineCanvas";
+import { TimelineScrubber } from "./TimelineScrubber";
+import { TIMELINE_ROW_HEIGHT, TIMELINE_SIDEBAR_WITDH } from "./constants";
 
 const useStyles = makeStyles()((theme) => ({
   topic: {

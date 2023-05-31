@@ -40,9 +40,9 @@ import {
   MessagePipelineContext,
   useMessagePipeline,
 } from "@foxglove/studio-base/components/MessagePipeline";
-import { TimelineDrawer } from "@foxglove/studio-base/components/PlaybackControls/TimelineDrawer";
 import PlaybackSpeedControls from "@foxglove/studio-base/components/PlaybackSpeedControls";
 import Stack from "@foxglove/studio-base/components/Stack";
+import { TimelineDrawer } from "@foxglove/studio-base/components/TimelineDrawer";
 import { useCurrentUser } from "@foxglove/studio-base/context/CurrentUserContext";
 import { EventsStore, useEvents } from "@foxglove/studio-base/context/EventsContext";
 import {

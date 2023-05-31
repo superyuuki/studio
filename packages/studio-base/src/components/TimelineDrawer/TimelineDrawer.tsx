@@ -21,10 +21,11 @@ import {
   MessagePipelineContext,
   useMessagePipeline,
 } from "@foxglove/studio-base/components/MessagePipeline";
-import { Timeline } from "@foxglove/studio-base/components/PlaybackControls/Timeline";
 import Stack from "@foxglove/studio-base/components/Stack";
 import { PlayerPresence, TopicStats } from "@foxglove/studio-base/players/types";
 import { Topic } from "@foxglove/studio-base/src/players/types";
+
+import { Timeline } from "./Timeline";
 
 const useStyles = makeStyles()((theme) => ({
   root: {
