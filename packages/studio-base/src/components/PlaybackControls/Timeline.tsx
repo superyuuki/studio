@@ -4,11 +4,11 @@
 
 import { Paper, Typography, useTheme } from "@mui/material";
 import { FzfResultItem } from "fzf";
-import { useCallback, useMemo, Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useCallback, useMemo } from "react";
 import tc, { ColorInput } from "tinycolor2";
 import { makeStyles } from "tss-react/mui";
 
-import { subtract as subtractTimes, toSec, Time } from "@foxglove/rostime";
+import { Time, subtract as subtractTimes, toSec } from "@foxglove/rostime";
 import AutoSizingCanvas from "@foxglove/studio-base/components/AutoSizingCanvas";
 import { FzfHighlightChars } from "@foxglove/studio-base/components/FzfHighlightChars";
 import useMessagesByPath from "@foxglove/studio-base/components/MessagePathSyntax/useMessagesByPath";
@@ -21,6 +21,7 @@ import Stack from "@foxglove/studio-base/components/Stack";
 import { Topic } from "@foxglove/studio-base/src/players/types";
 import { expandedLineColors } from "@foxglove/studio-base/util/plotColors";
 import { fonts } from "@foxglove/studio-base/util/sharedStyleConstants";
+import { toolsColorScheme } from "@foxglove/studio-base/util/toolsColorScheme";
 
 const ROW_HEIGHT = 48;
 const SIDEBAR_WITDH = 300;
@@ -53,21 +54,21 @@ const useStyles = makeStyles()((theme) => ({
   },
 }));
 
-enum schemaMapping {
-  "diagnostic_msgs/DiagnosticArray" = 0,
-  "foxglove_msgs/ImageMarkerArray" = 1,
-  "nav_msgs/OccupancyGrid" = 3,
-  "nav_msgs/Odometry" = 3,
-  "sensor_msgs/CameraInfo" = 4,
-  "sensor_msgs/CompressedImage" = 4,
-  "sensor_msgs/Imu" = 4,
-  "sensor_msgs/NavSatFix" = 4,
-  "sensor_msgs/PointCloud2" = 4,
-  "tf2_msgs/TFMessage" = 5,
-  "visualization_msgs/ImageMarker" = 6,
-  "visualization_msgs/MarkerArray" = 6,
-  "geometry_msgs/PoseStamped" = 7,
-}
+const SchemaMappings = [
+  "diagnostic_msgs/DiagnosticArray",
+  "foxglove_msgs/ImageMarkerArray",
+  "nav_msgs/OccupancyGrid",
+  "nav_msgs/Odometry",
+  "sensor_msgs/CameraInfo",
+  "sensor_msgs/CompressedImage",
+  "sensor_msgs/Imu",
+  "sensor_msgs/NavSatFix",
+  "sensor_msgs/PointCloud2",
+  "tf2_msgs/TFMessage",
+  "visualization_msgs/ImageMarker",
+  "visualization_msgs/MarkerArray",
+  "geometry_msgs/PoseStamped",
+] as const;
 
 const selectStartTime = (ctx: MessagePipelineContext) => ctx.playerState.activeData?.startTime;
 const selectEndTime = (ctx: MessagePipelineContext) => ctx.playerState.activeData?.endTime;
@@ -87,6 +88,14 @@ const foregroundColor = ({
   prefersDarkMode: boolean;
   color: ColorInput;
 }) => (prefersDarkMode ? tc(color).toString() : tc(color).darken(20).toString());
+
+function colorForSchema(schema: undefined | string) {
+  const index = SchemaMappings.findIndex((sch) => sch === schema);
+  return (
+    (index === -1 ? expandedLineColors[0] : expandedLineColors[index]) ??
+    toolsColorScheme.blue.medium
+  );
+}
 
 export function Timeline({
   zoom,
@@ -117,7 +126,7 @@ export function Timeline({
     (ctx: CanvasRenderingContext2D, width: number, _height: number) => {
       topics.map(({ item: topic }, idx) => {
         ctx.fillStyle = backgroundColor({
-          color: expandedLineColors[schemaMapping[topic.schemaName]]!,
+          color: colorForSchema(topic.schemaName),
           prefersDarkMode,
         });
         ctx.fillRect(0, ROW_HEIGHT * idx, width, ROW_HEIGHT);
@@ -131,7 +140,7 @@ export function Timeline({
           ctx.beginPath();
           ctx.lineWidth = 1;
           ctx.strokeStyle = foregroundColor({
-            color: expandedLineColors[schemaMapping[topic.schemaName]]!,
+            color: colorForSchema(topic.schemaName),
             prefersDarkMode,
           });
           ctx.moveTo(x, ROW_HEIGHT * idx);
@@ -142,7 +151,7 @@ export function Timeline({
         ctx.beginPath();
         ctx.lineWidth = 2;
         ctx.strokeStyle = foregroundColor({
-          color: expandedLineColors[schemaMapping[topic.schemaName]]!,
+          color: colorForSchema(topic.schemaName),
           prefersDarkMode,
         });
         ctx.moveTo(0, ROW_HEIGHT * idx + ROW_HEIGHT);
