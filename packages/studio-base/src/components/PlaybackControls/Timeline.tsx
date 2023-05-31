@@ -4,14 +4,16 @@
 
 import { Paper, Typography, useTheme } from "@mui/material";
 import { FzfResultItem } from "fzf";
+import { mergeWith } from "lodash";
 import { Dispatch, SetStateAction, useCallback, useMemo } from "react";
 import tc, { ColorInput } from "tinycolor2";
 import { makeStyles } from "tss-react/mui";
 
 import { Time, subtract as subtractTimes, toSec } from "@foxglove/rostime";
+import { useBlocksByTopic } from "@foxglove/studio-base/PanelAPI";
+import { MessageBlock } from "@foxglove/studio-base/PanelAPI/useBlocksByTopic";
 import AutoSizingCanvas from "@foxglove/studio-base/components/AutoSizingCanvas";
 import { FzfHighlightChars } from "@foxglove/studio-base/components/FzfHighlightChars";
-import useMessagesByPath from "@foxglove/studio-base/components/MessagePathSyntax/useMessagesByPath";
 import {
   MessagePipelineContext,
   useMessagePipeline,
@@ -97,6 +99,10 @@ function colorForSchema(schema: undefined | string) {
   );
 }
 
+function flattenBlocks(blocks: readonly MessageBlock[]) {
+  return blocks.reduce((acc, block) => mergeWith(acc, block, (a, b) => (a ?? []).concat(b)), {});
+}
+
 export function Timeline({
   zoom,
   topics = [],
@@ -114,13 +120,15 @@ export function Timeline({
   const theme = useTheme();
   const prefersDarkMode = theme.palette.mode === "dark";
 
-  const pathStrings = useMemo(() => topics.map(({ item: { name } }) => name), [topics]);
+  const topicNames = useMemo(() => topics.map(({ item: { name } }) => name), [topics]);
 
   const startTime = useMessagePipeline(selectStartTime);
   const endTime = useMessagePipeline(selectEndTime);
   const duration = toSec(subtractTimes(endTime!, startTime!));
 
-  const itemsByPath = useMessagesByPath(pathStrings);
+  const blocks = useBlocksByTopic(topicNames);
+
+  const flatBlocks = useMemo(() => flattenBlocks(blocks), [blocks]);
 
   const drawCallback = useCallback(
     (ctx: CanvasRenderingContext2D, width: number, _height: number) => {
@@ -131,8 +139,8 @@ export function Timeline({
         });
         ctx.fillRect(0, ROW_HEIGHT * idx, width, ROW_HEIGHT);
 
-        const canvasOffsets: number[] | undefined = itemsByPath[topic.name]?.map(
-          ({ messageEvent }) =>
+        const canvasOffsets: number[] | undefined = flatBlocks[topic.name]?.map(
+          (messageEvent) =>
             (toSec(subtractTimes(messageEvent.receiveTime, startTime!)) / duration) * width - 1,
         );
 
@@ -161,7 +169,7 @@ export function Timeline({
 
       ctx.save();
     },
-    [duration, itemsByPath, prefersDarkMode, startTime, topics],
+    [duration, flatBlocks, prefersDarkMode, startTime, topics],
   );
 
   return (
