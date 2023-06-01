@@ -128,7 +128,7 @@ export function DataSource(): JSX.Element {
   const playerProblems = useMessagePipeline(selectPlayerProblems) ?? [];
 
   const { sidebarActions } = useWorkspaceActions();
-  const { formatDate, formatTime } = useAppTimeFormat();
+  const { timeFormat } = useAppTimeFormat();
 
   // We bypass react and update the DOM elements directly for better performance here.
   useEffect(() => {
@@ -139,7 +139,7 @@ export function DataSource(): JSX.Element {
         durationRef.current.innerText = durationStr;
       }
     }
-  }, [endTime, formatTime, startTime, playerPresence, formatDate]);
+  }, [endTime, startTime, playerPresence]);
 
   const reconnecting = playerPresence === PlayerPresence.RECONNECTING;
   const initializing = playerPresence === PlayerPresence.INITIALIZING;
@@ -166,7 +166,12 @@ export function DataSource(): JSX.Element {
           {!error && isConnection && startTime && (
             <>
               <ChevronRight12Regular className={classes.chevron} />
-              <Timestamp title="Live since" horizontal time={startTime} />
+              <Timestamp
+                disableDate={timeFormat === "SEC"}
+                title="Live since"
+                horizontal
+                time={startTime}
+              />
               <ChevronRight12Regular className={classes.chevron} />
               <LiveDuration durationRef={durationRef} />
             </>
