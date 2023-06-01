@@ -27,6 +27,9 @@ import { fonts } from "@foxglove/studio-base/util/sharedStyleConstants";
 const ICON_SIZE = 18;
 
 const useStyles = makeStyles<void, "adornmentError">()((theme, _params, _classes) => ({
+  chevron: {
+    flex: "none",
+  },
   sourceName: {
     font: "inherit",
     fontSize: theme.typography.body2.fontSize,
@@ -91,7 +94,7 @@ type LiveDurationProps = {
   durationRef: MutableRefObject<ReactNull | HTMLDivElement>;
 };
 
-const LiveDuration = memo<LiveDurationProps>(function LiveTimestamp({
+const LiveDuration = memo<LiveDurationProps>(function LiveDuration({
   durationRef,
 }: LiveDurationProps) {
   return (
@@ -162,9 +165,9 @@ export function DataSource(): JSX.Element {
           </div>
           {!error && isConnection && startTime && (
             <>
-              <ChevronRight12Regular />
+              <ChevronRight12Regular className={classes.chevron} />
               <Timestamp title="Live since" horizontal time={startTime} />
-              <ChevronRight12Regular />
+              <ChevronRight12Regular className={classes.chevron} />
               <LiveDuration durationRef={durationRef} />
             </>
           )}
