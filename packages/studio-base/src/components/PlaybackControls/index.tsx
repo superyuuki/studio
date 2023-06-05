@@ -60,8 +60,11 @@ import Scrubber from "./Scrubber";
 import { DIRECTION, jumpSeek } from "./sharedHelpers";
 
 const circleMask = keyframes`
-  30% { clip-path: circle(10%); }
-  60% { clip-path: circle(30%); }
+  0% { clip-path: circle(10%); }
+  33% { clip-path: circle(10%); }
+  34% { clip-path: circle(30%); }
+  65% { clip-path: circle(30%); }
+  66% { clip-path: circle(50%); }
   100% { clip-path: circle(50%); }
 `;
 
@@ -90,7 +93,7 @@ const useStyles = makeStyles()((theme) => ({
     borderRadius: theme.shape.borderRadius,
 
     [`.${chipClasses.icon}`]: {
-      animation: `${circleMask} 1s linear infinite`,
+      animation: `${circleMask} 1.1s linear infinite`,
     },
   },
 }));
