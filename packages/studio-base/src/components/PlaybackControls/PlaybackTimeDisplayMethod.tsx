@@ -22,9 +22,11 @@ import { makeStyles } from "tss-react/mui";
 import { Time, isTimeInRangeInclusive } from "@foxglove/rostime";
 import Stack from "@foxglove/studio-base/components/Stack";
 import { useAppTimeFormat } from "@foxglove/studio-base/hooks";
+import { subtractTimes } from "@foxglove/studio-base/players/UserNodePlayer/nodeTransformerWorker/typescript/userUtils/time";
 import { TimeDisplayMethod } from "@foxglove/studio-base/types/panels";
 import {
   formatDate,
+  formatDuration,
   formatTime,
   getValidatedTimeAndMethodFromString,
 } from "@foxglove/studio-base/util/formatTime";
@@ -35,8 +37,8 @@ type PlaybackTimeDisplayMethodProps = {
   startTime?: Time;
   endTime?: Time;
   timezone?: string;
-  onSeek: (arg0: Time) => void;
-  onPause: () => void;
+  onSeek?: (arg0: Time) => void;
+  onPause?: () => void;
   isPlaying: boolean;
 };
 
@@ -173,21 +175,41 @@ export default function PlaybackTimeDisplayMethod({
 }: PlaybackTimeDisplayMethodProps): JSX.Element {
   const { classes, cx } = useStyles();
   const timeOutID = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const timeFormat = useAppTimeFormat();
-  const timeRawString = useMemo(
-    () => (currentTime ? formatTimeRaw(currentTime) : undefined),
-    [currentTime],
+  const { timeFormat, setTimeFormat } = useAppTimeFormat();
+
+  const isLiveConnection = !(onSeek && onPause);
+
+  const duration = useMemo(
+    () => (startTime && endTime ? subtractTimes(endTime, startTime) : undefined),
+    [endTime, startTime],
   );
-  const timeOfDayString = useMemo(
-    () => (currentTime ? formatTime(currentTime, timezone) : undefined),
-    [currentTime, timezone],
+
+  const { timeOfDayString, timeRawString } = useMemo(() => {
+    if (!currentTime || !duration) {
+      return {
+        timeOfDayString: undefined,
+        timeRawString: undefined,
+      };
+    }
+    if (isLiveConnection) {
+      return {
+        timeOfDayString: formatDuration(duration),
+        timeRawString: formatTimeRaw(duration),
+      };
+    }
+    return {
+      timeOfDayString: formatTime(currentTime, timezone),
+      timeRawString: formatTimeRaw(currentTime),
+    };
+  }, [currentTime, duration, isLiveConnection, timezone]);
+
+  const timeString = useMemo(
+    () => (timeFormat === "SEC" ? timeRawString : timeOfDayString),
+    [timeFormat, timeOfDayString, timeRawString],
   );
-  const currentTimeString = useMemo(
-    () => (timeFormat.timeFormat === "SEC" ? timeRawString : timeOfDayString),
-    [timeFormat.timeFormat, timeRawString, timeOfDayString],
-  );
+
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [inputText, setInputText] = useState<string | undefined>(currentTimeString ?? undefined);
+  const [inputText, setInputText] = useState<string | undefined>(timeString ?? undefined);
   const [hasError, setHasError] = useState<boolean>(false);
 
   const onSubmit = useCallback(
@@ -219,13 +241,13 @@ export default function PlaybackTimeDisplayMethod({
         validTimeAndMethod.time &&
         isTimeInRangeInclusive(validTimeAndMethod.time, startTime, endTime)
       ) {
-        onSeek(validTimeAndMethod.time);
-        if (validTimeAndMethod.method !== timeFormat.timeFormat) {
-          void timeFormat.setTimeFormat(validTimeAndMethod.method);
+        onSeek?.(validTimeAndMethod.time);
+        if (validTimeAndMethod.method !== timeFormat) {
+          void setTimeFormat(validTimeAndMethod.method);
         }
       }
     },
-    [inputText, startTime, currentTime, endTime, timezone, onSeek, timeFormat],
+    [inputText, startTime, currentTime, endTime, timezone, onSeek, timeFormat, setTimeFormat],
   );
 
   useEffect(() => {
@@ -250,30 +272,26 @@ export default function PlaybackTimeDisplayMethod({
             className={cx(classes.textField, { [classes.textFieldError]: hasError })}
             aria-label="Playback Time Method"
             data-testid="PlaybackTime-text"
-            value={isEditing ? inputText : currentTimeString}
+            value={isEditing ? inputText : timeString}
             error={hasError}
             variant="filled"
-            size="small"
             InputProps={{
+              readOnly: isLiveConnection,
               startAdornment: hasError ? <WarningIcon color="error" /> : undefined,
               endAdornment: (
                 <PlaybackTimeMethodMenu
-                  {...{
-                    currentTime,
-                    timezone,
-                    timeOfDayString,
-                    timeRawString,
-                    timeFormat: timeFormat.timeFormat,
-                    setTimeFormat: timeFormat.setTimeFormat,
-                  }}
+                  timeFormat={timeFormat}
+                  timeRawString={timeRawString}
+                  timeOfDayString={timeOfDayString}
+                  setTimeFormat={setTimeFormat}
                 />
               ),
             }}
             onFocus={(e) => {
-              onPause();
+              onPause?.();
               setHasError(false);
               setIsEditing(true);
-              setInputText(currentTimeString);
+              setInputText(timeString);
               e.target.select();
             }}
             onBlur={(e) => {
@@ -290,7 +308,7 @@ export default function PlaybackTimeDisplayMethod({
           disabled
           variant="filled"
           size="small"
-          defaultValue={timeFormat.timeFormat === "SEC" ? "0000000000.000000000" : "00:00:00.000"}
+          defaultValue={timeFormat === "SEC" ? "0000000000.000000000" : "00:00:00.000"}
           InputProps={{
             endAdornment: (
               <IconButton edge="end" disabled>

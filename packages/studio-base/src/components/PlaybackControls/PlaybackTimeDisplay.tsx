@@ -22,8 +22,8 @@ import { useAppConfigurationValue } from "@foxglove/studio-base/hooks/useAppConf
 import PlaybackTimeDisplayMethod from "./PlaybackTimeDisplayMethod";
 
 type Props = {
-  onSeek: (seekTo: Time) => void;
-  onPause: () => void;
+  onSeek?: (seekTo: Time) => void;
+  onPause?: () => void;
 };
 
 const selectActiveData = (ctx: MessagePipelineContext) => ctx.playerState.activeData;

@@ -3,8 +3,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { ErrorCircle20Filled } from "@fluentui/react-icons";
-import { CircularProgress, IconButton, Typography } from "@mui/material";
-import { MutableRefObject, memo, useEffect, useRef } from "react";
+import { CircularProgress, IconButton } from "@mui/material";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { makeStyles } from "tss-react/mui";
 
@@ -15,14 +15,11 @@ import {
 } from "@foxglove/studio-base/components/MessagePipeline";
 import Stack from "@foxglove/studio-base/components/Stack";
 import TextMiddleTruncate from "@foxglove/studio-base/components/TextMiddleTruncate";
-import Timestamp from "@foxglove/studio-base/components/Timestamp";
 import WssErrorModal from "@foxglove/studio-base/components/WssErrorModal";
 import { useWorkspaceActions } from "@foxglove/studio-base/context/Workspace/useWorkspaceActions";
-import { useAppTimeFormat } from "@foxglove/studio-base/hooks";
 import { subtractTimes } from "@foxglove/studio-base/players/UserNodePlayer/nodeTransformerWorker/typescript/userUtils/time";
 import { PlayerPresence } from "@foxglove/studio-base/players/types";
 import { formatDuration } from "@foxglove/studio-base/util/formatTime";
-import { fonts } from "@foxglove/studio-base/util/sharedStyleConstants";
 
 const ICON_SIZE = 18;
 
@@ -75,32 +72,12 @@ const useStyles = makeStyles<void, "adornmentError">()((theme, _params, _classes
   },
 }));
 
-const selectPlayerSourceId = (ctx: MessagePipelineContext) => ctx.playerState.urlState?.sourceId;
 const selectPlayerName = (ctx: MessagePipelineContext) => ctx.playerState.name;
 const selectPlayerPresence = (ctx: MessagePipelineContext) => ctx.playerState.presence;
 const selectPlayerProblems = (ctx: MessagePipelineContext) => ctx.playerState.problems;
 
 const selectStartTime = (ctx: MessagePipelineContext) => ctx.playerState.activeData?.startTime;
 const selectEndTime = (ctx: MessagePipelineContext) => ctx.playerState.activeData?.endTime;
-
-type LiveDurationProps = {
-  durationRef: MutableRefObject<ReactNull | HTMLDivElement>;
-};
-
-const LiveDuration = memo<LiveDurationProps>(function LiveDuration({
-  durationRef,
-}: LiveDurationProps) {
-  return (
-    <Typography
-      variant="inherit"
-      title="Duration"
-      ref={durationRef}
-      style={{
-        fontFeatureSettings: `${fonts.SANS_SERIF_FEATURE_SETTINGS}, "zero"`,
-      }}
-    />
-  );
-});
 
 export function DataSource(): JSX.Element {
   const { t } = useTranslation("appBar");
@@ -110,20 +87,11 @@ export function DataSource(): JSX.Element {
   const startTime = useMessagePipeline(selectStartTime);
   const endTime = useMessagePipeline(selectEndTime);
 
-  const playerSourceId = useMessagePipeline(selectPlayerSourceId);
   const playerName = useMessagePipeline(selectPlayerName);
   const playerPresence = useMessagePipeline(selectPlayerPresence);
   const playerProblems = useMessagePipeline(selectPlayerProblems) ?? [];
 
-  const isLiveConnection =
-    playerSourceId != undefined
-      ? playerSourceId.endsWith("socket") ||
-        playerSourceId.endsWith("lidar") ||
-        playerSourceId.endsWith("device")
-      : false;
-
   const { sidebarActions } = useWorkspaceActions();
-  const { timeFormat } = useAppTimeFormat();
 
   // We bypass react and update the DOM elements directly for better performance here.
   useEffect(() => {
@@ -156,19 +124,6 @@ export function DataSource(): JSX.Element {
           <div className={classes.textTruncate}>
             <TextMiddleTruncate text={playerDisplayName ?? "<unknown>"} />
           </div>
-          {!error && isLiveConnection && startTime && (
-            <>
-              <span>&nbsp;/&nbsp;</span>
-              <Timestamp
-                disableDate={timeFormat === "SEC"}
-                title="Live since"
-                horizontal
-                time={startTime}
-              />
-              <span>&nbsp;/&nbsp;</span>
-              <LiveDuration durationRef={durationRef} />
-            </>
-          )}
         </div>
         <div className={cx(classes.adornment, { [classes.adornmentError]: error })}>
           {loading && (

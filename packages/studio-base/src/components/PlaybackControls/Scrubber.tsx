@@ -34,6 +34,14 @@ import { ProgressPlot } from "./ProgressPlot";
 import Slider from "./Slider";
 
 const useStyles = makeStyles()((theme) => ({
+  root: {
+    display: "flex",
+    flexGrow: 1,
+    alignItems: "center",
+    position: "relative",
+    height: 32,
+    marginTop: theme.spacing(-1),
+  },
   marker: {
     backgroundColor: theme.palette.text.primary,
     position: "absolute",
@@ -193,15 +201,7 @@ export default function Scrubber(props: Props): JSX.Element {
         },
       }}
     >
-      <Stack
-        ref={hoverElRef}
-        direction="row"
-        flexGrow={1}
-        onPointerMove={handlePointerMove}
-        alignItems="center"
-        position="relative"
-        style={{ height: 32 }}
-      >
+      <div className={classes.root} ref={hoverElRef} onPointerMove={handlePointerMove}>
         <div className={cx(classes.track, { [classes.trackDisabled]: !startTime })} />
         <Stack position="absolute" flex="auto" fullWidth style={{ height: 6 }}>
           <ProgressPlot loading={loading} availableRanges={ranges} />
@@ -218,7 +218,7 @@ export default function Scrubber(props: Props): JSX.Element {
         </Stack>
         <EventsOverlay />
         <PlaybackBarHoverTicks componentId={hoverComponentId} />
-      </Stack>
+      </div>
     </Tooltip>
   );
 }

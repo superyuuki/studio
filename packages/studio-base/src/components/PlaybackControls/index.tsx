@@ -11,6 +11,7 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
+import { keyframes } from "@emotion/react";
 import {
   ArrowRepeatAll20Regular,
   ArrowRepeatAllOff20Regular,
@@ -24,7 +25,8 @@ import {
   Previous20Filled,
   Previous20Regular,
 } from "@fluentui/react-icons";
-import { Tooltip } from "@mui/material";
+import SensorsIcon from "@mui/icons-material/Sensors";
+import { Chip, Tooltip, Typography, chipClasses } from "@mui/material";
 import { useCallback, useMemo, useState } from "react";
 import { makeStyles } from "tss-react/mui";
 
@@ -57,11 +59,17 @@ import { RepeatAdapter } from "./RepeatAdapter";
 import Scrubber from "./Scrubber";
 import { DIRECTION, jumpSeek } from "./sharedHelpers";
 
+const circleMask = keyframes`
+  30% { clip-path: circle(10%); }
+  60% { clip-path: circle(30%); }
+  100% { clip-path: circle(50%); }
+`;
+
 const useStyles = makeStyles()((theme) => ({
   root: {
     display: "flex",
     flexDirection: "column",
-    padding: theme.spacing(0.5, 1, 1, 1),
+    padding: theme.spacing(1),
     position: "relative",
     backgroundColor: theme.palette.background.paper,
     borderTop: `1px solid ${theme.palette.divider}`,
@@ -78,6 +86,13 @@ const useStyles = makeStyles()((theme) => ({
   dataSourceInfoButton: {
     cursor: "default",
   },
+  chip: {
+    borderRadius: theme.shape.borderRadius,
+
+    [`.${chipClasses.icon}`]: {
+      animation: `${circleMask} 1s linear infinite`,
+    },
+  },
 }));
 
 const selectPresence = (ctx: MessagePipelineContext) => ctx.playerState.presence;
@@ -85,9 +100,9 @@ const selectEventsSupported = (store: EventsStore) => store.eventsSupported;
 const selectPlaybackRepeat = (store: WorkspaceContextStore) => store.playbackControls.repeat;
 
 export default function PlaybackControls(props: {
-  play: NonNullable<Player["startPlayback"]>;
-  pause: NonNullable<Player["pausePlayback"]>;
-  seek: NonNullable<Player["seekPlayback"]>;
+  play?: NonNullable<Player["startPlayback"]>;
+  pause?: NonNullable<Player["pausePlayback"]>;
+  seek?: NonNullable<Player["seekPlayback"]>;
   playUntil?: Player["playUntil"];
   isPlaying: boolean;
   getTimeInfo: () => { startTime?: Time; endTime?: Time; currentTime?: Time };
@@ -112,14 +127,14 @@ export default function PlaybackControls(props: {
 
   const togglePlayPause = useCallback(() => {
     if (isPlaying) {
-      pause();
+      pause?.();
     } else {
       const { startTime: start, endTime: end, currentTime: current } = getTimeInfo();
       // if we are at the end, we need to go back to start
       if (current && end && start && compare(current, end) >= 0) {
-        seek(start);
+        seek?.(start);
       }
-      play();
+      play?.();
     }
   }, [isPlaying, pause, getTimeInfo, play, seek]);
 
@@ -144,7 +159,7 @@ export default function PlaybackControls(props: {
       if (playUntil) {
         playUntil(targetTime);
       } else {
-        seek(targetTime);
+        seek?.(targetTime);
       }
     },
     [getTimeInfo, playUntil, seek],
@@ -156,7 +171,7 @@ export default function PlaybackControls(props: {
       if (!currentTime) {
         return;
       }
-      seek(jumpSeek(DIRECTION.BACKWARD, currentTime, ev));
+      seek?.(jumpSeek(DIRECTION.BACKWARD, currentTime, ev));
     },
     [getTimeInfo, seek],
   );
@@ -175,18 +190,20 @@ export default function PlaybackControls(props: {
   );
 
   const toggleCreateEventDialog = useCallback(() => {
-    pause();
+    pause?.();
     setCreateEventDialogOpen((open) => !open);
   }, [pause]);
 
   const disableControls = presence === PlayerPresence.ERROR;
 
+  const isLiveSource = !(play && pause && seek);
+
   return (
     <>
-      <RepeatAdapter play={play} seek={seek} repeatEnabled={repeat} />
-      <KeyListener global keyDownHandlers={keyDownHandlers} />
+      {!isLiveSource && <RepeatAdapter play={play} seek={seek} repeatEnabled={repeat} />}
+      {!isLiveSource && <KeyListener global keyDownHandlers={keyDownHandlers} />}
       <div className={classes.root}>
-        <Scrubber onSeek={seek} />
+        {!isLiveSource && <Scrubber onSeek={seek} />}
         <Stack direction="row" alignItems="center" flex={1} gap={1} overflowX="auto">
           <Stack direction="row" flex={1} gap={0.5}>
             {currentUser && eventsSupported && (
@@ -218,42 +235,58 @@ export default function PlaybackControls(props: {
             )}
             <PlaybackTimeDisplay onSeek={seek} onPause={pause} />
           </Stack>
-          <Stack direction="row" alignItems="center" gap={1}>
-            <HoverableIconButton
-              disabled={disableControls}
-              size="small"
-              title="Seek backward"
-              icon={<Previous20Regular />}
-              activeIcon={<Previous20Filled />}
-              onClick={() => seekBackwardAction()}
-            />
-            <HoverableIconButton
-              disabled={disableControls}
-              size="small"
-              title={isPlaying ? "Pause" : "Play"}
-              onClick={togglePlayPause}
-              icon={isPlaying ? <Pause20Regular /> : <Play20Regular />}
-              activeIcon={isPlaying ? <Pause20Filled /> : <Play20Filled />}
-            />
-            <HoverableIconButton
-              disabled={disableControls}
-              size="small"
-              title="Seek forward"
-              icon={<Next20Regular />}
-              activeIcon={<Next20Filled />}
-              onClick={() => seekForwardAction()}
-            />
-          </Stack>
-          <Stack direction="row" flex={1} alignItems="center" justifyContent="flex-end" gap={0.5}>
-            <HoverableIconButton
-              size="small"
-              title="Loop playback"
-              color={repeat ? "primary" : "inherit"}
-              onClick={toggleRepeat}
-              icon={repeat ? <ArrowRepeatAll20Regular /> : <ArrowRepeatAllOff20Regular />}
-            />
-            <PlaybackSpeedControls />
-          </Stack>
+          {!isLiveSource && (
+            <Stack direction="row" alignItems="center" gap={1}>
+              <HoverableIconButton
+                disabled={disableControls}
+                size="small"
+                title="Seek backward"
+                icon={<Previous20Regular />}
+                activeIcon={<Previous20Filled />}
+                onClick={() => seekBackwardAction()}
+              />
+              <HoverableIconButton
+                disabled={disableControls}
+                size="small"
+                title={isPlaying ? "Pause" : "Play"}
+                onClick={togglePlayPause}
+                icon={isPlaying ? <Pause20Regular /> : <Play20Regular />}
+                activeIcon={isPlaying ? <Pause20Filled /> : <Play20Filled />}
+              />
+              <HoverableIconButton
+                disabled={disableControls}
+                size="small"
+                title="Seek forward"
+                icon={<Next20Regular />}
+                activeIcon={<Next20Filled />}
+                onClick={() => seekForwardAction()}
+              />
+            </Stack>
+          )}
+          {isLiveSource ? (
+            <Stack direction="row" flex={1} alignItems="center" justifyContent="flex-end" gap={0.5}>
+              <Chip
+                className={classes.chip}
+                label={
+                  <Typography variant="overline" color="text.primary" fontWeight="bold">
+                    LIVE
+                  </Typography>
+                }
+                icon={<SensorsIcon fontSize="large" color="primary" />}
+              />
+            </Stack>
+          ) : (
+            <Stack direction="row" flex={1} alignItems="center" justifyContent="flex-end" gap={0.5}>
+              <HoverableIconButton
+                size="small"
+                title="Loop playback"
+                color={repeat ? "primary" : "inherit"}
+                onClick={toggleRepeat}
+                icon={repeat ? <ArrowRepeatAll20Regular /> : <ArrowRepeatAllOff20Regular />}
+              />
+              <PlaybackSpeedControls />
+            </Stack>
+          )}
         </Stack>
         {createEventDialogOpen && eventsSupported && (
           <CreateEventDialog onClose={toggleCreateEventDialog} />

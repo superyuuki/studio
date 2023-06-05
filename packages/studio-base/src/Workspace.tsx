@@ -676,18 +676,16 @@ function WorkspaceContent(props: WorkspaceContentProps): JSX.Element {
             </Stack>
           </RemountOnValueChange>
         </Sidebars>
-        {play && pause && seek && (
-          <div style={{ flexShrink: 0 }}>
-            <PlaybackControls
-              play={play}
-              pause={pause}
-              seek={seek}
-              playUntil={playUntil}
-              isPlaying={isPlaying}
-              getTimeInfo={getTimeInfo}
-            />
-          </div>
-        )}
+        <div style={{ flexShrink: 0 }}>
+          <PlaybackControls
+            play={play}
+            pause={pause}
+            seek={seek}
+            playUntil={playUntil}
+            isPlaying={isPlaying}
+            getTimeInfo={getTimeInfo}
+          />
+        </div>
       </div>
       {!props.showSignInForm && workspaceExtensions}
       <WorkspaceDialogs />
