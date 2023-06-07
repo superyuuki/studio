@@ -2,11 +2,11 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { assignWith, last, isEmpty } from "lodash";
+import { assignWith, first, isEmpty, last } from "lodash";
 import memoizeWeak from "memoize-weak";
 
 import { filterMap } from "@foxglove/den/collection";
-import { Time, isLessThan, isGreaterThan, compare as compareTimes } from "@foxglove/rostime";
+import { Time, compare as compareTimes, isGreaterThan, isLessThan } from "@foxglove/rostime";
 import { Immutable as Im } from "@foxglove/studio";
 import { MessageBlock } from "@foxglove/studio-base/PanelAPI/useBlocksByTopic";
 import { MessageDataItemsByPath } from "@foxglove/studio-base/components/MessagePathSyntax/useCachedGetMessagePathDataItems";
@@ -27,8 +27,8 @@ function maxTime(a: Time, b: Time): Time {
 type TimeRange = { start: Time; end: Time };
 
 /**
- * Find the earliest and latest times of messages in data, for all messages and
- * per-path.
+ * Find the earliest and latest times of messages in data, for all messages and per-path.
+ * Assumes invidual ranges of messages are already sorted by receiveTime.
  */
 export function findTimeRanges(data: Im<PlotDataByPath>): {
   all: TimeRange;
@@ -40,12 +40,10 @@ export function findTimeRanges(data: Im<PlotDataByPath>): {
   for (const path of Object.keys(data)) {
     const thisPath = (byPath[path] = { start: MAX_TIME, end: MIN_TIME });
     for (const item of data[path] ?? []) {
-      for (const datum of item) {
-        start = minTime(start, datum.receiveTime);
-        end = maxTime(end, datum.receiveTime);
-        thisPath.start = minTime(thisPath.start, datum.receiveTime);
-        thisPath.end = maxTime(thisPath.end, datum.receiveTime);
-      }
+      thisPath.start = minTime(thisPath.start, first(item)?.receiveTime ?? MAX_TIME);
+      thisPath.end = maxTime(thisPath.end, last(item)?.receiveTime ?? MIN_TIME);
+      start = minTime(start, thisPath.start);
+      end = maxTime(end, thisPath.end);
     }
   }
 
