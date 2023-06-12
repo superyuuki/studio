@@ -810,9 +810,14 @@ export default class UserNodePlayer implements Player {
         this.#memoizedNodeTopics,
         (top) => top.name,
       );
+      const newDatatypes = this.#getDatatypes(
+        this.#playerState.activeData.datatypes,
+        this.#memoizedNodeDatatypes,
+      );
       this.#playerState.activeData = {
         ...this.#playerState.activeData,
         topics: newTopics,
+        datatypes: newDatatypes,
       };
       this.#emitState().catch(console.error);
     }
