@@ -11,6 +11,7 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
+import { Mutex } from "async-mutex";
 import { isEqual, unionBy, uniq } from "lodash";
 import memoizeWeak from "memoize-weak";
 import ReactDOM from "react-dom";
@@ -144,7 +145,7 @@ export default class UserNodePlayer implements Player {
     inputsByOutputTopic: new Map(),
   });
 
-  readonly #emitLock = new MutexLocked(undefined);
+  readonly #emitLock = new Mutex();
 
   // exposed as a static to allow testing to mock/replace
   public static CreateNodeTransformWorker = (): SharedWorker => {
