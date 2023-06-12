@@ -822,7 +822,7 @@ export default class UserNodePlayer implements Player {
           topics: newTopics,
         },
       };
-      this.#emitState().catch(console.error);
+      void this.#emitState();
     }
   }
 
