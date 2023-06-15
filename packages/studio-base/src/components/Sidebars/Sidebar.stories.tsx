@@ -10,8 +10,7 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 
 import Stack from "@foxglove/studio-base/components/Stack";
 
-import { Sidebars } from ".";
-import { NewSidebarItem } from "./NewSidebar";
+import { SidebarItem, Sidebars } from ".";
 
 export default {
   title: "components/NewSidebar",
@@ -43,13 +42,13 @@ const Z = () => <>{longText}</>;
 type LeftKey = "a" | "b" | "c";
 type RightKey = "x" | "y" | "z";
 
-const LEFT_ITEMS = new Map<LeftKey, NewSidebarItem>([
+const LEFT_ITEMS = new Map<LeftKey, SidebarItem>([
   ["a", { title: "A", component: A }],
   ["b", { title: "B", component: B }],
   ["c", { title: "C", component: C }],
 ]);
 
-const RIGHT_ITEMS = new Map<RightKey, NewSidebarItem>([
+const RIGHT_ITEMS = new Map<RightKey, SidebarItem>([
   ["x", { title: "X", component: X }],
   ["y", { title: "Y", component: Y }],
   ["z", { title: "Z", component: Z }],

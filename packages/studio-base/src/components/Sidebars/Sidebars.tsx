@@ -9,7 +9,7 @@ import { makeStyles } from "tss-react/mui";
 import ErrorBoundary from "@foxglove/studio-base/components/ErrorBoundary";
 import Stack from "@foxglove/studio-base/components/Stack";
 
-import { NewSidebar, NewSidebarItem } from "./NewSidebar";
+import { Sidebar, SidebarItem } from "./Sidebar";
 import "react-mosaic-component/react-mosaic-component.css";
 
 type LayoutNode = "leftbar" | "children" | "rightbar";
@@ -61,13 +61,13 @@ function mosiacRightSidebarSplitPercentage(node: MosaicNode<LayoutNode>): number
 }
 
 type SidebarProps<LeftKey, RightKey> = PropsWithChildren<{
-  leftItems: Map<LeftKey, NewSidebarItem>;
+  leftItems: Map<LeftKey, SidebarItem>;
   selectedLeftKey: LeftKey | undefined;
   onSelectLeftKey: (key: LeftKey | undefined) => void;
   leftSidebarSize: number | undefined;
   setLeftSidebarSize: (size: number | undefined) => void;
 
-  rightItems: Map<RightKey, NewSidebarItem>;
+  rightItems: Map<RightKey, SidebarItem>;
   selectedRightKey: RightKey | undefined;
   onSelectRightKey: (key: RightKey | undefined) => void;
   rightSidebarSize: number | undefined;
@@ -158,7 +158,7 @@ export function Sidebars<LeftKey extends string, RightKey extends string>(
               case "leftbar":
                 return (
                   <ErrorBoundary>
-                    <NewSidebar<LeftKey>
+                    <Sidebar<LeftKey>
                       anchor="left"
                       onClose={() => onSelectLeftKey(undefined)}
                       items={leftItems}
@@ -170,7 +170,7 @@ export function Sidebars<LeftKey extends string, RightKey extends string>(
               case "rightbar":
                 return (
                   <ErrorBoundary>
-                    <NewSidebar<RightKey>
+                    <Sidebar<RightKey>
                       anchor="right"
                       onClose={() => onSelectRightKey(undefined)}
                       items={rightItems}

@@ -37,8 +37,7 @@ import PanelSettings from "@foxglove/studio-base/components/PanelSettings";
 import PlaybackControls from "@foxglove/studio-base/components/PlaybackControls";
 import { ProblemsList } from "@foxglove/studio-base/components/ProblemsList";
 import RemountOnValueChange from "@foxglove/studio-base/components/RemountOnValueChange";
-import { Sidebars } from "@foxglove/studio-base/components/Sidebars";
-import { NewSidebarItem } from "@foxglove/studio-base/components/Sidebars/NewSidebar";
+import { Sidebars, SidebarItem } from "@foxglove/studio-base/components/Sidebars";
 import { SignInFormModal } from "@foxglove/studio-base/components/SignInFormModal";
 import Stack from "@foxglove/studio-base/components/Stack";
 import { StudioLogsSettings } from "@foxglove/studio-base/components/StudioLogsSettings";
@@ -359,7 +358,7 @@ function WorkspaceContent(props: WorkspaceContentProps): JSX.Element {
   const showEventsTab = currentUser != undefined && eventsSupported;
 
   const leftSidebarItems = useMemo(() => {
-    const items = new Map<LeftSidebarItemKey, NewSidebarItem>([
+    const items = new Map<LeftSidebarItemKey, SidebarItem>([
       ["panel-settings", { title: "Panel", component: PanelSettings }],
       ["topics", { title: "Topics", component: TopicList }],
       [
@@ -381,7 +380,7 @@ function WorkspaceContent(props: WorkspaceContentProps): JSX.Element {
   }, [playerProblems]);
 
   const rightSidebarItems = useMemo(() => {
-    const items = new Map<RightSidebarItemKey, NewSidebarItem>([
+    const items = new Map<RightSidebarItemKey, SidebarItem>([
       ["variables", { title: "Variables", component: VariablesList }],
     ]);
     if (enableStudioLogsSidebar) {
