@@ -4,15 +4,13 @@
 
 import { StoryObj } from "@storybook/react";
 import { screen, userEvent } from "@storybook/testing-library";
-import { PropsWithChildren, useEffect, useState } from "react";
+import { PropsWithChildren, useState } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 
-import { AppSetting } from "@foxglove/studio-base/AppSetting";
 import Stack from "@foxglove/studio-base/components/Stack";
-import { useAppConfigurationValue } from "@foxglove/studio-base/hooks";
 
-import Sidebars, { SidebarItem } from ".";
+import { Sidebars } from ".";
 import { NewSidebarItem } from "./NewSidebar";
 
 export default {
@@ -45,9 +43,6 @@ const Z = () => <>{longText}</>;
 type LeftKey = "a" | "b" | "c";
 type RightKey = "x" | "y" | "z";
 
-const ITEMS = new Map<string, SidebarItem>([]);
-const BOTTOM_ITEMS = new Map<string, SidebarItem>([]);
-
 const LEFT_ITEMS = new Map<LeftKey, NewSidebarItem>([
   ["a", { title: "A", component: A }],
   ["b", { title: "B", component: B }],
@@ -71,32 +66,21 @@ function Story({
 }): JSX.Element {
   const [selectedRightKey, setSelectedRightKey] = useState<RightKey | undefined>(defaultRightKey);
   const [selectedLeftKey, setSelectedLeftKey] = useState<LeftKey | undefined>(defaultLeftKey);
-  const [_, setAppBarEnabled] = useAppConfigurationValue<boolean>(AppSetting.ENABLE_NEW_TOPNAV);
   const [leftSidebarSize, setLeftSidebarSize] = useState<number | undefined>();
   const [rightSidebarSize, setRightSidebarSize] = useState<number | undefined>();
-
-  useEffect(() => {
-    void setAppBarEnabled(true);
-  }, [setAppBarEnabled]);
 
   return (
     <DndProvider backend={HTML5Backend}>
       <div style={{ height: "100%" }}>
         <Sidebars
-          items={ITEMS}
-          bottomItems={BOTTOM_ITEMS}
-          rightItems={RIGHT_ITEMS}
           leftItems={LEFT_ITEMS}
-          selectedKey={undefined}
-          onSelectKey={() => {
-            // no-op
-          }}
-          selectedRightKey={selectedRightKey}
-          onSelectRightKey={setSelectedRightKey}
           selectedLeftKey={selectedLeftKey}
           onSelectLeftKey={setSelectedLeftKey}
           leftSidebarSize={leftSidebarSize}
           setLeftSidebarSize={setLeftSidebarSize}
+          rightItems={RIGHT_ITEMS}
+          selectedRightKey={selectedRightKey}
+          onSelectRightKey={setSelectedRightKey}
           rightSidebarSize={rightSidebarSize}
           setRightSidebarSize={setRightSidebarSize}
         >
