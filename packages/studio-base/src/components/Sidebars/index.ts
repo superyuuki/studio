@@ -3,4 +3,4 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 export * from "./Sidebars";
-export * from "./Sidebar";
+export type { SidebarItem } from "./Sidebar";
