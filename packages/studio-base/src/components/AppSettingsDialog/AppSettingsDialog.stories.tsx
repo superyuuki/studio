@@ -2,7 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { StoryFn, StoryObj } from "@storybook/react";
+import { Meta, StoryFn, StoryObj } from "@storybook/react";
 import { screen, userEvent } from "@storybook/testing-library";
 import { range } from "lodash";
 
@@ -75,31 +75,26 @@ function Wrapper(StoryComponent: StoryFn): JSX.Element {
 export default {
   title: "components/AppSettingsDialog",
   component: AppSettingsDialog,
+  args: {
+    open: true,
+  },
   parameters: { colorScheme: "light" },
   decorators: [Wrapper],
-};
+} as Meta<typeof AppSettingsDialog>;
 
-export const Default: StoryObj = {
-  render: () => {
-    return <AppSettingsDialog open />;
-  },
-};
+type Story = StoryObj<typeof AppSettingsDialog>;
 
-export const DefaultChinese: StoryObj = {
-  ...Default,
+export const Default: Story = {};
+
+export const DefaultChinese: Story = {
   parameters: { forceLanguage: "zh" },
 };
 
-export const DefaultJapanese: StoryObj = {
-  ...Default,
+export const DefaultJapanese: Story = {
   parameters: { forceLanguage: "ja" },
 };
 
-export const ChangingLanguage: StoryObj = {
-  render: function Story() {
-    return <AppSettingsDialog open />;
-  },
-
+export const ChangingLanguage: Story = {
   play: async () => {
     const input = await screen.findByText("English", { exact: false });
     userEvent.click(input);
@@ -110,82 +105,72 @@ export const ChangingLanguage: StoryObj = {
   },
 };
 
-export const General: StoryObj = {
-  render: () => {
-    return <AppSettingsDialog open activeTab="general" />;
-  },
+export const General: Story = {
+  args: { activeTab: "general" },
 };
 
-export const GeneralChinese: StoryObj = {
+export const GeneralChinese: Story = {
   ...General,
   parameters: { forceLanguage: "zh" },
 };
 
-export const GeneralJapanese: StoryObj = {
+export const GeneralJapanese: Story = {
   ...General,
   parameters: { forceLanguage: "ja" },
 };
 
-export const Privacy: StoryObj = {
-  render: () => {
-    return <AppSettingsDialog open activeTab="privacy" />;
-  },
+export const Privacy: Story = {
+  args: { activeTab: "privacy" },
 };
 
-export const PrivacyChinese: StoryObj = {
+export const PrivacyChinese: Story = {
   ...Privacy,
   parameters: { forceLanguage: "zh" },
 };
 
-export const PrivacyJapanese: StoryObj = {
+export const PrivacyJapanese: Story = {
   ...Privacy,
   parameters: { forceLanguage: "ja" },
 };
 
-export const Extensions: StoryObj = {
-  render: () => {
-    return <AppSettingsDialog open activeTab="extensions" />;
-  },
+export const Extensions: Story = {
+  args: { activeTab: "extensions" },
 };
 
-export const ExtensionsChinese: StoryObj = {
+export const ExtensionsChinese: Story = {
   ...Extensions,
   parameters: { forceLanguage: "zh" },
 };
 
-export const ExtensionsJapanese: StoryObj = {
+export const ExtensionsJapanese: Story = {
   ...Extensions,
   parameters: { forceLanguage: "ja" },
 };
 
-export const Experimental: StoryObj = {
-  render: () => {
-    return <AppSettingsDialog open activeTab="experimental-features" />;
-  },
+export const Experimental: Story = {
+  args: { activeTab: "experimental-features" },
 };
 
-export const ExperimentalChinese: StoryObj = {
+export const ExperimentalChinese: Story = {
   ...Experimental,
   parameters: { forceLanguage: "zh" },
 };
 
-export const ExperimentalJapanese: StoryObj = {
+export const ExperimentalJapanese: Story = {
   ...Experimental,
   parameters: { forceLanguage: "ja" },
 };
 
-export const About: StoryObj = {
-  render: () => {
-    return <AppSettingsDialog open activeTab="about" />;
-  },
+export const About: Story = {
+  args: { activeTab: "about" },
 };
 
-export const AboutChinese: StoryObj = {
+export const AboutChinese: Story = {
   ...About,
   parameters: { forceLanguage: "zh" },
 };
 
-export const AboutJapanese: StoryObj = {
+export const AboutJapanese: Story = {
   ...About,
   parameters: { forceLanguage: "ja" },
 };
