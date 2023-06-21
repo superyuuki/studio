@@ -223,6 +223,7 @@ export function AppBar(props: AppBarProps): JSX.Element {
   const currentLayoutId = useCurrentLayoutSelector(selectCurrentLayoutId);
 
   const {
+    connectionStatus,
     sidebars: {
       left: { open: leftSidebarOpen },
       right: { open: rightSidebarOpen },
@@ -375,7 +376,7 @@ export function AppBar(props: AppBarProps): JSX.Element {
                   data-testid="user-button"
                 >
                   <Avatar className={classes.avatar} variant="rounded">
-                    {currentUser?.avatarImageUrl ? (
+                    {connectionStatus === "online" && currentUser?.avatarImageUrl ? (
                       <img
                         src={currentUser.avatarImageUrl}
                         referrerPolicy="same-origin"

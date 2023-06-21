@@ -15,6 +15,7 @@ import {
   IDataSourceFactory,
   usePlayerSelection,
 } from "@foxglove/studio-base/context/PlayerSelectionContext";
+import { useConnectionStatus } from "@foxglove/studio-base/context/Workspace/useConnectionStatus";
 import { useAppConfigurationValue } from "@foxglove/studio-base/hooks";
 import isDesktopApp from "@foxglove/studio-base/util/isDesktopApp";
 
@@ -100,6 +101,7 @@ export function useWorkspaceActions(): WorkspaceActions {
   const { availableSources } = usePlayerSelection();
 
   const openFile = useOpenFile(availableSources);
+  useConnectionStatus();
 
   const set = useCallback(
     (setter: (draft: Draft<WorkspaceContextStore>) => void) => {

@@ -1,0 +1,45 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/
+
+import { produce } from "immer";
+import { useCallback, useEffect } from "react";
+
+import { useGuaranteedContext } from "@foxglove/hooks";
+import {
+  WorkspaceContext,
+  WorkspaceContextStore,
+} from "@foxglove/studio-base/context/Workspace/WorkspaceContext";
+
+export function useConnectionStatus(): void {
+  const { setState } = useGuaranteedContext(WorkspaceContext);
+
+  const setConnectionStatus = useCallback(
+    (status: "offline" | "online") => {
+      setState(
+        produce<WorkspaceContextStore>((draft) => {
+          draft.connectionStatus = status;
+        }),
+      );
+    },
+    [setState],
+  );
+
+  useEffect(() => {
+    window.addEventListener("offline", () => {
+      setConnectionStatus("offline");
+    });
+    window.addEventListener("online", () => {
+      setConnectionStatus("online");
+    });
+
+    return () => {
+      window.removeEventListener("offline", () => {
+        setConnectionStatus("offline");
+      });
+      window.removeEventListener("online", () => {
+        setConnectionStatus("online");
+      });
+    };
+  }, [setConnectionStatus]);
+}
