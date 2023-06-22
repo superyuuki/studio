@@ -13,6 +13,7 @@ import {
 
 export function useConnectionStatus(): void {
   const { setState } = useGuaranteedContext(WorkspaceContext);
+  const { addEventListener, navigator } = window;
 
   const setConnectionStatus = useCallback(
     (status: WorkspaceContextStore["connectionStatus"]) => {
@@ -25,9 +26,12 @@ export function useConnectionStatus(): void {
     [setState],
   );
 
-  useEffect(() => {
-    const { addEventListener } = window;
+  useEffect(
+    () => (navigator.onLine ? setConnectionStatus("online") : setConnectionStatus("offline")),
+    [navigator.onLine, setConnectionStatus],
+  );
 
+  useEffect(() => {
     addEventListener("offline", () => setConnectionStatus("offline"));
     addEventListener("online", () => setConnectionStatus("online"));
 
@@ -35,5 +39,5 @@ export function useConnectionStatus(): void {
       removeEventListener("offline", () => setConnectionStatus("offline"));
       removeEventListener("online", () => setConnectionStatus("online"));
     };
-  }, [setConnectionStatus]);
+  }, [addEventListener, setConnectionStatus]);
 }
