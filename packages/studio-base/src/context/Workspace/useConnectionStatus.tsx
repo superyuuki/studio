@@ -26,11 +26,13 @@ export function useConnectionStatus(): void {
     [setState],
   );
 
+  // Check if the app is online then initial connection status
   useEffect(
     () => (navigator.onLine ? setConnectionStatus("online") : setConnectionStatus("offline")),
     [navigator.onLine, setConnectionStatus],
   );
 
+  // Listen for changes to the connection status
   useEffect(() => {
     addEventListener("offline", () => setConnectionStatus("offline"));
     addEventListener("online", () => setConnectionStatus("online"));
