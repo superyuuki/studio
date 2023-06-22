@@ -51,11 +51,15 @@ export const CustomWindowControlsDragRegion: Story = {
 };
 
 const Grid = (Story: StoryFn): JSX.Element => (
-  <Stack overflowY="auto">
-    <div style={{ display: "grid", gridTemplateColumns: "max-content auto", alignItems: "center" }}>
-      <Story />
-    </div>
-  </Stack>
+  <WorkspaceContextProvider>
+    <Stack overflowY="auto">
+      <div
+        style={{ display: "grid", gridTemplateColumns: "max-content auto", alignItems: "center" }}
+      >
+        <Story />
+      </div>
+    </Stack>
+  </WorkspaceContextProvider>
 );
 
 const currentUser: User = {
@@ -96,20 +100,19 @@ export const SignInStates: Story = {
               },
             },
           ].map((state) => (
-            <WorkspaceContextProvider key={state.label}>
-              <CurrentUserContext.Provider
-                value={{
-                  currentUser: state.currentUser,
-                  signIn: () => undefined,
-                  signOut: async () => undefined,
-                }}
-              >
-                <div style={{ padding: 8 }}>{state.label}</div>
-                <div>
-                  <Story />
-                </div>
-              </CurrentUserContext.Provider>
-            </WorkspaceContextProvider>
+            <CurrentUserContext.Provider
+              key={state.label}
+              value={{
+                currentUser: state.currentUser,
+                signIn: () => undefined,
+                signOut: async () => undefined,
+              }}
+            >
+              <div style={{ padding: 8 }}>{state.label}</div>
+              <div>
+                <Story />
+              </div>
+            </CurrentUserContext.Provider>
           ))}
         </>
       );
