@@ -20,6 +20,7 @@ function createWorkspaceContextStore(
     persist(
       () => {
         const store: WorkspaceContextStore = {
+          connectionStatus: undefined,
           dialogs: {
             dataSource: {
               activeDataSource: undefined,

@@ -15,7 +15,7 @@ export function useConnectionStatus(): void {
   const { setState } = useGuaranteedContext(WorkspaceContext);
 
   const setConnectionStatus = useCallback(
-    (status: "offline" | "online") => {
+    (status: WorkspaceContextStore["connectionStatus"]) => {
       setState(
         produce<WorkspaceContextStore>((draft) => {
           draft.connectionStatus = status;
@@ -26,20 +26,14 @@ export function useConnectionStatus(): void {
   );
 
   useEffect(() => {
-    window.addEventListener("offline", () => {
-      setConnectionStatus("offline");
-    });
-    window.addEventListener("online", () => {
-      setConnectionStatus("online");
-    });
+    const { addEventListener } = window;
+
+    addEventListener("offline", () => setConnectionStatus("offline"));
+    addEventListener("online", () => setConnectionStatus("online"));
 
     return () => {
-      window.removeEventListener("offline", () => {
-        setConnectionStatus("offline");
-      });
-      window.removeEventListener("online", () => {
-        setConnectionStatus("online");
-      });
+      removeEventListener("offline", () => setConnectionStatus("offline"));
+      removeEventListener("online", () => setConnectionStatus("online"));
     };
   }, [setConnectionStatus]);
 }

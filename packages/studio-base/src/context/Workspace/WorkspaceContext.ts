@@ -32,7 +32,7 @@ export const RightSidebarItemKeys = ["events", "variables", "studio-logs-setting
 export type RightSidebarItemKey = (typeof RightSidebarItemKeys)[number];
 
 export type WorkspaceContextStore = {
-  connectionStatus: "offline" | "online";
+  connectionStatus: "offline" | "online" | undefined;
   dialogs: {
     dataSource: {
       activeDataSource: undefined | IDataSourceFactory;

@@ -47,6 +47,7 @@ export function migrateV0WorkspaceState(
   // needs to consider the version number.
   const v0State = oldState as WorkspaceContextStoreV0;
   const migrated: WorkspaceContextStore = {
+    connectionStatus: undefined,
     dialogs: {
       dataSource: {
         activeDataSource: undefined,
