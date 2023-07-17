@@ -261,7 +261,7 @@ export default function Panel<
     // If such a panel already exists, we update it with the new props.
     const openSiblingPanel = useCallback<OpenSiblingPanel>(
       async ({ panelType, siblingConfigCreator, updateIfExists }) => {
-        const panelsState = getCurrentLayoutState().selectedLayout?.data;
+        const panelsState = getCurrentLayoutState()?.data;
         if (!panelsState) {
           return;
         }
@@ -364,7 +364,7 @@ export default function Panel<
     );
 
     const groupPanels = useCallback(() => {
-      const layout = getCurrentLayoutState().selectedLayout?.data?.layout;
+      const layout = getCurrentLayoutState()?.data?.layout;
       if (layout == undefined) {
         return;
       }
@@ -377,7 +377,7 @@ export default function Panel<
     }, [getCurrentLayoutState, getSelectedPanelIds, createTabPanel, childId]);
 
     const createTabs = useCallback(() => {
-      const layout = getCurrentLayoutState().selectedLayout?.data?.layout;
+      const layout = getCurrentLayoutState()?.data?.layout;
       if (layout == undefined) {
         return;
       }
@@ -398,7 +398,7 @@ export default function Panel<
     }, [closePanel, mosaicActions, mosaicWindowActions, tabId]);
 
     const splitPanel = useCallback(() => {
-      const savedProps = getCurrentLayoutState().selectedLayout?.data?.configById;
+      const savedProps = getCurrentLayoutState()?.data?.configById;
       if (!savedProps) {
         return;
       }

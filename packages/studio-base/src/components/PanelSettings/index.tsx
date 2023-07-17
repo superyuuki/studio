@@ -30,9 +30,7 @@ import { TAB_PANEL_TYPE } from "@foxglove/studio-base/util/globalConstants";
 import { getPanelTypeFromId } from "@foxglove/studio-base/util/layout";
 
 const singlePanelIdSelector = (state: LayoutState) =>
-  typeof state.selectedLayout?.data?.layout === "string"
-    ? state.selectedLayout.data.layout
-    : undefined;
+  typeof state?.data?.layout === "string" ? state.data.layout : undefined;
 
 const selectIncrementSequenceNumber = (store: PanelStateStore) => store.incrementSequenceNumber;
 
@@ -89,7 +87,7 @@ export default function PanelSettings({
 
   const [showShareModal, setShowShareModal] = useState(false);
   const shareModal = useMemo(() => {
-    const panelConfigById = getCurrentLayout().selectedLayout?.data?.configById;
+    const panelConfigById = getCurrentLayout()?.data?.configById;
     if (selectedPanelId == undefined || !showShareModal || !panelConfigById) {
       return ReactNull;
     }

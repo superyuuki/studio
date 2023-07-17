@@ -5,12 +5,10 @@
 import { isEmpty, omitBy } from "lodash";
 
 import { fromRFC3339String, toRFC3339String, Time } from "@foxglove/rostime";
-import { LayoutID } from "@foxglove/studio-base/index";
 
 export type AppURLState = {
   ds?: string;
   dsParams?: Record<string, string>;
-  layoutId?: LayoutID;
   org?: string;
   time?: Time;
 };
@@ -24,14 +22,6 @@ export type AppURLState = {
  */
 export function updateAppURLState(url: URL, urlState: AppURLState): URL {
   const newURL = new URL(url.href);
-
-  if ("layoutId" in urlState) {
-    if (urlState.layoutId) {
-      newURL.searchParams.set("layoutId", urlState.layoutId);
-    } else {
-      newURL.searchParams.delete("layoutId");
-    }
-  }
 
   if ("org" in urlState) {
     if (urlState.org) {
@@ -83,7 +73,6 @@ export function updateAppURLState(url: URL, urlState: AppURLState): URL {
  */
 export function parseAppURLState(url: URL): AppURLState | undefined {
   const ds = url.searchParams.get("ds") ?? undefined;
-  const layoutId = url.searchParams.get("layoutId");
   const org = url.searchParams.get("org");
   const timeString = url.searchParams.get("time");
   const time = timeString == undefined ? undefined : fromRFC3339String(timeString);
@@ -97,7 +86,6 @@ export function parseAppURLState(url: URL): AppURLState | undefined {
 
   const state: AppURLState = omitBy(
     {
-      layoutId: layoutId ? (layoutId as LayoutID) : undefined,
       org,
       time,
       ds,

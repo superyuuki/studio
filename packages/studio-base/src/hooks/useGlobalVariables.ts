@@ -23,7 +23,7 @@ export type GlobalVariables = { [key: string]: VariableValue };
 export const EMPTY_GLOBAL_VARIABLES: GlobalVariables = Object.freeze({});
 
 const globalVariablesSelector = (state: LayoutState) =>
-  state.selectedLayout?.data?.globalVariables ?? EMPTY_GLOBAL_VARIABLES;
+  state?.data?.globalVariables ?? EMPTY_GLOBAL_VARIABLES;
 
 export default function useGlobalVariables(): {
   globalVariables: GlobalVariables;

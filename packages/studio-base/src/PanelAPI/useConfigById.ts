@@ -27,7 +27,7 @@ export default function useConfigById<Config extends Record<string, unknown>>(
       if (panelId == undefined) {
         return undefined;
       }
-      return maybeCast<Config>(state.selectedLayout?.data?.configById?.[panelId]);
+      return maybeCast<Config>(state?.data?.configById?.[panelId]);
     },
     [panelId],
   );
@@ -43,7 +43,7 @@ export default function useConfigById<Config extends Record<string, unknown>>(
       if (typeof newConfig === "function") {
         // We use a getter here instead of referring directly to the config object
         // so that this callback is stable across config changes.
-        const currentConfig = getCurrentLayoutState().selectedLayout?.data?.configById[panelId] as
+        const currentConfig = getCurrentLayoutState()?.data?.configById[panelId] as
           | undefined
           | Config;
         if (currentConfig) {

@@ -53,13 +53,13 @@ export default function usePanelDrag(props: {
         onDragStart();
       }
 
-      const { selectedLayout } = getCurrentLayout();
-      if (!selectedLayout?.data) {
+      const data = getCurrentLayout()?.data;
+      if (!data) {
         // eslint-disable-next-line no-restricted-syntax
         return null;
       }
 
-      const { layout: originalLayout, configById: originalConfigById } = selectedLayout.data;
+      const { layout: originalLayout, configById: originalConfigById } = data;
 
       // The defer is necessary as the element must be present on start for HTML DnD to not cry
       const path = mosaicWindowActions.getPath();
