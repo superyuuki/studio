@@ -60,16 +60,14 @@ export default function CurrentLayoutProvider({
     layoutStateListeners.current.delete(listener);
   }, []);
 
-  const [layoutState, setLayoutStateInternal] = useState<LayoutState>({
-    selectedLayout: undefined,
-  });
+  const [layoutState, setLayoutStateInternal] = useState<LayoutState>(undefined);
   const layoutStateRef = useRef(layoutState);
   const [incompatibleLayoutVersionError, setIncompatibleLayoutVersionError] = useState(false);
   const setLayoutState = useCallback((newState: LayoutState) => {
-    const layoutVersion = newState.selectedLayout?.data?.version;
+    const layoutVersion = newState?.data?.version;
     if (layoutVersion != undefined && layoutVersion > MAX_SUPPORTED_LAYOUT_VERSION) {
       setIncompatibleLayoutVersionError(true);
-      setLayoutStateInternal({ selectedLayout: undefined });
+      setLayoutStateInternal(undefined);
       return;
     }
 
@@ -108,13 +106,10 @@ export default function CurrentLayoutProvider({
 
   const performAction = useCallback(
     (action: PanelsActions) => {
-      if (
-        layoutStateRef.current.selectedLayout?.data == undefined ||
-        layoutStateRef.current.selectedLayout.loading === true
-      ) {
+      if (layoutStateRef.current?.data == undefined) {
         return;
       }
-      const oldData = layoutStateRef.current.selectedLayout.data;
+      const oldData = layoutStateRef.current.data;
       const newData = panelsReducer(oldData, action);
 
       // The panel state did not change, so no need to perform layout state
@@ -125,13 +120,7 @@ export default function CurrentLayoutProvider({
       }
 
       setLayoutState({
-        selectedLayout: {
-          id: layoutStateRef.current.selectedLayout.id,
-          data: newData,
-          loading: false,
-          name: layoutStateRef.current.selectedLayout.name,
-          edited: true,
-        },
+        data: newData,
       });
     },
     [setLayoutState],
@@ -179,14 +168,10 @@ export default function CurrentLayoutProvider({
         // the new panel id will be so we diff the panelIds of the old and
         // new layout so we can select the new panel.
         const originalIsSelected = selectedPanelIds.current.includes(payload.originalId);
-        const beforePanelIds = Object.keys(
-          layoutStateRef.current.selectedLayout?.data?.configById ?? {},
-        );
+        const beforePanelIds = Object.keys(layoutStateRef.current?.data?.configById ?? {});
         performAction({ type: "SWAP_PANEL", payload });
         if (originalIsSelected) {
-          const afterPanelIds = Object.keys(
-            layoutStateRef.current.selectedLayout?.data?.configById ?? {},
-          );
+          const afterPanelIds = Object.keys(layoutStateRef.current?.data?.configById ?? {});
           setSelectedPanelIds(difference(afterPanelIds, beforePanelIds));
         }
         void analytics.logEvent(AppEvent.PANEL_ADD, { type: payload.type, action: "swap" });

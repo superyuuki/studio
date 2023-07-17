@@ -194,18 +194,15 @@ function LoadingState(): JSX.Element {
   );
 }
 
-const selectedLayoutLoadingSelector = (state: LayoutState) => state.selectedLayout?.loading;
-const selectedLayoutExistsSelector = (state: LayoutState) =>
-  state.selectedLayout?.data != undefined;
-const selectedLayoutMosaicSelector = (state: LayoutState) => state.selectedLayout?.data?.layout;
+const selectedLayoutMosaicSelector = (state: LayoutState) => state?.data?.layout;
 
 export default function PanelLayout(): JSX.Element {
   const { layoutEmptyState } = useAppContext();
   const { changePanelLayout } = useCurrentLayoutActions();
-  const layoutExists = useCurrentLayoutSelector(selectedLayoutExistsSelector);
-  const layoutLoading = useCurrentLayoutSelector(selectedLayoutLoadingSelector);
   const mosaicLayout = useCurrentLayoutSelector(selectedLayoutMosaicSelector);
   const registeredExtensions = useExtensionCatalog((state) => state.installedExtensions);
+
+  const layoutExists = mosaicLayout != undefined;
 
   const onChange = useCallback(
     (newLayout: MosaicNode<string> | undefined) => {
@@ -224,13 +221,10 @@ export default function PanelLayout(): JSX.Element {
     return <UnconnectedPanelLayout layout={mosaicLayout} onChange={onChange} />;
   }
 
-  if (layoutLoading === true) {
-    return <LoadingState />;
-  }
-
   if (layoutEmptyState) {
     return layoutEmptyState;
   }
 
+  // fixme - should this show some message? Or should we always have a default layout available?
   return <></>;
 }

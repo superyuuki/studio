@@ -35,9 +35,7 @@ export type { LayoutData };
 
 export type LayoutState = Readonly<
   | {
-      loading?: boolean;
       data: LayoutData | undefined;
-      edited?: boolean;
     }
   | undefined
 >;
@@ -68,8 +66,8 @@ export interface ICurrentLayout {
      * Returns the current state - useful for click handlers and callbacks that read the state
      * asynchronously and don't want to update every time the state changes.
      */
-    getCurrentLayoutState: () => LayoutData;
-    setCurrentLayoutState: (newState: LayoutData) => void;
+    getCurrentLayoutState: () => LayoutState;
+    setCurrentLayoutState: (newState: LayoutState) => void;
 
     savePanelConfigs: (payload: SaveConfigsPayload) => void;
     updatePanelConfigs: (panelType: string, updater: (config: PanelConfig) => PanelConfig) => void;
@@ -176,30 +174,25 @@ export function useSelectedPanels(): SelectedPanelActions {
 
   const setSelectedPanelIds = useGuaranteedContext(CurrentLayoutContext).setSelectedPanelIds;
   const getSelectedPanelIds = useGuaranteedContext(CurrentLayoutContext).getSelectedPanelIds;
-  const { getCurrentLayoutState: getCurrentLayout } = useCurrentLayoutActions();
+  const { getCurrentLayoutState } = useCurrentLayoutActions();
 
   const selectAllPanels = useCallback(() => {
     // eslint-disable-next-line no-restricted-syntax
-    const panelIds = getLeaves(getCurrentLayout().selectedLayout?.data?.layout ?? null);
+    const panelIds = getLeaves(getCurrentLayoutState()?.data?.layout ?? null);
     setSelectedPanelIds(panelIds);
-  }, [getCurrentLayout, setSelectedPanelIds]);
+  }, [getCurrentLayoutState, setSelectedPanelIds]);
 
   const togglePanelSelected = useCallback(
     (panelId: string, containingTabId: string | undefined) => {
       setSelectedPanelIds((selectedIds) => {
-        const { selectedLayout } = getCurrentLayout();
-        if (!selectedLayout?.data) {
+        const data = getCurrentLayoutState()?.data;
+        if (!data) {
           return selectedIds;
         }
-        return toggleSelectedPanel(
-          panelId,
-          containingTabId,
-          selectedLayout.data.configById,
-          selectedIds,
-        );
+        return toggleSelectedPanel(panelId, containingTabId, data.configById, selectedIds);
       });
     },
-    [setSelectedPanelIds, getCurrentLayout],
+    [setSelectedPanelIds, getCurrentLayoutState],
   );
 
   return useShallowMemo({

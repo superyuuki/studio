@@ -29,10 +29,6 @@ import { MemoryUseIndicator } from "@foxglove/studio-base/components/MemoryUseIn
 import Stack from "@foxglove/studio-base/components/Stack";
 import { useAnalytics } from "@foxglove/studio-base/context/AnalyticsContext";
 import { useAppContext } from "@foxglove/studio-base/context/AppContext";
-import {
-  LayoutState,
-  useCurrentLayoutSelector,
-} from "@foxglove/studio-base/context/CurrentLayoutContext";
 import { useCurrentUser } from "@foxglove/studio-base/context/CurrentUserContext";
 import {
   useWorkspaceStore,
@@ -188,7 +184,6 @@ type AppBarProps = CustomWindowControlsProps & {
   disableSignIn?: boolean;
 };
 
-const selectCurrentLayoutId = ({ selectedLayout }: LayoutState) => selectedLayout?.id;
 const selectWorkspace = (store: WorkspaceContextStore) => store;
 
 export function AppBar(props: AppBarProps): JSX.Element {
@@ -214,8 +209,6 @@ export function AppBar(props: AppBarProps): JSX.Element {
   const [enableMemoryUseIndicator = false] = useAppConfigurationValue<boolean>(
     AppSetting.ENABLE_MEMORY_USE_INDICATOR,
   );
-
-  const currentLayoutId = useCurrentLayoutSelector(selectCurrentLayoutId);
 
   const {
     sidebars: {
@@ -282,7 +275,6 @@ export function AppBar(props: AppBarProps): JSX.Element {
               <AppBarIconButton
                 className={cx({ "Mui-selected": panelMenuOpen })}
                 color="inherit"
-                disabled={currentLayoutId == undefined}
                 id="add-panel-button"
                 data-tourid="add-panel-button"
                 title="Add panel"

@@ -187,10 +187,8 @@ function hasSameKeys(
 
 const createHasSameKeySelector = createSelectorCreator(defaultMemoize, hasSameKeys);
 
-const selectCurrentLayoutId = (state: LayoutState) => state.selectedLayout?.id;
-
 const selectLayoutConfigById = createHasSameKeySelector(
-  (state: LayoutState) => state.selectedLayout?.data?.configById,
+  (state: LayoutState) => state?.data?.configById,
   (config) => config,
 );
 
@@ -213,12 +211,16 @@ export function PanelStateContextProvider(props: Props): JSX.Element {
     store.setState((old) => ({ sharedPanelState: pick(old.sharedPanelState, panelTypesInUse) }));
   }, [panelTypesInUse, store]);
 
+  // fixme - how should this be handled now that we have no layoutID?
+  // Seems this exposes that this context should be part of the current layout provider?
+  /*
   // clear shared panel state on layout change
   const currentLayoutId = useCurrentLayoutSelector(selectCurrentLayoutId);
   useEffect(() => {
     void currentLayoutId;
     store.setState({ sharedPanelState: {} });
   }, [currentLayoutId, store]);
+  */
 
   return <PanelStateContext.Provider value={store}>{children}</PanelStateContext.Provider>;
 }

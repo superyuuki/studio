@@ -58,10 +58,9 @@ type PlayerManagerProps = {
   playerSources: IDataSourceFactory[];
 };
 
-const userNodesSelector = (state: LayoutState) =>
-  state.selectedLayout?.data?.userNodes ?? EMPTY_USER_NODES;
+const userNodesSelector = (state: LayoutState) => state?.data?.userNodes ?? EMPTY_USER_NODES;
 const globalVariablesSelector = (state: LayoutState) =>
-  state.selectedLayout?.data?.globalVariables ?? EMPTY_GLOBAL_VARIABLES;
+  state?.data?.globalVariables ?? EMPTY_GLOBAL_VARIABLES;
 const selectTopicAliasFunctions = (catalog: ExtensionCatalog) =>
   catalog.installedTopicAliasFunctions;
 

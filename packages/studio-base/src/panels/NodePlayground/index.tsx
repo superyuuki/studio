@@ -162,8 +162,7 @@ const WelcomeScreen = ({ addNewNode }: { addNewNode: (code?: string) => void }) 
 
 const EMPTY_USER_NODES: UserNodes = Object.freeze({});
 
-const userNodeSelector = (state: LayoutState) =>
-  state.selectedLayout?.data?.userNodes ?? EMPTY_USER_NODES;
+const userNodeSelector = (state: LayoutState) => state?.data?.userNodes ?? EMPTY_USER_NODES;
 
 function NodePlayground(props: Props) {
   const { config, saveConfig } = props;
