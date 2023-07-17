@@ -31,19 +31,16 @@ import {
   SwapPanelPayload,
 } from "./actions";
 
-export type LayoutID = string & { __brand: "LayoutID" };
+export type { LayoutData };
 
-export type LayoutState = Readonly<{
-  selectedLayout:
-    | {
-        id: LayoutID;
-        loading?: boolean;
-        data: LayoutData | undefined;
-        name?: string;
-        edited?: boolean;
-      }
-    | undefined;
-}>;
+export type LayoutState = Readonly<
+  | {
+      loading?: boolean;
+      data: LayoutData | undefined;
+      edited?: boolean;
+    }
+  | undefined
+>;
 
 /**
  * Encapsulates the mosaic layout, user nodes, and playback settings (everything considered to be
@@ -71,8 +68,8 @@ export interface ICurrentLayout {
      * Returns the current state - useful for click handlers and callbacks that read the state
      * asynchronously and don't want to update every time the state changes.
      */
-    getCurrentLayoutState: () => LayoutState;
-    setCurrentLayoutState: (newState: LayoutState) => void;
+    getCurrentLayoutState: () => LayoutData;
+    setCurrentLayoutState: (newState: LayoutData) => void;
 
     savePanelConfigs: (payload: SaveConfigsPayload) => void;
     updatePanelConfigs: (panelType: string, updater: (config: PanelConfig) => PanelConfig) => void;
