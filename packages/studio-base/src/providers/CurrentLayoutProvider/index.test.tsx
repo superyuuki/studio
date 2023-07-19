@@ -10,7 +10,6 @@ import { useEffect } from "react";
 
 import {
   CurrentLayoutActions,
-  LayoutID,
   LayoutState,
   useCurrentLayoutActions,
   useCurrentLayoutSelector,
@@ -44,7 +43,6 @@ describe("CurrentLayoutProvider", () => {
 
         actions.setCurrentLayoutState({
           selectedLayout: {
-            id: "example" as LayoutID,
             data: expectedState,
           },
         });

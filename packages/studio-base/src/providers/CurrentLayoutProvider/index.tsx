@@ -126,7 +126,6 @@ export default function CurrentLayoutProvider({
 
       setLayoutState({
         selectedLayout: {
-          id: layoutStateRef.current.selectedLayout.id,
           data: newData,
           loading: false,
           name: layoutStateRef.current.selectedLayout.name,

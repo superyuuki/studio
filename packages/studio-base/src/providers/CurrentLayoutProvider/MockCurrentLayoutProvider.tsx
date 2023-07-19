@@ -7,7 +7,6 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useShallowMemo } from "@foxglove/hooks";
 import CurrentLayoutContext, {
   ICurrentLayout,
-  LayoutID,
   LayoutState,
 } from "@foxglove/studio-base/context/CurrentLayoutContext";
 import {
@@ -41,7 +40,6 @@ export default function MockCurrentLayoutProvider({
 
   const [layoutState, setLayoutStateInternal] = useState<LayoutState>({
     selectedLayout: {
-      id: "mock-layout" as LayoutID,
       data: {
         configById: {},
         globalVariables: {},
@@ -69,7 +67,6 @@ export default function MockCurrentLayoutProvider({
       setLayoutState({
         ...layoutStateRef.current,
         selectedLayout: {
-          id: "mock-layout" as LayoutID,
           ...layoutStateRef.current.selectedLayout,
           data: layoutStateRef.current.selectedLayout?.data
             ? panelsReducer(layoutStateRef.current.selectedLayout.data, action)

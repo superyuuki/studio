@@ -8,7 +8,6 @@ import { useDebounce } from "use-debounce";
 
 import Log from "@foxglove/log";
 import {
-  LayoutID,
   LayoutState,
   useCurrentLayoutActions,
   useCurrentLayoutSelector,
@@ -36,7 +35,6 @@ export function CurrentLayoutLocalStorageSyncAdapter(): JSX.Element {
     if (selectedSource?.sampleLayout) {
       setCurrentLayoutState({
         selectedLayout: {
-          id: "default" as LayoutID,
           data: selectedSource.sampleLayout,
         },
       });
@@ -71,7 +69,6 @@ export function CurrentLayoutLocalStorageSyncAdapter(): JSX.Element {
     );
     setCurrentLayoutState({
       selectedLayout: {
-        id: "default" as LayoutID,
         data: layoutData,
       },
     });

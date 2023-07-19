@@ -31,12 +31,9 @@ import {
   SwapPanelPayload,
 } from "./actions";
 
-export type LayoutID = string & { __brand: "LayoutID" };
-
 export type LayoutState = Readonly<{
   selectedLayout:
     | {
-        id: LayoutID;
         loading?: boolean;
         data: LayoutData | undefined;
         name?: string;
