@@ -7,6 +7,7 @@ import { isEqual } from "lodash";
 
 import { Condvar } from "@foxglove/den/async";
 import { filterMap } from "@foxglove/den/collection";
+import { isMemoryExhausted } from "@foxglove/den/system";
 import Log from "@foxglove/log";
 import {
   Time,
@@ -303,14 +304,14 @@ export class BlockLoader {
 
           sizeInBytes += messageSizeInBytes;
 
-          if (totalBlockSizeBytes < this.#maxCacheSize) {
+          if (totalBlockSizeBytes < this.#maxCacheSize && !isMemoryExhausted()) {
             this.#problemManager.removeProblem("cache-full");
             continue;
           }
           // cache over capacity, try removing unused topics
           const removedSize = this.#removeUnusedBlockTopics();
           totalBlockSizeBytes -= removedSize;
-          if (totalBlockSizeBytes > this.#maxCacheSize) {
+          if (totalBlockSizeBytes > this.#maxCacheSize || isMemoryExhausted()) {
             this.#problemManager.addProblem("cache-full", {
               severity: "error",
               message: `Cache is full. Preloading for topics [${Array.from(topicsToFetch).join(

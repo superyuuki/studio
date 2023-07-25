@@ -8,16 +8,17 @@ import { v4 as uuidv4 } from "uuid";
 
 import { debouncePromise } from "@foxglove/den/async";
 import { filterMap } from "@foxglove/den/collection";
+import { isMemoryExhausted } from "@foxglove/den/system";
 import Log from "@foxglove/log";
 import {
   Time,
   add,
-  compare,
   clampTime,
+  compare,
   fromMillis,
   fromNanoSec,
-  toString,
   toRFC3339String,
+  toString,
 } from "@foxglove/rostime";
 import { MessageEvent, ParameterValue } from "@foxglove/studio";
 import NoopMetricsCollector from "@foxglove/studio-base/players/NoopMetricsCollector";
@@ -25,16 +26,16 @@ import PlayerProblemManager from "@foxglove/studio-base/players/PlayerProblemMan
 import {
   AdvertiseOptions,
   Player,
+  PlayerCapabilities,
   PlayerMetricsCollectorInterface,
+  PlayerPresence,
   PlayerState,
+  PlayerStateActiveData,
   Progress,
   PublishPayload,
   SubscribePayload,
   Topic,
-  PlayerPresence,
-  PlayerCapabilities,
   TopicStats,
-  PlayerStateActiveData,
 } from "@foxglove/studio-base/players/types";
 import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 import delay from "@foxglove/studio-base/util/delay";
@@ -66,6 +67,10 @@ const MAX_BLOCKS = 400;
 // Amount to seek into the data source from the start when loading the player. The purpose of this
 // is to provide some initial data to subscribers.
 const SEEK_ON_START_NS = BigInt(99 * 1e6);
+
+const PlayerProblemIDs = {
+  memoryExhausted: "memory-exhausted",
+} as const;
 
 type IterablePlayerOptions = {
   metricsCollector?: PlayerMetricsCollectorInterface;
@@ -284,6 +289,12 @@ export class IterablePlayer implements Player {
 
   public setSubscriptions(newSubscriptions: SubscribePayload[]): void {
     log.debug("set subscriptions", newSubscriptions);
+
+    // Re-check memory availability when subscriptions change.
+    if (!isMemoryExhausted()) {
+      this.#problemManager.removeProblem(PlayerProblemIDs.memoryExhausted);
+    }
+
     this.#subscriptions = newSubscriptions;
     this.#metricsCollector.setSubscriptions(newSubscriptions);
 
@@ -384,17 +395,23 @@ export class IterablePlayer implements Player {
             await this.#stateInitialize();
             break;
           case "start-play":
-            await this.#stateStartPlay();
+            if (!isMemoryExhausted()) {
+              await this.#stateStartPlay();
+            }
             break;
           case "idle":
             await this.#stateIdle();
             break;
           case "seek-backfill":
             // We allow aborting requests when moving on to the next state
-            await this.#stateSeekBackfill();
+            if (!isMemoryExhausted()) {
+              await this.#stateSeekBackfill();
+            }
             break;
           case "play":
-            await this.#statePlay();
+            if (!isMemoryExhausted()) {
+              await this.#statePlay();
+            }
             break;
           case "close":
             await this.#stateClose();
@@ -925,6 +942,17 @@ export class IterablePlayer implements Player {
     this.#currentTime = end;
     this.#messages = msgEvents;
     this.#queueEmitState();
+
+    // If we've run out of memory, stop playback and register a player problem.
+    if (isMemoryExhausted()) {
+      this.#problemManager.addProblem(PlayerProblemIDs.memoryExhausted, {
+        severity: "error",
+        message:
+          "Memory is exhausted. Please try reducing the number of topics or the size of your messages.",
+        error: undefined,
+      });
+      this.pausePlayback();
+    }
 
     // This tick has reached the end of the untilTime so we go back to pause
     if (this.#untilTime && compare(this.#currentTime, this.#untilTime) >= 0) {
