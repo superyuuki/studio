@@ -4,31 +4,26 @@
 
 import {
   AddSquare20Regular,
-  ReOrderDotsVertical20Filled,
-  SubtractSquare20Regular,
+  // SubtractSquare20Regular,
+  ChevronRight16Filled,
+  ChevronRight16Regular,
+  ChevronDown16Filled,
+  ChevronDown16Regular,
 } from "@fluentui/react-icons";
 import ClearIcon from "@mui/icons-material/Clear";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import SearchIcon from "@mui/icons-material/Search";
 import {
-  Box,
-  Collapse,
-  Divider,
   IconButton,
   List,
   ListItem,
-  ListItemButton,
-  ListItemIcon,
   ListItemText,
   Skeleton,
-  SvgIcon,
   TextField,
   Typography,
   listItemButtonClasses,
-  listItemClasses,
   listItemIconClasses,
   listItemSecondaryActionClasses,
-  listItemTextClasses,
   outlinedInputClasses,
 } from "@mui/material";
 import { Fzf, FzfResultItem } from "fzf";
@@ -43,28 +38,76 @@ import {
   MessagePipelineContext,
   useMessagePipeline,
 } from "@foxglove/studio-base/components/MessagePipeline";
-import { PlayerPresence, TopicStats } from "@foxglove/studio-base/players/types";
+import Stack from "@foxglove/studio-base/components/Stack";
+import { PlayerPresence } from "@foxglove/studio-base/players/types";
 import { Topic } from "@foxglove/studio-base/src/players/types";
 import { fonts } from "@foxglove/studio-base/util/sharedStyleConstants";
 
-type TopicWithStats = Topic & Partial<TopicStats>;
-
-const topicToFzfResult = (item: TopicWithStats) =>
-  ({
-    item,
-    score: 0,
-    positions: new Set<number>(),
-    start: 0,
-    end: 0,
-  } as FzfResultItem<TopicWithStats>);
-
-const useStyles = makeStyles()((theme) => ({
+const useStyles = makeStyles<void, "action" | "gridCell">()((theme, _params, classes) => ({
   appBar: {
     top: 0,
     zIndex: theme.zIndex.appBar,
     padding: theme.spacing(0.5),
     position: "sticky",
     backgroundColor: theme.palette.background.paper,
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "30px minmax(auto, 1fr) minmax(auto, 1fr) auto",
+    overflow: "hidden",
+  },
+  topicRow: {
+    display: "contents",
+  },
+  fieldRow: {
+    display: "contents",
+    position: "relative",
+    overflow: "hidden",
+
+    [`.${classes.gridCell}`]: {
+      backgroundColor: theme.palette.action.hover,
+    },
+    [`:not(:hover) .${classes.action}`]: {
+      visibility: "hidden",
+    },
+    [`:hover > .${classes.gridCell}`]: {
+      backgroundColor: theme.palette.action.focus,
+    },
+  },
+  complexRow: {
+    [`:hover > .${classes.gridCell}`]: {
+      backgroundColor: theme.palette.action.hover,
+    },
+  },
+  gridCell: {
+    display: "flex",
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    padding: theme.spacing(0.5),
+    alignItems: "center",
+
+    "&:nth-last-of-type(1)": {
+      justifyContent: "flex-end",
+    },
+  },
+  expandButton: {
+    justifyContent: "center",
+  },
+  topicInfo: {
+    gridColumn: "span 2",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    paddingInlineStart: 0,
+    overflow: "hidden",
+  },
+  fieldName: {},
+  fieldType: {},
+  action: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "sticky",
+    right: 0,
   },
   listItem: {
     [`.${listItemButtonClasses.root}`]: {
@@ -75,7 +118,7 @@ const useStyles = makeStyles()((theme) => ({
     },
     [`.${listItemIconClasses.root}`]: {
       minWidth: "auto",
-      marginRight: theme.spacing(1.5),
+      marginRight: theme.spacing(1),
     },
   },
   textField: {
@@ -88,9 +131,6 @@ const useStyles = makeStyles()((theme) => ({
     display: "block",
     textAlign: "start",
   },
-  startAdornment: {
-    display: "flex",
-  },
 }));
 
 const selectPlayerPresence = ({ playerState }: MessagePipelineContext) => playerState.presence;
@@ -99,161 +139,180 @@ const selectDatatypes = ({ datatypes }: MessagePipelineContext) => datatypes;
 
 function TopicListItem({
   topic,
-  datatype,
+  datatypes,
+  fieldDefinitions,
   positions,
   filterText,
 }: {
   topic: Topic;
-  dataype?: MessageDefinitionField;
+  datatypes?: ReadonlyMap<string, { definitions: MessageDefinitionField[] }>;
+  fieldDefinitions?: readonly MessageDefinitionField[];
   positions: Set<number>;
   filterText: string;
 }): JSX.Element {
-  const { classes, theme } = useStyles();
+  const { classes, cx, theme } = useStyles();
   const [expanded, setExpanded] = useState<boolean>(false);
+  const [hovered, setHovered] = useState<boolean>(false);
+
+  const handleMouseEnter = () => setHovered(true);
+  const handleMouseLeave = () => setHovered(false);
+
+  const expandIcon = useMemo(() => {
+    if (expanded) {
+      return hovered ? <ChevronDown16Filled /> : <ChevronDown16Regular />;
+    }
+    return hovered ? <ChevronRight16Filled /> : <ChevronRight16Regular />;
+  }, [expanded, hovered]);
 
   return (
     <>
-      <ListItem
-        className={classes.listItem}
-        divider
+      <div
         key={topic.name}
-        secondaryAction={
-          <div>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              data-topic={topic.name}
-              data-topic-stat="count"
-              align="right"
-              display="block"
-            >
-              &mdash;
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              data-topic={topic.name}
-              data-topic-stat="frequency"
-              align="right"
-            >
-              &mdash;
-            </Typography>
-          </div>
-        }
+        className={classes.topicRow}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onClick={() => setExpanded(!expanded)}
       >
-        <ListItemIcon onClick={() => setExpanded(!expanded)}>
-          {datatype.length > 1 ? (
-            expanded ? (
-              <SubtractSquare20Regular style={{ marginLeft: -6 }} />
-            ) : (
-              <AddSquare20Regular style={{ marginLeft: -6 }} />
-            )
-          ) : (
-            <SvgIcon style={{ marginLeft: -6 }} />
-          )}
-        </ListItemIcon>
-        <ListItemText
-          primary={
-            <>
-              <HighlightChars str={topic.name} indices={positions} />
-              {topic.aliasedFromName && (
-                <Typography variant="caption" className={classes.aliasedTopicName}>
-                  from {topic.aliasedFromName}
-                </Typography>
-              )}
-            </>
-          }
-          primaryTypographyProps={{ noWrap: true, title: topic.name }}
-          secondary={
-            topic.schemaName == undefined ? (
-              "—"
-            ) : (
+        <div className={cx(classes.gridCell, classes.expandButton)}>{expandIcon}</div>
+
+        <div className={cx(classes.gridCell, classes.topicInfo)}>
+          <Typography variant="body2" noWrap title={topic.name}>
+            <HighlightChars str={topic.name} indices={positions} />
+            {topic.aliasedFromName && (
+              <Typography variant="caption" className={classes.aliasedTopicName}>
+                from {topic.aliasedFromName}
+              </Typography>
+            )}
+          </Typography>
+          <Typography
+            variant="caption"
+            fontFamily={fonts.MONOSPACE}
+            color="text.secondary"
+            noWrap
+            title={topic.schemaName}
+          >
+            {topic.schemaName != undefined ? (
               <HighlightChars
                 str={topic.schemaName}
                 indices={positions}
                 offset={topic.name.length + 1}
               />
-            )
-          }
-          secondaryTypographyProps={{
-            variant: "caption",
-            fontFamily: fonts.MONOSPACE,
-            noWrap: true,
-            title: topic.schemaName,
-          }}
-          style={{ marginRight: "48px" }}
-        />
-      </ListItem>
-      {datatype.length > 1 && (
-        <Collapse in={expanded} timeout={0}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "36px max-content 1fr 36px",
-              backgroundColor: theme.palette.background.default,
-            }}
+            ) : (
+              "—"
+            )}
+          </Typography>
+        </div>
+
+        <Stack className={classes.gridCell} style={{ alignItems: "flex-end" }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            data-topic={topic.name}
+            data-topic-stat="count"
+            align="right"
+            noWrap
           >
-            {datatype.map((field) => {
-              return (
-                <Box
-                  key={field.name}
-                  sx={{
-                    display: "contents",
-                    ":not(:hover) > :nth-last-of-type(1) svg": {
-                      visibility: "hidden",
-                    },
-                  }}
+            &mdash;
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            data-topic={topic.name}
+            data-topic-stat="frequency"
+            align="right"
+            noWrap
+          >
+            &mdash;
+          </Typography>
+        </Stack>
+      </div>
+
+      {expanded &&
+        fieldDefinitions?.map((field) => (
+          <Fragment key={field.name}>
+            <div
+              className={cx(classes.fieldRow, {
+                [classes.complexRow]: field.isComplex === true,
+              })}
+            >
+              {field.isComplex === true && (
+                <div className={cx(classes.gridCell, classes.expandButton)}>
+                  <AddSquare20Regular />
+                </div>
+              )}
+              <div
+                className={cx(classes.gridCell, classes.fieldName)}
+                style={
+                  field.isComplex !== true
+                    ? {
+                        gridColumn: "span 2",
+                        paddingInlineStart: 8,
+                      }
+                    : undefined
+                }
+              >
+                <HighlightChars str={field.name} indices={positions} />
+              </div>
+              <div
+                className={cx(classes.gridCell, classes.fieldType)}
+                style={
+                  field.isComplex === true
+                    ? {
+                        gridColumn: "span 2",
+                        justifyContent: "flex-start",
+                      }
+                    : undefined
+                }
+              >
+                <Typography
+                  variant="caption"
+                  fontFamily={fonts.MONOSPACE}
+                  color="text.secondary"
+                  noWrap
+                  title={topic.schemaName}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderBottom: `1px solid ${theme.palette.divider}`,
-                      ...theme.typography.body2,
-                    }}
-                  >
-                    {field.isComplex && <AddSquare20Regular />}
+                  {field.type}
+                  {field.isArray === true ? "[]" : ""}
+                </Typography>
+              </div>
+              {field.isComplex !== true && (
+                <div className={classes.gridCell}>
+                  <div className={classes.action}>
+                    <DragIndicatorIcon />
                   </div>
-                  <div
-                    style={{
-                      paddingInline: 6,
-                      paddingBlock: 6,
-                      fontWeight: "bold",
-                      borderBottom: `1px solid ${theme.palette.divider}`,
-                      ...theme.typography.body2,
-                      fontWeight: 500,
-                    }}
-                  >
-                    {field.name}
+                </div>
+              )}
+            </div>
+            {field.isComplex === true &&
+              datatypes?.get(field.type)?.definitions.map((subField) => (
+                <div className={classes.fieldRow} key={subField.name}>
+                  <div className={cx(classes.gridCell, classes.expandButton)}>
+                    {subField.isComplex === true && <AddSquare20Regular />}
                   </div>
-                  <div
-                    style={{
-                      paddingInline: 12,
-                      paddingBlock: 6,
-                      borderBottom: `1px solid ${theme.palette.divider}`,
-                      ...theme.typography.body2,
-                    }}
-                  >
-                    {field.type}
+                  <div className={cx(classes.gridCell, classes.fieldName)}>
+                    <HighlightChars str={subField.name} indices={positions} />
                   </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderBottom: `1px solid ${theme.palette.divider}`,
-                      ...theme.typography.body2,
-                    }}
-                  >
-                    {!field.isComplex && <DragIndicatorIcon color="disabled" />}
+                  <div className={cx(classes.gridCell, classes.fieldType)}>
+                    <Typography
+                      variant="caption"
+                      fontFamily={fonts.MONOSPACE}
+                      color="text.secondary"
+                      noWrap
+                      title={topic.schemaName}
+                    >
+                      {subField.type}
+                      {subField.isArray === true ? "[]" : ""}
+                    </Typography>
                   </div>
-                </Box>
-              );
-            })}
-          </div>
-        </Collapse>
-      )}
+                  <div className={classes.gridCell}>
+                    <div className={classes.action}>
+                      {subField.isComplex !== true && <DragIndicatorIcon />}
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </Fragment>
+        ))}
     </>
   );
 }
@@ -272,13 +331,11 @@ export function TopicList(): JSX.Element {
 
   const filteredTopics: FzfResultItem<Topic>[] = useMemo(
     () =>
-      filterText
-        ? new Fzf(topics, {
-            fuzzy: filterText.length > 2 ? "v2" : false,
-            sort: true,
-            selector: (item) => `${item.name}|${item.schemaName}`,
-          }).find(filterText)
-        : topics.map((item) => topicToFzfResult(item)),
+      new Fzf(topics, {
+        fuzzy: filterText.length > 2 ? "v2" : false,
+        sort: true,
+        selector: (item) => [item.name, item.schemaName].join("|"),
+      }).find(filterText),
     [filterText, topics],
   );
 
@@ -334,11 +391,6 @@ export function TopicList(): JSX.Element {
           placeholder="Filter by topic or schema name…"
           InputProps={{
             size: "small",
-            startAdornment: (
-              <label className={classes.startAdornment} htmlFor="topic-filter">
-                <SearchIcon fontSize="small" />
-              </label>
-            ),
             endAdornment: filterText && (
               <IconButton
                 size="small"
@@ -354,19 +406,20 @@ export function TopicList(): JSX.Element {
       </header>
 
       {filteredTopics.length > 0 ? (
-        <List key="topics" dense disablePadding>
+        <div className={classes.grid}>
           {filteredTopics.map(({ item: topic, positions }) => {
             return (
               <MemoTopicListItem
                 key={topic.name}
+                datatypes={datatypes}
                 filterText={filterText}
-                datatype={datatypes.get(topic.schemaName ?? "")?.definitions}
+                fieldDefinitions={datatypes.get(topic.schemaName ?? "")?.definitions}
                 topic={topic}
                 positions={positions}
               />
             );
           })}
-        </List>
+        </div>
       ) : (
         <EmptyState>
           {playerPresence === PlayerPresence.PRESENT && filterText
