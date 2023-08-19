@@ -10,6 +10,7 @@ import {
   dividerClasses,
   listClasses,
   listItemClasses,
+  buttonClasses,
 } from "@mui/material";
 import { CSSProperties } from "react";
 import tinycolor from "tinycolor2";
@@ -135,6 +136,28 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
         },
         containedInherit: {
           backgroundColor: theme.palette.action.focus,
+        },
+        sizeSmall: {
+          [`&.${buttonClasses.text}`]: {
+            fontSize: "0.625rem",
+          },
+          [`&.${buttonClasses.contained}`]: {
+            fontSize: "0.625rem",
+          },
+          [`&.${buttonClasses.outlined}`]: {
+            fontSize: "0.625rem",
+          },
+        },
+        sizeLarge: {
+          [`&.${buttonClasses.text}`]: {
+            fontSize: "0.875rem",
+          },
+          [`&.${buttonClasses.contained}`]: {
+            fontSize: "0.875rem",
+          },
+          [`&.${buttonClasses.outlined}`]: {
+            fontSize: "0.875rem",
+          },
         },
       },
     },
