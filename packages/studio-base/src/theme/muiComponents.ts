@@ -44,6 +44,7 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
           svg: {
             display: "block",
             maxWidth: "100%",
+            flex: "none",
           },
         },
       },
@@ -340,9 +341,6 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
           "&.MuiInputBase-sizeSmall": {
             paddingRight: theme.spacing(1),
           },
-          svg: {
-            flex: "none",
-          },
         },
         adornedStart: {
           "&.MuiInputBase-sizeSmall": {
@@ -351,9 +349,6 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
             "& .MuiSelect-select": {
               paddingRight: `${theme.spacing(2)} !important`,
             },
-          },
-          svg: {
-            flex: "none",
           },
         },
         input: {
