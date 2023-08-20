@@ -227,6 +227,7 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
       },
       styleOverrides: {
         input: {
+          height: theme.typography.pxToRem(20),
           fontSize: theme.typography.body1.fontSize,
           padding: theme.spacing(1, 1.25),
         },
@@ -339,6 +340,9 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
           "&.MuiInputBase-sizeSmall": {
             paddingRight: theme.spacing(1),
           },
+          svg: {
+            flex: "none",
+          },
         },
         adornedStart: {
           "&.MuiInputBase-sizeSmall": {
@@ -347,6 +351,9 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
             "& .MuiSelect-select": {
               paddingRight: `${theme.spacing(2)} !important`,
             },
+          },
+          svg: {
+            flex: "none",
           },
         },
         input: {
