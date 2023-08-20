@@ -112,13 +112,13 @@ export function ColorSchemeSettings(): JSX.Element {
         onChange={handleChange}
       >
         <ToggleButton className={classes.toggleButton} value="dark">
-          <DarkModeIcon /> {t("dark")}
+          <DarkModeIcon fontSize="small" /> {t("dark")}
         </ToggleButton>
         <ToggleButton className={classes.toggleButton} value="light">
-          <Brightness5Icon /> {t("light")}
+          <Brightness5Icon fontSize="small" /> {t("light")}
         </ToggleButton>
         <ToggleButton className={classes.toggleButton} value="system">
-          <ComputerIcon /> {t("followSystem")}
+          <ComputerIcon fontSize="small" /> {t("followSystem")}
         </ToggleButton>
       </ToggleButtonGroup>
     </Stack>
@@ -266,13 +266,13 @@ export function LaunchDefault(): React.ReactElement {
         onChange={(_, value?: string) => value != undefined && void setPreference(value)}
       >
         <ToggleButton value={LaunchPreferenceValue.WEB} className={classes.toggleButton}>
-          <WebIcon /> {t("webApp")}
+          <WebIcon fontSize="small" /> {t("webApp")}
         </ToggleButton>
         <ToggleButton value={LaunchPreferenceValue.DESKTOP} className={classes.toggleButton}>
-          <ComputerIcon /> {t("desktopApp")}
+          <ComputerIcon fontSize="small" /> {t("desktopApp")}
         </ToggleButton>
         <ToggleButton value={LaunchPreferenceValue.ASK} className={classes.toggleButton}>
-          <QuestionAnswerOutlinedIcon /> {t("askEachTime")}
+          <QuestionAnswerOutlinedIcon fontSize="small" /> {t("askEachTime")}
         </ToggleButton>
       </ToggleButtonGroup>
     </Stack>

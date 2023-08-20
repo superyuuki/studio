@@ -2,7 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import CloseIcon from "@mui/icons-material/Close";
+import { Dismiss20Filled } from "@fluentui/react-icons";
 import {
   Alert,
   Button,
@@ -230,7 +230,7 @@ export function AppSettingsDialog(
           {t("settings")}
         </Typography>
         <IconButton edge="end" onClick={handleClose}>
-          <CloseIcon />
+          <Dismiss20Filled />
         </IconButton>
       </Stack>
       <div className={classes.layoutGrid}>
