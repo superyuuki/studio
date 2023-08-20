@@ -116,8 +116,9 @@ function PlaybackTimeMethodMenu({
         aria-haspopup="true"
         aria-expanded={open ? "true" : undefined}
         onClick={handleClick}
+        size="small"
       >
-        <ArrowDropDownIcon />
+        <ArrowDropDownIcon fontSize="inherit" />
       </IconButton>
       <Menu
         id="playback-time-display-toggle-menu"
