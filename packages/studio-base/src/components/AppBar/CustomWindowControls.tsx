@@ -21,6 +21,9 @@ export type CustomWindowControlsProps = {
 };
 
 const useStyles = makeStyles()((theme) => ({
+  iconButton: {
+    padding: theme.spacing(0.5),
+  },
   closeButton: {
     ":hover": {
       backgroundColor: theme.palette.error.main,
@@ -35,16 +38,17 @@ export function CustomWindowControls({
   onUnmaximizeWindow,
   onCloseWindow,
 }: Omit<CustomWindowControlsProps, "showCustomWindowControls">): JSX.Element {
-  const { classes } = useStyles();
+  const { classes, cx } = useStyles();
   return (
-    <Stack direction="row" gap={1} paddingX={1}>
+    <Stack alignItems="center" direction="row" gap={1} paddingX={1}>
       <IconButton
         size="small"
         color="inherit"
         onClick={onMinimizeWindow}
         data-testid="win-minimize"
+        className={classes.iconButton}
       >
-        <MinimizeIcon fontSize="inherit" color="inherit" />
+        <MinimizeIcon fontSize="inherit" />
       </IconButton>
 
       <IconButton
@@ -52,22 +56,23 @@ export function CustomWindowControls({
         color="inherit"
         onClick={isMaximized ? onUnmaximizeWindow : onMaximizeWindow}
         data-testid="win-maximize"
+        className={classes.iconButton}
       >
         {isMaximized ? (
-          <FilterNoneIcon fontSize="inherit" color="inherit" />
+          <FilterNoneIcon fontSize="inherit" />
         ) : (
-          <CheckBoxOutlineBlankIcon fontSize="inherit" color="inherit" />
+          <CheckBoxOutlineBlankIcon fontSize="inherit" />
         )}
       </IconButton>
 
       <IconButton
-        className={classes.closeButton}
+        className={cx(classes.closeButton, classes.iconButton)}
         size="small"
         color="inherit"
         onClick={onCloseWindow}
         data-testid="win-close"
       >
-        <CloseIcon fontSize="inherit" color="inherit" />
+        <CloseIcon fontSize="inherit" />
       </IconButton>
     </Stack>
   );
