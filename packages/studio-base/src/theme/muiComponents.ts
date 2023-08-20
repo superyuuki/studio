@@ -65,6 +65,13 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
         },
       },
     },
+    MuiAlert: {
+      styleOverrides: {
+        icon: {
+          padding: theme.spacing(0.75, 0),
+        },
+      },
+    },
     MuiAvatar: {
       defaultProps: {
         variant: "rounded",
@@ -322,7 +329,6 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
       styleOverrides: {
         root: {
           borderRadius: theme.shape.borderRadius,
-          ...iconHack,
 
           ".root-span": {
             display: "flex",

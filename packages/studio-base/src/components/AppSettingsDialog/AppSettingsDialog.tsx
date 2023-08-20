@@ -276,9 +276,7 @@ export function AppSettingsDialog(
             })}
           >
             <Stack gap={2}>
-              <Alert color="info" icon={<InfoOutlinedIcon />}>
-                {t("privacyDescription")}
-              </Alert>
+              <Alert severity="info">{t("privacyDescription")}</Alert>
               <Stack gap={0.5} paddingLeft={2}>
                 <FormControlLabel
                   className={classes.formControlLabel}
