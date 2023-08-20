@@ -57,7 +57,6 @@ const useStyles = makeStyles()((theme) => ({
     },
   },
   iconButton: {
-    padding: theme.spacing(0.91125), // round out the overall height to 30px
     color: theme.palette.text.secondary,
     borderRadius: 0,
 
@@ -151,7 +150,7 @@ export function Sidebar<K extends string>({
           size="small"
           data-testid={`sidebar-close-${anchor}`}
         >
-          <CloseIcon fontSize="inherit" />
+          <CloseIcon fontSize="small" />
         </IconButton>
       </Stack>
       <Divider />
