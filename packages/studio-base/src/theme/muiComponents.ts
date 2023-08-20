@@ -34,23 +34,6 @@ type MuiLabComponents = {
   };
 };
 
-const iconHack = {
-  "& svg:not(.MuiSvgIcon-root)": {
-    fill: "currentColor",
-    width: "1em",
-    height: "1em",
-    display: "inline-block",
-    fontSize: "1.2857142857142856rem",
-    transition: "fill 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
-    flexShrink: 0,
-    userSelect: "none",
-  },
-};
-
-const disableBackgroundColorTransition = {
-  transition: "none",
-};
-
 export default function muiComponents(theme: Theme): Theme["components"] & MuiLabComponents {
   const prefersDarkMode = theme.palette.mode === "dark";
 
@@ -102,7 +85,7 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
           },
         },
         endAdornment: {
-          top: `calc(50% - ${theme.spacing(1.5)})`,
+          // top: `calc(50% - ${theme.spacing(1.5)})`,
         },
       },
     },
@@ -138,9 +121,6 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
         disableElevation: true,
       },
       styleOverrides: {
-        root: {
-          ...disableBackgroundColorTransition,
-        },
         containedInherit: {
           backgroundColor: theme.palette.action.focus,
         },
@@ -172,6 +152,11 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
       defaultProps: {
         disableRipple: true,
       },
+      styleOverrides: {
+        root: {
+          transition: "none",
+        },
+      },
     },
     MuiCard: {
       defaultProps: {
@@ -185,7 +170,7 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
       },
       styleOverrides: {
         focusHighlight: {
-          ...disableBackgroundColorTransition,
+          transition: "none",
         },
       },
     },
@@ -216,11 +201,6 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
       defaultProps: {
         disableRipple: true,
       },
-      styleOverrides: {
-        root: {
-          ...iconHack,
-        },
-      },
     },
     MuiFormLabel: {
       styleOverrides: {
@@ -247,13 +227,16 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
       },
       styleOverrides: {
         input: {
+          fontSize: theme.typography.body1.fontSize,
           padding: theme.spacing(1, 1.25),
         },
         inputSizeSmall: {
+          fontSize: theme.typography.body2.fontSize,
           padding: theme.spacing(0.75, 1),
         },
         root: {
           borderRadius: theme.shape.borderRadius,
+          transition: "none",
 
           "&.Mui-focused": {
             backgroundColor: theme.palette.action.focus,
@@ -264,7 +247,6 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
           ".MuiAutocomplete-root &": {
             paddingTop: 0,
           },
-          ...disableBackgroundColorTransition,
         },
       },
     },
@@ -336,16 +318,17 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
           "&:hover": {
             backgroundColor: theme.palette.action.hover,
           },
-          ...disableBackgroundColorTransition,
         },
       },
     },
     MuiInput: {
       styleOverrides: {
         input: {
+          fontSize: theme.typography.body1.fontSize,
           padding: theme.spacing(1, 1.25),
         },
         inputSizeSmall: {
+          fontSize: theme.typography.body2.fontSize,
           padding: theme.spacing(0.75, 1),
         },
       },
@@ -355,23 +338,19 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
         adornedEnd: {
           "&.MuiInputBase-sizeSmall": {
             paddingRight: theme.spacing(1),
-
-            "& .MuiSvgIcon-root": {
-              fontSize: "1rem",
-            },
           },
         },
         adornedStart: {
           "&.MuiInputBase-sizeSmall": {
             paddingLeft: theme.spacing(1),
 
-            "& .MuiSvgIcon-root": {
-              fontSize: "1rem",
-            },
             "& .MuiSelect-select": {
               paddingRight: `${theme.spacing(2)} !important`,
             },
           },
+        },
+        input: {
+          fontSize: theme.typography.body1.fontSize,
         },
         inputSizeSmall: {
           fontSize: theme.typography.body2.fontSize,
@@ -407,14 +386,7 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
         },
       },
     },
-    MuiListItemButton: {
-      defaultProps: { disableRipple: true },
-      styleOverrides: {
-        root: {
-          ...disableBackgroundColorTransition,
-        },
-      },
-    },
+    MuiListItemButton: {},
     MuiListItemText: {
       styleOverrides: {
         dense: {
@@ -458,10 +430,11 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
     MuiOutlinedInput: {
       styleOverrides: {
         input: {
-          boxSizing: "content-box",
+          fontSize: theme.typography.body1.fontSize,
           padding: theme.spacing(1, 1.25),
         },
         inputSizeSmall: {
+          fontSize: theme.typography.body2.fontSize,
           padding: theme.spacing(0.75, 1),
         },
       },
@@ -510,7 +483,6 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
     },
     MuiTab: {
       styleOverrides: {
-        labelIcon: iconHack,
         root: {
           opacity: 0.8,
 
@@ -548,7 +520,6 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
         disableRipple: true,
       },
       styleOverrides: {
-        label: iconHack,
         root: {
           "&:active": {
             backgroundColor: alpha(
