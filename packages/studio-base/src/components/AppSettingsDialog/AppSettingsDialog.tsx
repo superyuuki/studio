@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import CloseIcon from "@mui/icons-material/Close";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import {
   Alert,
@@ -320,9 +319,7 @@ export function AppSettingsDialog(
             })}
           >
             <Stack gap={2}>
-              <Alert color="warning" icon={<WarningAmberIcon />}>
-                {t("experimentalFeaturesDescription")}
-              </Alert>
+              <Alert severity="warning">{t("experimentalFeaturesDescription")}</Alert>
               <Stack paddingLeft={2}>
                 <ExperimentalFeatureSettings />
               </Stack>
