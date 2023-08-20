@@ -139,13 +139,13 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
         },
         sizeSmall: {
           [`&.${buttonClasses.text}`]: {
-            fontSize: "0.625rem",
+            fontSize: "0.6875rem",
           },
           [`&.${buttonClasses.contained}`]: {
-            fontSize: "0.625rem",
+            fontSize: "0.6875rem",
           },
           [`&.${buttonClasses.outlined}`]: {
-            fontSize: "0.625rem",
+            fontSize: "0.6875rem",
           },
         },
         sizeLarge: {
@@ -556,6 +556,12 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
               theme.palette.action.selectedOpacity + theme.palette.action.activatedOpacity,
             ),
           },
+        },
+        sizeSmall: {
+          fontSize: "0.6875rem",
+        },
+        sizeLarge: {
+          fontSize: "0.875rem",
         },
       },
     },
