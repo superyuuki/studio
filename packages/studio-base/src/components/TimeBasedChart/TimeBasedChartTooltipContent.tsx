@@ -37,17 +37,16 @@ const useStyles = makeStyles()((theme) => ({
   root: {
     fontFamily: fonts.MONOSPACE,
     fontSize: theme.typography.caption.fontSize,
-    lineHeight: theme.typography.caption.lineHeight,
     overflowWrap: "break-word",
   },
   grid: {
-    columnGap: theme.spacing(0.5),
+    gap: theme.spacing(0.25, 0.5),
     display: "grid",
     gridTemplateColumns: "auto minmax(0px, max-content) minmax(auto, max-content)",
+    gridAutoRows: "16px",
     alignItems: "center",
     fontFamily: fonts.MONOSPACE,
     fontSize: theme.typography.caption.fontSize,
-    lineHeight: theme.typography.caption.lineHeight,
     overflowWrap: "break-word",
   },
   path: {
@@ -161,8 +160,8 @@ export default function TimeBasedChartTooltipContent(
 
         return (
           <Fragment key={idx}>
-            <svg className={classes.icon} viewBox="0 0 13 13" height={13} width={13}>
-              <rect x={2} y={2} height={9} width={9} rx={1} fill={color} />
+            <svg className={classes.icon} viewBox="0 0 14 14" height={14} width={14}>
+              <rect x={2} y={2} height={10} width={10} rx={1} fill={color} />
             </svg>
             <div className={classes.path}>{label ?? ""}</div>
             <div className={classes.value}>
