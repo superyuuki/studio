@@ -12,7 +12,7 @@
 //   You may not use this file except in compliance with the License.
 
 import CloseIcon from "@mui/icons-material/Close";
-import { IconButton, InputBase } from "@mui/material";
+import { IconButton, InputBase, Typography } from "@mui/material";
 import React, { Ref as ReactRef, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import textMetrics from "text-metrics";
 import { makeStyles } from "tss-react/mui";
@@ -63,8 +63,10 @@ const useStyles = makeStyles<void, "active">()((theme, _params, classes) => ({
     visibility: "hidden",
   },
   input: {
-    font: "inherit",
-    color: "inherit",
+    input: {
+      padding: theme.spacing(0.5, 0),
+      color: "inherit",
+    },
   },
   dropIndicator: {
     position: "absolute",
@@ -229,17 +231,24 @@ export function ToolbarTab(props: Props): JSX.Element {
           }}
         />
       )}
-      <InputBase
-        className={classes.input}
-        readOnly={!editingTitle}
-        placeholder="Enter tab name"
-        value={title}
-        onChange={onChangeTitleInput}
-        onBlur={setTabTitle}
-        onKeyDown={onKeyDown}
-        inputRef={inputRef}
-        style={{ pointerEvents: editingTitle ? "all" : "none" }}
-      />
+      {editingTitle ? (
+        <InputBase
+          size="small"
+          fullWidth
+          className={classes.input}
+          readOnly={!editingTitle}
+          placeholder="Enter tab name"
+          value={title}
+          onChange={onChangeTitleInput}
+          onBlur={setTabTitle}
+          onKeyDown={onKeyDown}
+          inputRef={inputRef}
+        />
+      ) : (
+        <Typography variant="body2" flex={1}>
+          {title}
+        </Typography>
+      )}
       {isActive && (
         <IconButton
           edge="end"

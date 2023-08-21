@@ -1,123 +1,75 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
-//
-// This file incorporates work covered by the following copyright and
-// permission notice:
-//
-//   Copyright 2019-2021 Cruise LLC
-//
-//   This source code is licensed under the Apache License, Version 2.0,
-//   found at http://www.apache.org/licenses/LICENSE-2.0
-//   You may not use this file except in compliance with the License.
 
-import { StoryObj } from "@storybook/react";
+import { Meta, StoryObj } from "@storybook/react";
+import { userEvent, within } from "@storybook/testing-library";
 import { noop } from "lodash";
-import React, { ReactNode } from "react";
 
 import { ToolbarTab } from "@foxglove/studio-base/panels/Tab/ToolbarTab";
 
-const baseProps = {
-  hidden: false,
-  highlight: undefined,
-  innerRef: undefined,
-  isActive: false,
-  isDragging: false,
-  actions: {
-    addTab: noop,
-    removeTab: noop,
-    selectTab: noop,
-    setTabTitle: noop,
-  },
-  tabCount: 1,
-  tabIndex: 0,
-  tabTitle: "Tab Title",
-};
-
-const Container = React.forwardRef<HTMLDivElement, { children?: ReactNode }>(function Container(
-  { children }: any,
-  ref,
-) {
-  return (
-    <div style={{ margin: 8 }} ref={ref}>
-      {children}
-    </div>
-  );
-});
-
 export default {
   title: "panels/Tab/ToolbarTab",
-};
+  component: ToolbarTab,
+  args: {
+    hidden: false,
+    highlight: undefined,
+    innerRef: undefined,
+    isActive: false,
+    isDragging: false,
+    actions: {
+      addTab: noop,
+      removeTab: noop,
+      selectTab: noop,
+      setTabTitle: noop,
+    },
+    tabCount: 1,
+    tabIndex: 0,
+    tabTitle: "Tab Title",
+  },
+  decorators: [
+    (Story) => (
+      <div style={{ margin: 8 }}>
+        <Story />
+      </div>
+    ),
+  ],
+} as Meta<typeof ToolbarTab>;
 
-export const Default: StoryObj = {
-  render: () => (
-    <Container>
-      <ToolbarTab {...baseProps} />
-    </Container>
-  ),
-
-  name: "default",
-};
+export const Default: StoryObj = {};
 
 export const ActiveWithCloseIcon: StoryObj = {
-  render: () => (
-    <Container>
-      <ToolbarTab {...{ ...baseProps, isActive: true, tabCount: 3 }} />
-    </Container>
-  ),
-
-  name: "active with close icon",
+  args: { isActive: true, tabCount: 3 },
 };
 
 export const ActiveWithoutCloseIcon: StoryObj = {
-  render: () => (
-    <Container>
-      <ToolbarTab {...{ ...baseProps, isActive: true, tabCount: 1 }} />
-    </Container>
-  ),
-
-  name: "active without close icon",
+  args: { isActive: true, tabCount: 1 },
 };
 
 export const Hidden: StoryObj = {
-  render: () => (
-    <Container>
-      <ToolbarTab {...{ ...baseProps, hidden: true }} />
-    </Container>
-  ),
-
-  name: "hidden",
+  args: { hidden: true },
 };
 
 export const Highlight: StoryObj = {
-  render: () => (
-    <Container>
-      <ToolbarTab {...{ ...baseProps, highlight: "before" }} />
-    </Container>
-  ),
-
-  name: "highlight",
+  args: { highlight: "before" },
 };
 
 export const Dragging: StoryObj = {
-  render: () => (
-    <Container>
-      <ToolbarTab {...{ ...baseProps, isDragging: true }} />
-    </Container>
-  ),
-
-  name: "dragging",
+  args: { isDragging: true },
 };
 
 export const Editing: StoryObj = {
-  render: () => (
-    <Container>
-      <ToolbarTab {...{ ...baseProps, isActive: true }} />
-    </Container>
-  ),
+  args: {
+    isActive: true,
+  },
+  play: async ({ canvasElement }) => {
+    const user = userEvent.setup();
+    const canvas = within(canvasElement);
+    const tabs = await canvas.findAllByText("Tab Title");
 
-  name: "editing",
-  play: () => {
-    document.querySelectorAll("input")[0]!.click();
+    for (const tab of tabs) {
+      await user.click(tab);
+      await user.keyboard("Rename Tab");
+    }
   },
 };
