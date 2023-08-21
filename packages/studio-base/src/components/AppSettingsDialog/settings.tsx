@@ -321,6 +321,7 @@ export function AutoUpdate(): React.ReactElement {
         className={classes.formControlLabel}
         control={
           <Checkbox
+            size="small"
             className={classes.checkbox}
             checked={updatesEnabled}
             onChange={(_event, checked) => void setUpdatedEnabled(checked)}

@@ -280,6 +280,7 @@ export function AppSettingsDialog(
                   className={classes.formControlLabel}
                   control={
                     <Checkbox
+                      size="small"
                       className={classes.checkbox}
                       checked={telemetryEnabled ?? true}
                       onChange={(_event, checked) => void setTelemetryEnabled(checked)}
@@ -291,6 +292,7 @@ export function AppSettingsDialog(
                   className={classes.formControlLabel}
                   control={
                     <Checkbox
+                      size="small"
                       className={classes.checkbox}
                       checked={crashReportingEnabled ?? true}
                       onChange={(_event, checked) => void setCrashReportingEnabled(checked)}

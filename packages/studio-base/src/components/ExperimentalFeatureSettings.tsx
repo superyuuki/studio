@@ -78,6 +78,7 @@ function ExperimentalFeatureItem(props: { feature: Feature }) {
       className={classes.formControlLabel}
       control={
         <Checkbox
+          size="small"
           className={classes.checkbox}
           checked={enabled ?? false}
           onChange={(_, checked) => {
