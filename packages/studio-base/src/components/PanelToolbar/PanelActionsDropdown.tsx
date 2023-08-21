@@ -12,14 +12,14 @@
 //   You may not use this file except in compliance with the License.
 
 import {
+  ChevronRight20Regular,
   Delete20Regular,
   FullScreenMaximize20Regular,
+  MoreVertical20Filled,
   ShapeSubtract20Regular,
   SplitHorizontal20Regular,
   SplitVertical20Regular,
 } from "@fluentui/react-icons";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { Divider, Menu, MenuItem } from "@mui/material";
 import { MouseEvent, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { MosaicContext, MosaicNode, MosaicWindowContext } from "react-mosaic-component";
@@ -38,6 +38,7 @@ type Props = {
 const useStyles = makeStyles()((theme) => ({
   error: { color: theme.palette.error.main },
   icon: {
+    marginLeft: theme.spacing(3),
     marginRight: theme.spacing(-1),
   },
   menuItem: {
@@ -45,10 +46,6 @@ const useStyles = makeStyles()((theme) => ({
     gap: theme.spacing(1),
     alignItems: "center",
 
-    ".root-span": {
-      display: "flex",
-      marginLeft: theme.spacing(-0.25),
-    },
     "&.Mui-selected": {
       backgroundColor: theme.palette.action.hover,
 
@@ -211,7 +208,7 @@ function PanelActionsDropdownComponent({ isUnknownPanel }: Props): JSX.Element {
         data-testid="panel-menu"
         title="More"
       >
-        <MoreVertIcon />
+        <MoreVertical20Filled />
       </ToolbarIconButton>
       <Menu
         id="panel-menu"
@@ -236,7 +233,7 @@ function PanelActionsDropdownComponent({ isUnknownPanel }: Props): JSX.Element {
         >
           <ShapeSubtract20Regular />
           Change panel
-          <ChevronRightIcon className={classes.icon} fontSize="small" />
+          <ChevronRight20Regular className={classes.icon} />
         </MenuItem>
         <ChangePanelMenu anchorEl={subMenuAnchorEl} onClose={handleSubmenuClose} tabId={tabId} />
         <Divider variant="middle" />
