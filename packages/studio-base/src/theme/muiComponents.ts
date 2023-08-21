@@ -441,6 +441,12 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
             paddingBottom: theme.spacing(0.625),
           },
         },
+        iconOutlined: {
+          right: theme.spacing(0.25),
+        },
+        iconFilled: {
+          right: theme.spacing(0.5),
+        },
       },
     },
     MuiPaper: {
