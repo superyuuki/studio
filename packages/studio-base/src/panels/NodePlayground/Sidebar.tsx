@@ -11,7 +11,7 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import CloseIcon from "@mui/icons-material/Close";
+import { Dismiss20Filled } from "@fluentui/react-icons";
 import ConstructionOutlinedIcon from "@mui/icons-material/ConstructionOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import TemplateIcon from "@mui/icons-material/PhotoFilter";
@@ -139,7 +139,7 @@ const SidebarHeader = ({
     }}
     action={
       <IconButton size="small" onClick={collapse} title="Collapse">
-        <CloseIcon />
+        <Dismiss20Filled />
       </IconButton>
     }
   />
@@ -289,7 +289,7 @@ const Sidebar = ({
             disableRipple
             value="nodes"
             title="Scripts"
-            icon={<NoteIcon fontSize="large" />}
+            icon={<NoteIcon />}
             data-testid="node-explorer"
             onClick={() => updateExplorer(nodesSelected ? undefined : "nodes")}
           />
@@ -297,7 +297,7 @@ const Sidebar = ({
             disableRipple
             value="utils"
             title="Utilities"
-            icon={<ConstructionOutlinedIcon fontSize="large" />}
+            icon={<ConstructionOutlinedIcon />}
             data-testid="utils-explorer"
             onClick={() => updateExplorer(utilsSelected ? undefined : "utils")}
           />
@@ -305,7 +305,7 @@ const Sidebar = ({
             disableRipple
             value="templates"
             title="Templates"
-            icon={<TemplateIcon fontSize="large" />}
+            icon={<TemplateIcon />}
             data-testid="templates-explorer"
             onClick={() => updateExplorer(templatesSelected ? undefined : "templates")}
           />
