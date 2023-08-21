@@ -266,6 +266,8 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
           },
         },
         paper: {
+          fontSize: theme.typography.body1.fontSize,
+
           // Prevent dialog from going underneath window title bar controls on Windows
           maxHeight: `calc(100% - 2 * (env(titlebar-area-height, ${theme.spacing(
             2,
