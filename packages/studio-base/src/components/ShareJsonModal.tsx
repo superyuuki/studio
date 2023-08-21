@@ -113,13 +113,13 @@ export function ShareJsonModal({
           <IconButton onClick={handleDownload} title="Download" aria-label="Download">
             <ArrowDownload20Filled />
           </IconButton>
-          <CopyButton color="default" getText={getText} />
+          <CopyButton color="default" iconSize="small" getText={getText} />
           <HoverableIconButton
             activeColor="error"
             onClick={() => setValue("{}")}
             title="Clear"
             aria-label="Clear"
-            icon={<DeleteOutline />}
+            icon={<DeleteOutline fontSize="small" />}
           />
         </Stack>
 

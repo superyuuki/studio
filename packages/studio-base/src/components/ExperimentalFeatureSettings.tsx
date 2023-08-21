@@ -30,7 +30,7 @@ const useStyles = makeStyles()((theme) => ({
   },
   checkbox: {
     paddingTop: 0,
-    paddingLeft: theme.spacing(0.25),
+    paddingLeft: theme.spacing(0),
   },
   formControlLabel: {
     display: "contents",
