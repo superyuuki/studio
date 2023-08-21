@@ -11,7 +11,6 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import { Square24Filled } from "@fluentui/react-icons";
 import { sortBy } from "lodash";
 import { Fragment, PropsWithChildren, useMemo } from "react";
 import { makeStyles } from "tss-react/mui";
@@ -51,14 +50,12 @@ const useStyles = makeStyles()((theme) => ({
     lineHeight: theme.typography.caption.lineHeight,
     overflowWrap: "break-word",
   },
-  icon: {
-    gridColumn: "1",
-    height: 12,
-    width: 12,
-  },
   path: {
     opacity: 0.9,
     whiteSpace: "nowrap",
+  },
+  icon: {
+    gridColumn: 1,
   },
   value: {
     fontWeight: 600,
@@ -164,7 +161,9 @@ export default function TimeBasedChartTooltipContent(
 
         return (
           <Fragment key={idx}>
-            <Square24Filled className={classes.icon} primaryFill={color} />
+            <svg className={classes.icon} viewBox="0 0 14 14" height={14} width={14}>
+              <rect x={2} y={2} height={10} width={10} rx={1} fill={color} />
+            </svg>
             <div className={classes.path}>{label ?? ""}</div>
             <div className={classes.value}>
               {value}
