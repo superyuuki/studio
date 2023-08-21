@@ -2,7 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { Ruler24Filled } from "@fluentui/react-icons";
+import { Ruler20Filled } from "@fluentui/react-icons";
 import {
   Button,
   IconButton,
@@ -224,6 +224,7 @@ export function RendererOverlay(props: {
         ref={publickClickButtonRef}
         onClick={props.onClickPublish}
         data-testid="publish-button"
+        size="small"
         style={{ fontSize: "1rem", pointerEvents: "auto" }}
       >
         {selectedPublishClickIcon}
@@ -407,6 +408,7 @@ export function RendererOverlay(props: {
         {props.interfaceMode === "3d" && (
           <Paper square={false} elevation={4} style={{ display: "flex", flexDirection: "column" }}>
             <IconButton
+              size="small"
               className={classes.iconButton}
               color={props.perspective ? "info" : "inherit"}
               title={props.perspective ? "Switch to 2D camera" : "Switch to 3D camera"}
@@ -415,13 +417,14 @@ export function RendererOverlay(props: {
               <span className={classes.threeDeeButton}>3D</span>
             </IconButton>
             <IconButton
+              size="small"
               data-testid="measure-button"
               className={classes.iconButton}
               color={props.measureActive ? "info" : "inherit"}
               title={props.measureActive ? "Cancel measuring" : "Measure distance"}
               onClick={props.onClickMeasure}
             >
-              <Ruler24Filled className={classes.rulerIcon} />
+              <Ruler20Filled className={classes.rulerIcon} />
             </IconButton>
 
             {publishControls}

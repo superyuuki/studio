@@ -2,16 +2,8 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { ArrowMinimize24Filled } from "@fluentui/react-icons";
-import {
-  Paper,
-  IconButton,
-  Tabs,
-  Tab,
-  svgIconClasses,
-  tabClasses,
-  tabsClasses,
-} from "@mui/material";
+import { ArrowMinimize20Filled } from "@fluentui/react-icons";
+import { Paper, IconButton, Tabs, Tab, tabClasses, tabsClasses } from "@mui/material";
 import { ReactElement, ReactNode } from "react";
 import { makeStyles } from "tss-react/mui";
 
@@ -28,13 +20,7 @@ const useStyles = makeStyles()((theme) => ({
   content: {
     position: "relative",
   },
-  iconButton: {
-    fontSize: "1rem !important",
-
-    [`& svg:not(.${svgIconClasses.root})`]: {
-      fontSize: "1rem !important",
-    },
-  },
+  iconButton: {},
   tabs: {
     minHeight: "auto",
 
@@ -101,6 +87,7 @@ export default function ExpandingToolbar<T extends string>({
     return (
       <Paper square={false} elevation={4} style={{ pointerEvents: "auto" }}>
         <IconButton
+          size="small"
           className={classes.iconButton}
           color={checked === true ? "info" : "default"}
           title={tooltip}
@@ -140,8 +127,12 @@ export default function ExpandingToolbar<T extends string>({
               <Tab label={child.props.name} value={child.props.name} />
             ))}
           </Tabs>
-          <IconButton className={classes.iconButton} onClick={() => onSelectTab(undefined)}>
-            <ArrowMinimize24Filled />
+          <IconButton
+            size="small"
+            className={classes.iconButton}
+            onClick={() => onSelectTab(undefined)}
+          >
+            <ArrowMinimize20Filled />
           </IconButton>
         </Stack>
       </Paper>

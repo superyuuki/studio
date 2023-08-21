@@ -8,7 +8,7 @@ import {
   ChevronLeft20Regular,
   ChevronRight20Regular,
   TextBulletListLtr20Filled,
-  ArrowMinimize24Filled,
+  ArrowMinimize20Filled,
 } from "@fluentui/react-icons";
 import { IconButton } from "@mui/material";
 import { clamp } from "lodash";
@@ -116,14 +116,7 @@ const useStyles = makeStyles<void, "container" | "toggleButton" | "toggleButtonF
         borderColor: palette.action.selected,
       },
     },
-    toggleButton: {
-      fontSize: "1rem",
-      padding: spacing(0.75),
-
-      "svg:not(.MuiSvgIcon-root)": {
-        fontSize: "1em",
-      },
-    },
+    toggleButton: {},
     toggleButtonFloating: {
       backdropFilter: "blur(3px)",
       pointerEvents: "auto",
@@ -168,7 +161,7 @@ function PlotLegendComponent(props: Props): JSX.Element {
   const legendIcon = useMemo(() => {
     switch (legendDisplay) {
       case "floating":
-        return showLegend ? <ArrowMinimize24Filled /> : <TextBulletListLtr20Filled />;
+        return showLegend ? <ArrowMinimize20Filled /> : <TextBulletListLtr20Filled />;
       case "left":
         return showLegend ? <ChevronLeft20Regular /> : <ChevronRight20Regular />;
       case "top":
@@ -223,6 +216,7 @@ function PlotLegendComponent(props: Props): JSX.Element {
       })}
     >
       <IconButton
+        size="small"
         onClick={toggleLegend}
         className={cx(classes.toggleButton, {
           [classes.toggleButtonFloating]: legendDisplay === "floating",
