@@ -88,10 +88,10 @@ const useStyles = makeStyles()((theme) => ({
     left: 0,
     transform: "translate(-97.5%, -50%)",
   },
-
   nodeHeader: {
     display: "flex",
     gridColumn: "span 2",
+    alignItems: "center",
     paddingRight: theme.spacing(0.5),
     minHeight: NODE_HEADER_MIN_HEIGHT,
 
@@ -129,7 +129,6 @@ const useStyles = makeStyles()((theme) => ({
       },
     },
   },
-
   nodeHeaderToggle: {
     display: "grid",
     alignItems: "center",
