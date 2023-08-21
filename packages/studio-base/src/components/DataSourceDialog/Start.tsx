@@ -108,6 +108,7 @@ const useStyles = makeStyles()((theme) => ({
   },
   recentSourceSecondary: {
     color: "inherit",
+    fontSize: theme.typography.body2.fontSize,
   },
   featureList: {
     paddingLeft: theme.spacing(1.5),
