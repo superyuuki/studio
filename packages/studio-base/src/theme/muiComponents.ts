@@ -86,7 +86,7 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
           },
         },
         endAdornment: {
-          // top: `calc(50% - ${theme.spacing(1.5)})`,
+          top: `calc(50% - ${theme.spacing(1.5)})`,
         },
       },
     },
