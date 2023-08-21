@@ -2,6 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+import { DismissCircle16Filled, Search16Filled } from "@fluentui/react-icons";
 import CancelIcon from "@mui/icons-material/Cancel";
 import SearchIcon from "@mui/icons-material/Search";
 import { IconButton, TextField } from "@mui/material";
@@ -130,18 +131,18 @@ export default function SettingsTreeEditor({
             InputProps={{
               size: "small",
               startAdornment: (
-                <label className={classes.startAdornment} htmlFor="settings-filter">
-                  <SearchIcon fontSize="small" />
+                <label className={classes.startAdornment} htmlFor="topic-filter">
+                  <Search16Filled />
                 </label>
               ),
               endAdornment: filterText && (
                 <IconButton
                   size="small"
-                  title={t("clearSearch")}
+                  title="Clear filter"
                   onClick={() => setFilterText("")}
                   edge="end"
                 >
-                  <CancelIcon fontSize="small" />
+                  <DismissCircle16Filled />
                 </IconButton>
               ),
             }}
