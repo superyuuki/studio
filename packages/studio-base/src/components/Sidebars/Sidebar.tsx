@@ -2,8 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { Dismiss12Filled } from "@fluentui/react-icons";
-import CloseIcon from "@mui/icons-material/Close";
+import { Dismiss12Regular } from "@fluentui/react-icons";
 import { Badge, BadgeProps, Divider, IconButton, Tab, Tabs } from "@mui/material";
 import { makeStyles } from "tss-react/mui";
 
@@ -150,7 +149,7 @@ export function Sidebar<K extends string>({
           onClick={onClose}
           data-testid={`sidebar-close-${anchor}`}
         >
-          <Dismiss12Filled />
+          <Dismiss12Regular />
         </IconButton>
       </Stack>
       <Divider />
