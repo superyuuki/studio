@@ -23,7 +23,6 @@ const headingFontStyles: TypographyStyle = {
 };
 
 const subtitleFontStyles: TypographyStyle = {
-  lineHeight: 1.1,
   fontWeight: 500,
 };
 

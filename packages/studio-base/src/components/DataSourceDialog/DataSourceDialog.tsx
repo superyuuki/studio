@@ -2,7 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import CloseIcon from "@mui/icons-material/Close";
+import { Dismiss20Filled } from "@fluentui/react-icons";
 import { Dialog, IconButton } from "@mui/material";
 import { useCallback, useLayoutEffect, useMemo } from "react";
 import { useMountedState } from "react-use";
@@ -37,7 +37,7 @@ const useStyles = makeStyles()((theme) => ({
     position: "absolute",
     right: 0,
     top: 0,
-    margin: theme.spacing(3),
+    margin: theme.spacing(2),
   },
 }));
 
@@ -128,7 +128,7 @@ export function DataSourceDialog(props: DataSourceDialogProps): JSX.Element {
       }}
     >
       <IconButton className={classes.closeButton} onClick={onModalClose} edge="end">
-        <CloseIcon />
+        <Dismiss20Filled />
       </IconButton>
       <Stack
         flexGrow={1}
