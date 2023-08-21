@@ -17,6 +17,12 @@ const useStyles = makeStyles()((theme) => ({
   container: {
     padding: theme.spacing(2),
   },
+  input: {
+    fontFamily: fonts.MONOSPACE,
+  },
+  icon: {
+    marginLeft: theme.spacing(-0.5),
+  },
   picker: {
     "&.react-colorful": {
       width: "100%",
@@ -83,8 +89,8 @@ export function ColorPickerControl(props: ColorPickerInputProps): JSX.Element {
         InputProps={{
           onFocus: (event) => event.target.select(),
           role: "input",
-          startAdornment: <TagIcon fontSize="small" />,
-          style: { fontFamily: fonts.MONOSPACE },
+          startAdornment: <TagIcon className={classes.icon} fontSize="small" />,
+          className: classes.input,
         }}
         placeholder={alphaType === "alpha" ? "RRGGBBAA" : "RRGGBB"}
         value={editedValue}
