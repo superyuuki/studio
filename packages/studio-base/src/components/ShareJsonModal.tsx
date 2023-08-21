@@ -87,7 +87,7 @@ export function ShareJsonModal({
         </Stack>
 
         <IconButton onClick={onRequestClose} edge="end">
-          <CloseIcon />
+          <CloseIcon fontSize="small" />
         </IconButton>
       </Stack>
       <DialogContent>

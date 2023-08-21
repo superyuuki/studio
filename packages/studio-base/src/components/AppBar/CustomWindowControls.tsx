@@ -37,14 +37,14 @@ export function CustomWindowControls({
 }: Omit<CustomWindowControlsProps, "showCustomWindowControls">): JSX.Element {
   const { classes } = useStyles();
   return (
-    <Stack direction="row" gap={1} paddingX={1}>
+    <Stack direction="row" alignItems="center" gap={1} paddingX={1}>
       <IconButton
         size="small"
         color="inherit"
         onClick={onMinimizeWindow}
         data-testid="win-minimize"
       >
-        <MinimizeIcon fontSize="inherit" color="inherit" />
+        <MinimizeIcon fontSize="inherit" />
       </IconButton>
 
       <IconButton
@@ -54,9 +54,9 @@ export function CustomWindowControls({
         data-testid="win-maximize"
       >
         {isMaximized ? (
-          <FilterNoneIcon fontSize="inherit" color="inherit" />
+          <FilterNoneIcon fontSize="inherit" />
         ) : (
-          <CheckBoxOutlineBlankIcon fontSize="inherit" color="inherit" />
+          <CheckBoxOutlineBlankIcon fontSize="inherit" />
         )}
       </IconButton>
 
@@ -67,7 +67,7 @@ export function CustomWindowControls({
         onClick={onCloseWindow}
         data-testid="win-close"
       >
-        <CloseIcon fontSize="inherit" color="inherit" />
+        <CloseIcon fontSize="inherit" />
       </IconButton>
     </Stack>
   );

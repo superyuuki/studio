@@ -295,15 +295,6 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
           },
           ...disableBackgroundColorTransition,
         },
-        sizeSmall: {
-          fontSize: 20,
-        },
-        sizeMedium: {
-          fontSize: 24,
-        },
-        sizeLarge: {
-          fontSize: 28,
-        },
       },
     },
     MuiInput: {
@@ -526,15 +517,6 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
         disableRipple: true,
       },
       styleOverrides: {
-        sizeSmall: {
-          fontSize: 20,
-        },
-        sizeMedium: {
-          fontSize: 24,
-        },
-        sizeLarge: {
-          fontSize: 28,
-        },
         root: {
           "&:active": {
             backgroundColor: alpha(

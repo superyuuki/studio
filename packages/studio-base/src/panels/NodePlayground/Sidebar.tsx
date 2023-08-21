@@ -139,7 +139,7 @@ const SidebarHeader = ({
     }}
     action={
       <IconButton size="small" onClick={collapse} title="Collapse">
-        <CloseIcon />
+        <CloseIcon fontSize="small" />
       </IconButton>
     }
   />

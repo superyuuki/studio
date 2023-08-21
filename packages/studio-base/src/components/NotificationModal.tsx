@@ -81,7 +81,7 @@ export default function NotificationModal({
         onClick={() => onRequestClose?.()}
         className={classes.iconButton}
       >
-        <CloseIcon />
+        <CloseIcon fontSize="small" />
       </IconButton>
     </Dialog>
   );

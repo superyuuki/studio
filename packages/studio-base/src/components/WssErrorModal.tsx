@@ -54,7 +54,7 @@ export default function WssErrorModal(
           WebSocket SSL Error
         </Typography>
         <IconButton onClick={() => setOpen(false)} edge="end">
-          <CloseIcon />
+          <CloseIcon fontSize="small" />
         </IconButton>
       </Stack>
       <Stack paddingX={3} paddingY={2} rowGap={2}>

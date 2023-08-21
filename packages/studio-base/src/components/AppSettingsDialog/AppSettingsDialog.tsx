@@ -56,6 +56,7 @@ const useStyles = makeStyles()((theme) => ({
     height: "70vh",
     paddingLeft: theme.spacing(1),
     overflowY: "hidden",
+
     [theme.breakpoints.up("sm")]: {
       gridTemplateColumns: "auto minmax(0, 1fr)",
     },
@@ -75,9 +76,7 @@ const useStyles = makeStyles()((theme) => ({
     display: "block",
   },
   checkbox: {
-    "&.MuiCheckbox-root": {
-      paddingTop: 0,
-    },
+    paddingBlock: theme.spacing(0.5),
   },
   dialogActions: {
     position: "sticky",
@@ -85,11 +84,6 @@ const useStyles = makeStyles()((theme) => ({
     borderTop: `${theme.palette.divider} 1px solid`,
     padding: theme.spacing(1),
     bottom: 0,
-  },
-  formControlLabel: {
-    "&.MuiFormControlLabel-root": {
-      alignItems: "start",
-    },
   },
   tab: {
     svg: {
@@ -232,7 +226,7 @@ export function AppSettingsDialog(
           {t("settings")}
         </Typography>
         <IconButton edge="end" onClick={handleClose}>
-          <CloseIcon />
+          <CloseIcon fontSize="small" />
         </IconButton>
       </Stack>
       <div className={classes.layoutGrid}>
@@ -281,9 +275,9 @@ export function AppSettingsDialog(
               </Alert>
               <Stack gap={0.5} paddingLeft={2}>
                 <FormControlLabel
-                  className={classes.formControlLabel}
                   control={
                     <Checkbox
+                      size="small"
                       className={classes.checkbox}
                       checked={telemetryEnabled ?? true}
                       onChange={(_event, checked) => void setTelemetryEnabled(checked)}
@@ -292,9 +286,9 @@ export function AppSettingsDialog(
                   label={t("sendAnonymizedUsageData")}
                 />
                 <FormControlLabel
-                  className={classes.formControlLabel}
                   control={
                     <Checkbox
+                      size="small"
                       className={classes.checkbox}
                       checked={crashReportingEnabled ?? true}
                       onChange={(_event, checked) => void setCrashReportingEnabled(checked)}
@@ -344,6 +338,7 @@ export function AppSettingsDialog(
                 </Typography>
                 <CopyButton
                   size="small"
+                  iconSize="small"
                   getText={() => FOXGLOVE_STUDIO_VERSION?.toString() ?? ""}
                 />
               </Stack>

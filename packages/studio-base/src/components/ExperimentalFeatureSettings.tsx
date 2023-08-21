@@ -21,18 +21,21 @@ import { useAnalytics } from "@foxglove/studio-base/context/AnalyticsContext";
 import { useAppConfigurationValue } from "@foxglove/studio-base/hooks/useAppConfigurationValue";
 import { AppEvent } from "@foxglove/studio-base/services/IAnalytics";
 
-const useStyles = makeStyles()({
+const useStyles = makeStyles()((theme) => ({
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "auto 1fr",
+    alignItems: "flex-start",
+    rowGap: theme.spacing(2),
+  },
   checkbox: {
-    "&.MuiCheckbox-root": {
-      paddingTop: 0,
-    },
+    paddingTop: 0,
+    paddingLeft: theme.spacing(0.25),
   },
   formControlLabel: {
-    "&.MuiFormControlLabel-root": {
-      alignItems: "start",
-    },
+    display: "contents",
   },
-});
+}));
 
 type Feature = {
   key: AppSetting;
@@ -78,6 +81,7 @@ function ExperimentalFeatureItem(props: { feature: Feature }) {
       className={classes.formControlLabel}
       control={
         <Checkbox
+          size="small"
           className={classes.checkbox}
           checked={enabled ?? false}
           onChange={(_, checked) => {
@@ -104,14 +108,18 @@ function ExperimentalFeatureItem(props: { feature: Feature }) {
 export const ExperimentalFeatureSettings = (): React.ReactElement => {
   const features = useFeatures();
   const { t } = useTranslation("appSettings");
+  const { classes } = useStyles();
+
   return (
     <Stack gap={2}>
       {features.length === 0 && (
         <Typography fontStyle="italic">{t("noExperimentalFeatures")}</Typography>
       )}
-      {features.map((feature) => (
-        <ExperimentalFeatureItem key={feature.key} feature={feature} />
-      ))}
+      <div className={classes.grid}>
+        {features.map((feature) => (
+          <ExperimentalFeatureItem key={feature.key} feature={feature} />
+        ))}
+      </div>
     </Stack>
   );
 };
