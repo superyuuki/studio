@@ -20,6 +20,7 @@ import { Topic } from "@foxglove/studio-base/src/players/types";
 const useStyles = makeStyles<void, "copyIcon">()((theme, _params, classes) => ({
   copyIcon: {
     visibility: "hidden",
+    fontSize: 18,
 
     "&:hover": {
       backgroundColor: "transparent",
@@ -74,7 +75,7 @@ function TopicRow({ topic }: { topic: Topic }): JSX.Element {
           className={classes.copyIcon}
           edge="end"
           size="small"
-          iconSize="small"
+          iconSize="inherit"
           getText={() => topic.name}
         />
         {topic.aliasedFromName && (
@@ -93,7 +94,7 @@ function TopicRow({ topic }: { topic: Topic }): JSX.Element {
               className={classes.copyIcon}
               edge="end"
               size="small"
-              iconSize="small"
+              iconSize="inherit"
               getText={() => topic.schemaName ?? ""}
             />
           </>
