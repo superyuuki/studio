@@ -12,7 +12,7 @@
 //   You may not use this file except in compliance with the License.
 
 import {
-  ChevronRight20Regular,
+  ChevronRight16Regular,
   Delete20Regular,
   FullScreenMaximize20Regular,
   MoreVertical20Filled,
@@ -38,7 +38,7 @@ type Props = {
 const useStyles = makeStyles()((theme) => ({
   error: { color: theme.palette.error.main },
   icon: {
-    marginLeft: theme.spacing(3),
+    marginLeft: theme.spacing(2),
     marginRight: theme.spacing(-1),
   },
   menuItem: {
@@ -233,7 +233,7 @@ function PanelActionsDropdownComponent({ isUnknownPanel }: Props): JSX.Element {
         >
           <ShapeSubtract20Regular />
           Change panel
-          <ChevronRight20Regular className={classes.icon} />
+          <ChevronRight16Regular className={classes.icon} />
         </MenuItem>
         <ChangePanelMenu anchorEl={subMenuAnchorEl} onClose={handleSubmenuClose} tabId={tabId} />
         <Divider variant="middle" />
