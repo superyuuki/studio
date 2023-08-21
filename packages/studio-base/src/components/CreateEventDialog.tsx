@@ -240,10 +240,10 @@ export function CreateEventDialog(props: { onClose: () => void }): JSX.Element {
           />
           <ButtonGroup style={{ visibility: "hidden" }}>
             <IconButton tabIndex={-1} data-testid="add">
-              <AddIcon />
+              <AddIcon fontSize="small" />
             </IconButton>
             <IconButton tabIndex={-1}>
-              <AddIcon />
+              <AddIcon fontSize="small" />
             </IconButton>
           </ButtonGroup>
         </div>
