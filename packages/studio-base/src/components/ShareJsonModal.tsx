@@ -2,9 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { ArrowDownload20Filled } from "@fluentui/react-icons";
-import CloseIcon from "@mui/icons-material/Close";
-import DeleteOutline from "@mui/icons-material/DeleteOutline";
+import { ArrowDownload20Filled, Delete20Regular, Dismiss20Filled } from "@fluentui/react-icons";
 import {
   Button,
   IconButton,
@@ -87,7 +85,7 @@ export function ShareJsonModal({
         </Stack>
 
         <IconButton onClick={onRequestClose} edge="end">
-          <CloseIcon />
+          <Dismiss20Filled />
         </IconButton>
       </Stack>
       <DialogContent>
@@ -109,28 +107,23 @@ export function ShareJsonModal({
         />
       </DialogContent>
       <DialogActions>
-        <Stack direction="row" gap={1}>
+        <Stack alignItems="center" direction="row" gap={1}>
           <IconButton onClick={handleDownload} title="Download" aria-label="Download">
             <ArrowDownload20Filled />
           </IconButton>
-          <CopyButton color="default" getText={getText} />
+          <CopyButton iconSize="small" color="default" getText={getText} />
           <HoverableIconButton
             activeColor="error"
             onClick={() => setValue("{}")}
             title="Clear"
             aria-label="Clear"
-            icon={<DeleteOutline />}
+            icon={<Delete20Regular />}
           />
         </Stack>
 
         <Stack flex="auto" />
 
-        <Button
-          disabled={error != undefined}
-          variant="contained"
-          size="large"
-          onClick={handleSubmit}
-        >
+        <Button disabled={error != undefined} variant="contained" onClick={handleSubmit}>
           Apply
         </Button>
       </DialogActions>
