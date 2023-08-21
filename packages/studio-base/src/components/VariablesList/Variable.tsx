@@ -216,9 +216,11 @@ export default function Variable(props: {
             primary={
               <Stack direction="row" alignItems="center" style={{ marginLeft: -12 }}>
                 <ArrowDropDownIcon
+                  fontSize="small"
                   style={{ transform: !expanded ? "rotate(-90deg)" : undefined }}
                 />
                 <InputBase
+                  size="small"
                   className={classes.input}
                   autoFocus={name === ""}
                   error={isDuplicate}
