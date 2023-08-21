@@ -2,30 +2,29 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import CloseIcon from "@mui/icons-material/Close";
+import { Dismiss20Filled } from "@fluentui/react-icons";
 import { Dialog, DialogTitle, IconButton, Typography } from "@mui/material";
 import { useMemo } from "react";
 import { makeStyles } from "tss-react/mui";
 
 import { NotificationMessage } from "@foxglove/studio-base/util/sendNotification";
+import { fonts } from "@foxglove/studio-base/util/sharedStyleConstants";
 
 const useStyles = makeStyles()((theme) => ({
   container: {
     alignItems: "stretch",
     display: "flex",
     flexDirection: "column",
-    maxHeight: "50vw",
+    maxHeight: "70vh",
     marginBlockEnd: theme.spacing(3),
     marginInline: theme.spacing(3),
-  },
-  paper: {
-    maxWidth: 700,
-    width: "70%",
   },
   text: {
     backgroundColor: theme.palette.background.default,
     color: theme.palette.text.primary,
-    fontSize: theme.typography.body1.fontSize,
+    fontSize: theme.typography.body2.fontSize,
+    lineHeight: theme.typography.body2.lineHeight,
+    fontFamily: fonts.MONOSPACE,
     flex: 1,
     padding: theme.spacing(1),
     overflowY: "auto",
@@ -70,7 +69,7 @@ export default function NotificationModal({
   }, [classes, details, subText]);
 
   return (
-    <Dialog classes={{ paper: classes.paper }} fullWidth open onClose={() => onRequestClose?.()}>
+    <Dialog maxWidth="md" fullWidth open onClose={() => onRequestClose?.()}>
       <DialogTitle color={displayPropsBySeverity[severity]}>{message}</DialogTitle>
       <div className={classes.container}>
         {subText && <Typography mb={3}>{subText}</Typography>}
@@ -81,7 +80,7 @@ export default function NotificationModal({
         onClick={() => onRequestClose?.()}
         className={classes.iconButton}
       >
-        <CloseIcon />
+        <Dismiss20Filled />
       </IconButton>
     </Dialog>
   );
