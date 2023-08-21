@@ -83,7 +83,7 @@ const useStyles = makeStyles<void, "error">()((theme, _params, classes) => {
       backgroundColor: inputBackgroundColor,
 
       input: {
-        height: theme.typography.pxToRem(30),
+        height: theme.typography.pxToRem(22),
       },
       "&:hover": {
         backgroundColor: prefersDarkMode ? "rgba(255, 255, 255, 0.13)" : "rgba(0, 0, 0, 0.09)",
