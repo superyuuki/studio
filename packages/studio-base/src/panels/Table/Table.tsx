@@ -150,7 +150,11 @@ function getColumnsFromObject(val: CellValue, accessorPath: string, iconButtonCl
             data-testid={`expand-row-${row.index}`}
             onClick={() => row.toggleExpanded()}
           >
-            {row.getIsExpanded() ? <MinusIcon fontSize="small" /> : <PlusIcon fontSize="small" />}
+            {row.getIsExpanded() ? (
+              <MinusIcon fontSize="inherit" />
+            ) : (
+              <PlusIcon fontSize="inherit" />
+            )}
           </IconButton>
         );
       },

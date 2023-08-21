@@ -12,10 +12,10 @@
 //   You may not use this file except in compliance with the License.
 
 import {
-  ArrowBidirectionalUpDown16Regular,
-  PageFit16Regular,
-  RectangleLandscape16Regular,
-  Diamond32Filled,
+  ArrowBidirectionalUpDown20Regular,
+  PageFit20Regular,
+  RectangleLandscape20Regular,
+  Diamond20Filled,
 } from "@fluentui/react-icons";
 import { FormControlLabel, IconButton, Paper, Radio, RadioGroup } from "@mui/material";
 import Cytoscape from "cytoscape";
@@ -126,13 +126,6 @@ const useStyles = makeStyles()((theme) => ({
         borderBottomRightRadius: 0,
         borderBottomLeftRadius: 0,
       },
-    },
-  },
-  icon: {
-    fontSize: "1rem !important",
-
-    "& svg:not(.MuiSvgIcon-root)": {
-      fontSize: "1rem !important",
     },
   },
   pointerEventsAuto: {
@@ -381,21 +374,21 @@ function TopicGraph() {
       <div className={classes.root}>
         <Paper square={false} elevation={4} className={classes.pointerEventsAuto}>
           <Stack flex="0 0" className={cx(classes.stack, classes.pointerEventsAuto)}>
-            <IconButton title="Zoom fit" onClick={onZoomFit} className={classes.icon}>
-              <PageFit16Regular />
+            <IconButton size="small" title="Zoom fit" onClick={onZoomFit}>
+              <PageFit20Regular />
             </IconButton>
-            <IconButton title="Orientation" onClick={toggleOrientation} className={classes.icon}>
-              <ArrowBidirectionalUpDown16Regular
+            <IconButton size="small" title="Orientation" onClick={toggleOrientation}>
+              <ArrowBidirectionalUpDown20Regular
                 style={{ transform: `rotate(${lrOrientation ? 90 : 0}deg)` }}
               />
             </IconButton>
             <IconButton
+              size="small"
               color={showServices ? "info" : "inherit"}
-              className={classes.icon}
               title={showServices ? "Showing services" : "Hiding services"}
               onClick={toggleShowServices}
             >
-              <RectangleLandscape16Regular />
+              <RectangleLandscape20Regular />
             </IconButton>
           </Stack>
         </Paper>
@@ -404,7 +397,7 @@ function TopicGraph() {
           checked={topicVisibility !== "none"}
           dataTest="set-topic-visibility"
           tooltip={topicVisibilityTooltip}
-          icon={<Diamond32Filled />}
+          icon={<Diamond20Filled />}
           selectedTab={selectedTab}
           onSelectTab={(newSelectedTab) => {
             setSelectedTab(newSelectedTab);
