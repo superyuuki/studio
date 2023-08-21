@@ -2,6 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+import { Dismiss12Filled } from "@fluentui/react-icons";
 import CloseIcon from "@mui/icons-material/Close";
 import { Badge, BadgeProps, Divider, IconButton, Tab, Tabs } from "@mui/material";
 import { makeStyles } from "tss-react/mui";
@@ -110,7 +111,7 @@ export function Sidebar<K extends string>({
       overflow="hidden"
       data-tourid={`sidebar-${anchor}`}
     >
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
+      <Stack direction="row" justifyContent="space-between">
         <Tabs
           className={classes.tabs}
           textColor="inherit"
@@ -147,10 +148,9 @@ export function Sidebar<K extends string>({
         <IconButton
           className={classes.iconButton}
           onClick={onClose}
-          size="small"
           data-testid={`sidebar-close-${anchor}`}
         >
-          <CloseIcon fontSize="small" />
+          <Dismiss12Filled />
         </IconButton>
       </Stack>
       <Divider />
