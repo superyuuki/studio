@@ -2,7 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { ErrorCircle16Filled, Square16Filled, Square16Regular } from "@fluentui/react-icons";
+import { ErrorCircle16Filled, Square12Filled, Square12Regular } from "@fluentui/react-icons";
 import { Checkbox, Tooltip, Typography } from "@mui/material";
 import { ComponentProps, useMemo, useState } from "react";
 import { makeStyles } from "tss-react/mui";
@@ -67,8 +67,6 @@ const useStyles = makeStyles<void, "plotName">()((theme, _params, classes) => ({
     left: 0,
   },
   checkbox: {
-    fontSize: "1em",
-    padding: theme.spacing(0.975),
     borderRadius: 0,
   },
   disabledPathLabel: {
@@ -161,8 +159,8 @@ export function PlotLegendRow({
           size="small"
           title="Toggle visibility"
           style={{ color: getLineColor(path.color, index) }}
-          icon={<Square16Regular />}
-          checkedIcon={<Square16Filled />}
+          icon={<Square12Regular />}
+          checkedIcon={<Square12Filled />}
           onClick={(event) => event.stopPropagation()} // prevent toggling from opening settings
           onChange={() => {
             const newPaths = paths.slice();
