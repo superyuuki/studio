@@ -2,7 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { MoreVertical20Regular } from "@fluentui/react-icons";
+import { MoreVertical20Filled } from "@fluentui/react-icons";
 import { IconButton, Menu, MenuItem } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
@@ -35,7 +35,7 @@ export function ActionMenu({
         aria-expanded={open ? "true" : undefined}
         onClick={handleClick}
       >
-        <MoreVertical20Regular />
+        <MoreVertical20Filled />
       </IconButton>
       <Menu
         id="basic-menu"
