@@ -20,7 +20,14 @@ const useStyles = makeStyles()((theme) => ({
   content: {
     position: "relative",
   },
-  iconButton: {},
+  iconButton: {
+    fontSize: 16,
+
+    svg: {
+      height: "1em",
+      width: "1em",
+    },
+  },
   tabs: {
     minHeight: "auto",
 
@@ -87,7 +94,6 @@ export default function ExpandingToolbar<T extends string>({
     return (
       <Paper square={false} elevation={4} style={{ pointerEvents: "auto" }}>
         <IconButton
-          size="small"
           className={classes.iconButton}
           color={checked === true ? "info" : "default"}
           title={tooltip}
@@ -127,11 +133,7 @@ export default function ExpandingToolbar<T extends string>({
               <Tab label={child.props.name} value={child.props.name} />
             ))}
           </Tabs>
-          <IconButton
-            size="small"
-            className={classes.iconButton}
-            onClick={() => onSelectTab(undefined)}
-          >
+          <IconButton className={classes.iconButton} onClick={() => onSelectTab(undefined)}>
             <ArrowMinimize20Filled />
           </IconButton>
         </Stack>

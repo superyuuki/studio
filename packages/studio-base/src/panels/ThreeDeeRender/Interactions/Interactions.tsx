@@ -11,7 +11,7 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import { Cursor20Regular } from "@fluentui/react-icons";
+import { Cursor16Regular } from "@fluentui/react-icons";
 import { Typography } from "@mui/material";
 
 import type { LayoutActions } from "@foxglove/studio";
@@ -58,7 +58,7 @@ const InteractionsBaseComponent = React.memo<Props>(function InteractionsBaseCom
   return (
     <ExpandingToolbar
       tooltip="Inspect objects"
-      icon={<Cursor20Regular />}
+      icon={<Cursor16Regular />}
       selectedTab={interactionsTabType}
       onSelectTab={(newSelectedTab) => setInteractionsTabType(newSelectedTab)}
     >

@@ -55,12 +55,13 @@ const PublishClickIcons: Record<PublishClickType, React.ReactNode> = {
 const useStyles = makeStyles()((theme) => ({
   iconButton: {
     position: "relative",
-    fontSize: "1rem !important",
     pointerEvents: "auto",
     aspectRatio: "1",
+    fontSize: 16,
 
     "& svg:not(.MuiSvgIcon-root)": {
-      fontSize: "1rem !important",
+      height: "1em",
+      width: "1em",
     },
   },
   rulerIcon: {
@@ -408,7 +409,6 @@ export function RendererOverlay(props: {
         {props.interfaceMode === "3d" && (
           <Paper square={false} elevation={4} style={{ display: "flex", flexDirection: "column" }}>
             <IconButton
-              size="small"
               className={classes.iconButton}
               color={props.perspective ? "info" : "inherit"}
               title={props.perspective ? "Switch to 2D camera" : "Switch to 3D camera"}
@@ -417,7 +417,6 @@ export function RendererOverlay(props: {
               <span className={classes.threeDeeButton}>3D</span>
             </IconButton>
             <IconButton
-              size="small"
               data-testid="measure-button"
               className={classes.iconButton}
               color={props.measureActive ? "info" : "inherit"}

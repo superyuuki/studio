@@ -12,10 +12,10 @@
 //   You may not use this file except in compliance with the License.
 
 import {
-  ArrowBidirectionalUpDown20Regular,
-  PageFit20Regular,
-  RectangleLandscape20Regular,
-  Diamond20Filled,
+  ArrowBidirectionalUpDown16Regular,
+  PageFit16Regular,
+  RectangleLandscape16Regular,
+  Diamond16Filled,
 } from "@fluentui/react-icons";
 import { FormControlLabel, IconButton, Paper, Radio, RadioGroup } from "@mui/material";
 import Cytoscape from "cytoscape";
@@ -374,21 +374,20 @@ function TopicGraph() {
       <div className={classes.root}>
         <Paper square={false} elevation={4} className={classes.pointerEventsAuto}>
           <Stack flex="0 0" className={cx(classes.stack, classes.pointerEventsAuto)}>
-            <IconButton size="small" title="Zoom fit" onClick={onZoomFit}>
-              <PageFit20Regular />
+            <IconButton title="Zoom fit" onClick={onZoomFit}>
+              <PageFit16Regular />
             </IconButton>
-            <IconButton size="small" title="Orientation" onClick={toggleOrientation}>
-              <ArrowBidirectionalUpDown20Regular
+            <IconButton title="Orientation" onClick={toggleOrientation}>
+              <ArrowBidirectionalUpDown16Regular
                 style={{ transform: `rotate(${lrOrientation ? 90 : 0}deg)` }}
               />
             </IconButton>
             <IconButton
-              size="small"
               color={showServices ? "info" : "inherit"}
               title={showServices ? "Showing services" : "Hiding services"}
               onClick={toggleShowServices}
             >
-              <RectangleLandscape20Regular />
+              <RectangleLandscape16Regular />
             </IconButton>
           </Stack>
         </Paper>
@@ -397,7 +396,7 @@ function TopicGraph() {
           checked={topicVisibility !== "none"}
           dataTest="set-topic-visibility"
           tooltip={topicVisibilityTooltip}
-          icon={<Diamond20Filled />}
+          icon={<Diamond16Filled />}
           selectedTab={selectedTab}
           onSelectTab={(newSelectedTab) => {
             setSelectedTab(newSelectedTab);
