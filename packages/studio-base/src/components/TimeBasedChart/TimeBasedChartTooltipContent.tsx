@@ -51,7 +51,7 @@ const useStyles = makeStyles()((theme) => ({
     overflowWrap: "break-word",
   },
   path: {
-    opacity: 0.9,
+    opacity: 0.6,
     whiteSpace: "nowrap",
   },
   icon: {
@@ -161,8 +161,8 @@ export default function TimeBasedChartTooltipContent(
 
         return (
           <Fragment key={idx}>
-            <svg className={classes.icon} viewBox="0 0 14 14" height={14} width={14}>
-              <rect x={2} y={2} height={10} width={10} rx={1} fill={color} />
+            <svg className={classes.icon} viewBox="0 0 13 13" height={13} width={13}>
+              <rect x={2} y={2} height={9} width={9} rx={1} fill={color} />
             </svg>
             <div className={classes.path}>{label ?? ""}</div>
             <div className={classes.value}>
