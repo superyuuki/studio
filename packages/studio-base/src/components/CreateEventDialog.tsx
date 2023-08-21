@@ -274,14 +274,14 @@ export function CreateEventDialog(props: { onClose: () => void }): JSX.Element {
                 />
                 <ButtonGroup>
                   <IconButton tabIndex={-1} onClick={() => addRow(index)}>
-                    <AddIcon />
+                    <AddIcon fontSize="small" />
                   </IconButton>
                   <IconButton
                     tabIndex={-1}
                     onClick={() => removeRow(index)}
                     style={{ visibility: event.metadataEntries.length > 1 ? "visible" : "hidden" }}
                   >
-                    <RemoveIcon />
+                    <RemoveIcon fontSize="small" />
                   </IconButton>
                 </ButtonGroup>
               </div>
