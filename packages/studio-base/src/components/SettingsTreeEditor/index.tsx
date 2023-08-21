@@ -3,8 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { DismissCircle16Filled, Search16Filled } from "@fluentui/react-icons";
-import CancelIcon from "@mui/icons-material/Cancel";
-import SearchIcon from "@mui/icons-material/Search";
 import { IconButton, TextField } from "@mui/material";
 import memoizeWeak from "memoize-weak";
 import { useCallback, useMemo, useState } from "react";
