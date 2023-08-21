@@ -74,7 +74,7 @@ function TopicRow({ topic }: { topic: Topic }): JSX.Element {
           className={classes.copyIcon}
           edge="end"
           size="small"
-          iconSize="small"
+          iconSize="inherit"
           getText={() => topic.name}
         />
         {topic.aliasedFromName && (
@@ -93,7 +93,7 @@ function TopicRow({ topic }: { topic: Topic }): JSX.Element {
               className={classes.copyIcon}
               edge="end"
               size="small"
-              iconSize="small"
+              iconSize="inherit"
               getText={() => topic.schemaName ?? ""}
             />
           </>
