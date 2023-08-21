@@ -203,6 +203,16 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
         disableRipple: true,
       },
     },
+    MuiChip: {
+      styleOverrides: {
+        sizeSmall: {
+          fontSize: theme.typography.body2.fontSize,
+        },
+        sizeMedium: {
+          fontSize: theme.typography.body1.fontSize,
+        },
+      },
+    },
     MuiFormLabel: {
       styleOverrides: {
         root: {
