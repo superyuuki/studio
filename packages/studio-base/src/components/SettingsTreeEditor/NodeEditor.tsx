@@ -7,7 +7,7 @@ import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import CheckIcon from "@mui/icons-material/Check";
 import EditIcon from "@mui/icons-material/Edit";
 import ErrorIcon from "@mui/icons-material/Error";
-import { Button, Divider, IconButton, TextField, Tooltip, Typography } from "@mui/material";
+import { Button, Divider, FilledInput, IconButton, Tooltip, Typography } from "@mui/material";
 import { TFunction } from "i18next";
 import { isEqual, partition } from "lodash";
 import memoizeWeak from "memoize-weak";
@@ -48,6 +48,10 @@ const NODE_HEADER_MIN_HEIGHT = 35;
 const useStyles = makeStyles()((theme) => ({
   actionButton: {
     padding: theme.spacing(0.5),
+
+    [`&.MuiIconButton-root, &.MuiCheckbox-root`]: {
+      fontSize: 18,
+    },
   },
   editNameField: {
     font: "inherit",
@@ -56,7 +60,7 @@ const useStyles = makeStyles()((theme) => ({
 
     ".MuiInputBase-input": {
       fontSize: "0.75rem",
-      padding: theme.spacing(0.75, 1),
+      padding: theme.spacing(0.375, 0, 0.375, 0.25),
     },
   },
   focusedNode: {
@@ -154,7 +158,7 @@ function ExpansionArrow({ expanded }: { expanded: boolean }): JSX.Element {
   const Component = expanded ? ArrowDownIcon : ArrowRightIcon;
   return (
     <div className={classes.iconWrapper}>
-      <Component />
+      <Component fontSize="small" />
     </div>
   );
 }
@@ -352,40 +356,39 @@ function NodeEditorComponent(props: NodeEditorProps): JSX.Element {
           {hasProperties && <ExpansionArrow expanded={state.open} />}
           {IconComponent && (
             <IconComponent
-              fontSize="small"
-              color="inherit"
+              fontSize="inherit"
               style={{
+                fontSize: 18,
                 marginRight: theme.spacing(0.5),
                 opacity: 0.8,
               }}
             />
           )}
           {state.editing ? (
-            <TextField
+            <FilledInput
+              size="small"
               className={classes.editNameField}
               autoFocus
-              variant="filled"
               onChange={onEditLabel}
               value={settings.label}
               onBlur={toggleEditing}
               onKeyDown={onLabelKeyDown}
               onFocus={(event) => event.target.select()}
-              InputProps={{
-                endAdornment: (
-                  <IconButton
-                    className={classes.actionButton}
-                    title="Rename"
-                    data-node-function="edit-label"
-                    color="primary"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      toggleEditing();
-                    }}
-                  >
-                    <CheckIcon fontSize="small" />
-                  </IconButton>
-                ),
-              }}
+              endAdornment={
+                <IconButton
+                  className={classes.actionButton}
+                  title="Rename"
+                  data-node-function="edit-label"
+                  color="primary"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    toggleEditing();
+                  }}
+                  style={{ marginRight: theme.spacing(-1) }}
+                >
+                  <CheckIcon fontSize="inherit" />
+                </IconButton>
+              }
             />
           ) : (
             <Typography
@@ -402,6 +405,7 @@ function NodeEditorComponent(props: NodeEditorProps): JSX.Element {
         <Stack alignItems="center" direction="row">
           {settings.renamable === true && !state.editing && (
             <IconButton
+              size="small"
               className={classes.actionButton}
               title="Rename"
               data-node-function="edit-label"
@@ -410,13 +414,16 @@ function NodeEditorComponent(props: NodeEditorProps): JSX.Element {
                 event.stopPropagation();
                 toggleEditing();
               }}
+              style={{ fontSize: 18 }}
             >
-              <EditIcon fontSize="small" />
+              <EditIcon fontSize="inherit" />
             </IconButton>
           )}
           {settings.visible != undefined && (
             <VisibilityToggle
+              className={classes.actionButton}
               size="small"
+              iconSize="inherit"
               checked={visible}
               onChange={toggleVisibility}
               style={{ opacity: allowVisibilityToggle ? 1 : 0 }}
@@ -437,7 +444,7 @@ function NodeEditorComponent(props: NodeEditorProps): JSX.Element {
                 title={action.label}
                 className={classes.actionButton}
               >
-                <Icon fontSize="small" />
+                <Icon fontSize="inherit" />
               </IconButton>
             ) : (
               <Button
@@ -460,14 +467,18 @@ function NodeEditorComponent(props: NodeEditorProps): JSX.Element {
                 </Typography>
               }
             >
-              <IconButton size="small" color="error">
-                <ErrorIcon fontSize="small" />
+              <IconButton className={classes.actionButton} size="small" color="error">
+                <ErrorIcon fontSize="inherit" />
               </IconButton>
             </Tooltip>
           )}
 
           {menuActions.length > 0 && (
-            <NodeActionsMenu actions={menuActions} onSelectAction={handleNodeAction} />
+            <NodeActionsMenu
+              className={classes.actionButton}
+              actions={menuActions}
+              onSelectAction={handleNodeAction}
+            />
           )}
         </Stack>
       </div>

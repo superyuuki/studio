@@ -2,7 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import CancelIcon from "@mui/icons-material/Cancel";
+import { DismissCircle16Filled } from "@fluentui/react-icons";
 import ErrorIcon from "@mui/icons-material/Error";
 import {
   Autocomplete,
@@ -62,6 +62,7 @@ const useStyles = makeStyles<void, "error">()((theme, _params, classes) => {
     fieldWrapper: {
       minWidth: theme.spacing(14),
       marginRight: theme.spacing(0.5),
+
       [`&.${classes.error} .MuiInputBase-root, .MuiInputBase-root.${classes.error}`]: {
         outline: `1px ${theme.palette.error.main} solid`,
         outlineOffset: -1,
@@ -82,7 +83,7 @@ const useStyles = makeStyles<void, "error">()((theme, _params, classes) => {
       backgroundColor: inputBackgroundColor,
 
       input: {
-        height: "1.77em",
+        height: theme.typography.pxToRem(30),
       },
       "&:hover": {
         backgroundColor: prefersDarkMode ? "rgba(255, 255, 255, 0.13)" : "rgba(0, 0, 0, 0.09)",
@@ -161,7 +162,7 @@ function FieldInput({
               className: classes.clearIndicator,
             },
           }}
-          clearIcon={<CancelIcon fontSize="small" />}
+          clearIcon={<DismissCircle16Filled />}
           renderInput={(params) => (
             <TextField {...params} variant="filled" size="small" placeholder={field.placeholder} />
           )}
@@ -539,8 +540,9 @@ function FieldEditorComponent({
             arrow
             placement="top"
             title={<Typography variant="subtitle2">{field.error}</Typography>}
+            style={{ fontSize: 18 }}
           >
-            <ErrorIcon color="error" fontSize="small" />
+            <ErrorIcon color="error" fontSize="inherit" />
           </Tooltip>
         )}
         <FieldLabel field={field} />

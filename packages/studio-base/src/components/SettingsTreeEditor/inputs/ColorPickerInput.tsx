@@ -2,7 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import CancelIcon from "@mui/icons-material/Cancel";
+import { DismissCircle16Filled } from "@fluentui/react-icons";
 import { TextField, Popover, IconButton } from "@mui/material";
 import { useCallback, MouseEvent, useState, useMemo } from "react";
 import tinycolor from "tinycolor2";
@@ -120,7 +120,7 @@ export function ColorPickerInput(props: ColorPickerInputProps): JSX.Element {
               onClick={clearValue}
               disabled={disabled}
             >
-              <CancelIcon />
+              <DismissCircle16Filled />
             </IconButton>
           ),
         }}

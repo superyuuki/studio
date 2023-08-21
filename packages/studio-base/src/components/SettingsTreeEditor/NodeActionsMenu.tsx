@@ -11,9 +11,11 @@ import { SettingsTreeNodeAction } from "@foxglove/studio";
 import { icons } from "./icons";
 
 export function NodeActionsMenu({
+  className,
   actions,
   onSelectAction,
 }: {
+  className?: string;
   actions: readonly SettingsTreeNodeAction[];
   onSelectAction: (actionId: string) => void;
 }): JSX.Element {
@@ -34,6 +36,7 @@ export function NodeActionsMenu({
   return (
     <>
       <IconButton
+        className={className}
         title="More actions"
         aria-controls={open ? "node-actions-menu" : undefined}
         aria-haspopup="true"
@@ -42,7 +45,7 @@ export function NodeActionsMenu({
         data-testid="node-actions-menu-button"
         size="small"
       >
-        <MoreVertIcon fontSize="small" />
+        <MoreVertIcon fontSize="inherit" />
       </IconButton>
       <Menu
         id="basic-menu"

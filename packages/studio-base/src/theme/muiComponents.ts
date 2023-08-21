@@ -233,6 +233,7 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
           padding: theme.spacing(1, 1.25),
         },
         inputSizeSmall: {
+          height: theme.typography.pxToRem(18),
           fontSize: theme.typography.body2.fontSize,
           padding: theme.spacing(0.75, 1),
         },

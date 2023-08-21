@@ -15,17 +15,16 @@ import { fonts } from "@foxglove/studio-base/util/sharedStyleConstants";
 const useStyles = makeStyles()((theme) => ({
   iconButton: {
     "&.MuiIconButton-edgeStart": {
-      marginLeft: theme.spacing(-0.75),
+      marginLeft: theme.spacing(-1),
       borderTopRightRadius: 0,
       borderBottomRightRadius: 0,
     },
     "&.MuiIconButton-edgeEnd": {
-      marginRight: theme.spacing(-0.75),
+      marginRight: theme.spacing(-1),
       borderTopLeftRadius: 0,
       borderBottomLeftRadius: 0,
     },
   },
-
   textField: {
     ".MuiInputBase-formControl.MuiInputBase-root": {
       paddingTop: 0,
@@ -42,11 +41,8 @@ const useStyles = makeStyles()((theme) => ({
       },
     },
     "@media (pointer: fine)": {
-      ".MuiIconButton-root": {
+      "&:not(:hover) .MuiIconButton-root": {
         visibility: "hidden",
-      },
-      "&:hover .MuiIconButton-root": {
-        visibility: "visible",
       },
     },
   },
