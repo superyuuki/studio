@@ -18,6 +18,7 @@ const useStyles = makeStyles()((theme) => ({
     maxHeight: "70vh",
     marginBlockEnd: theme.spacing(3),
     marginInline: theme.spacing(3),
+    gap: theme.spacing(1),
   },
   text: {
     backgroundColor: theme.palette.background.default,
@@ -65,14 +66,14 @@ export default function NotificationModal({
       return undefined;
     }
 
-    return "No details provided";
+    return <Typography>No details provided</Typography>;
   }, [classes, details, subText]);
 
   return (
-    <Dialog maxWidth="md" fullWidth open onClose={() => onRequestClose?.()}>
+    <Dialog fullWidth open onClose={() => onRequestClose?.()}>
       <DialogTitle color={displayPropsBySeverity[severity]}>{message}</DialogTitle>
       <div className={classes.container}>
-        {subText && <Typography mb={3}>{subText}</Typography>}
+        {subText && <Typography>{subText}</Typography>}
         {detailsElement}
       </div>
       <IconButton
