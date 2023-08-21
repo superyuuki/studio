@@ -340,6 +340,7 @@ export function AppSettingsDialog(
                 </Typography>
                 <CopyButton
                   size="small"
+                  iconSize="small"
                   getText={() => FOXGLOVE_STUDIO_VERSION?.toString() ?? ""}
                 />
               </Stack>
