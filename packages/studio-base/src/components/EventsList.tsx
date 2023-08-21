@@ -2,8 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import ClearIcon from "@mui/icons-material/Clear";
-import SearchIcon from "@mui/icons-material/Search";
+import { Search20Filled, DismissCircle20Filled } from "@fluentui/react-icons";
 import { AppBar, CircularProgress, IconButton, TextField, Typography } from "@mui/material";
 import { useCallback, useMemo } from "react";
 import { makeStyles } from "tss-react/mui";
@@ -122,10 +121,10 @@ export function EventsList(): JSX.Element {
           onChange={(event) => setFilter(event.currentTarget.value)}
           placeholder="Search by key, value, or key:value"
           InputProps={{
-            startAdornment: <SearchIcon fontSize="small" />,
+            startAdornment: <Search20Filled />,
             endAdornment: filter !== "" && (
-              <IconButton edge="end" onClick={clearFilter} size="small">
-                <ClearIcon fontSize="small" />
+              <IconButton edge="end" onClick={clearFilter}>
+                <DismissCircle20Filled />
               </IconButton>
             ),
           }}
