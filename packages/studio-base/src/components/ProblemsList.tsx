@@ -41,8 +41,7 @@ const useStyles = makeStyles()((theme) => ({
   accordionDetails: {
     display: "flex",
     flexDirection: "column",
-    fontFamily: fonts.MONOSPACE,
-    fontSize: "0.6875rem",
+    fontSize: theme.typography.body2.fontSize,
     padding: theme.spacing(1.125),
     gap: theme.spacing(1),
   },
@@ -72,9 +71,10 @@ const useStyles = makeStyles()((theme) => ({
     },
   },
   detailsText: {
+    fontFamily: fonts.MONOSPACE,
     color: theme.palette.text.primary,
-    fontSize: theme.typography.caption.fontSize,
-    lineHeight: 1.5,
+    fontSize: theme.typography.body2.fontSize,
+    lineHeight: 1.2,
     whiteSpace: "pre-wrap",
     maxHeight: "30vh",
     overflow: "auto",
@@ -82,24 +82,20 @@ const useStyles = makeStyles()((theme) => ({
     backgroundColor: theme.palette.action.hover,
     padding: theme.spacing(1),
   },
-  icon: {
-    flex: "none",
-  },
 }));
 
 const selectPlayerProblems = ({ playerState }: MessagePipelineContext) => playerState.problems;
 
 function ProblemIcon({ severity }: { severity: NotificationSeverity }): JSX.Element {
   const { palette } = useTheme();
-  const { classes } = useStyles();
 
   switch (severity) {
     case "warn":
-      return <Warning16Regular className={classes.icon} primaryFill={palette.warning.main} />;
+      return <Warning16Regular primaryFill={palette.warning.main} />;
     case "error":
-      return <ErrorCircle16Regular className={classes.icon} primaryFill={palette.error.main} />;
+      return <ErrorCircle16Regular primaryFill={palette.error.main} />;
     case "info":
-      return <Info16Regular className={classes.icon} primaryFill={palette.info.main} />;
+      return <Info16Regular primaryFill={palette.info.main} />;
     default:
       return <></>;
   }
@@ -122,7 +118,7 @@ function ProblemDetails(props: { details: DetailsType; tip?: string }): JSX.Elem
       return undefined;
     }
 
-    return "No details provided";
+    return <Typography variant="body2">No details provided</Typography>;
   }, [classes, details, tip]);
 
   return (
@@ -156,7 +152,7 @@ export function ProblemsList(): JSX.Element {
             title={problem.message}
           >
             <ProblemIcon severity={problem.severity} />
-            <Typography variant="inherit" noWrap>
+            <Typography variant="body2" noWrap>
               {problem.message}
             </Typography>
           </AccordionSummary>
