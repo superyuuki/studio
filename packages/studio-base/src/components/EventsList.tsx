@@ -2,7 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { Search20Filled, DismissCircle20Filled } from "@fluentui/react-icons";
+import { Search16Filled, DismissCircle16Filled } from "@fluentui/react-icons";
 import { AppBar, CircularProgress, IconButton, TextField, Typography } from "@mui/material";
 import { useCallback, useMemo } from "react";
 import { makeStyles } from "tss-react/mui";
@@ -31,7 +31,7 @@ const useStyles = makeStyles()((theme) => ({
     zIndex: theme.zIndex.appBar - 1,
     display: "flex",
     flexDirection: "row",
-    padding: theme.spacing(1),
+    padding: theme.spacing(0.5),
     gap: theme.spacing(1),
     alignItems: "center",
     borderBottom: `1px solid ${theme.palette.divider}`,
@@ -121,10 +121,11 @@ export function EventsList(): JSX.Element {
           onChange={(event) => setFilter(event.currentTarget.value)}
           placeholder="Search by key, value, or key:value"
           InputProps={{
-            startAdornment: <Search20Filled />,
+            size: "small",
+            startAdornment: <Search16Filled />,
             endAdornment: filter !== "" && (
-              <IconButton edge="end" onClick={clearFilter}>
-                <DismissCircle20Filled />
+              <IconButton size="small" edge="end" onClick={clearFilter}>
+                <DismissCircle16Filled />
               </IconButton>
             ),
           }}

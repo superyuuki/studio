@@ -2,8 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import ClearIcon from "@mui/icons-material/Clear";
-import SearchIcon from "@mui/icons-material/Search";
+import { Search16Filled, DismissCircle16Filled } from "@fluentui/react-icons";
 import {
   IconButton,
   List,
@@ -59,11 +58,6 @@ const useStyles = makeStyles()((theme) => ({
     },
     ".MuiListItemSecondaryAction-root": {
       marginRight: theme.spacing(-1),
-    },
-  },
-  textField: {
-    ".MuiOutlinedInput-notchedOutline": {
-      border: "none",
     },
   },
   aliasedTopicName: {
@@ -183,12 +177,12 @@ export function TopicList(): JSX.Element {
         <header className={classes.appBar}>
           <TextField
             disabled
-            className={classes.textField}
+            variant="filled"
             fullWidth
             placeholder="Waiting for data..."
             InputProps={{
               size: "small",
-              startAdornment: <SearchIcon fontSize="small" />,
+              startAdornment: <Search16Filled />,
             }}
           />
         </header>
@@ -216,14 +210,13 @@ export function TopicList(): JSX.Element {
           disabled={playerPresence !== PlayerPresence.PRESENT}
           onChange={(event) => setFilterText(event.target.value)}
           value={filterText}
-          className={classes.textField}
           fullWidth
           placeholder="Filter by topic or schema name…"
           InputProps={{
             size: "small",
             startAdornment: (
               <label className={classes.startAdornment} htmlFor="topic-filter">
-                <SearchIcon fontSize="small" />
+                <Search16Filled />
               </label>
             ),
             endAdornment: filterText && (
@@ -233,7 +226,7 @@ export function TopicList(): JSX.Element {
                 onClick={() => setFilterText("")}
                 edge="end"
               >
-                <ClearIcon fontSize="small" />
+                <DismissCircle16Filled />
               </IconButton>
             ),
           }}
