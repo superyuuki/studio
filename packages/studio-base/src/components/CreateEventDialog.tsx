@@ -290,12 +290,11 @@ export function CreateEventDialog(props: { onClose: () => void }): JSX.Element {
         </div>
       </Stack>
       <DialogActions>
-        <Button variant="outlined" size="large" onClick={onClose}>
+        <Button variant="outlined" onClick={onClose}>
           Cancel
         </Button>
         <Button
           variant="contained"
-          size="large"
           onClick={createEvent}
           disabled={!canSubmit || createdEvent.loading}
         >
