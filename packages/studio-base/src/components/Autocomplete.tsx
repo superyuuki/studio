@@ -11,7 +11,7 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import { DismissCircle20Filled } from "@fluentui/react-icons";
+import { DismissCircle16Filled } from "@fluentui/react-icons";
 import { MenuItem, Autocomplete as MuiAutocomplete, TextField, alpha } from "@mui/material";
 import { Fzf, FzfResultItem } from "fzf";
 import * as React from "react";
@@ -282,7 +282,7 @@ export default React.forwardRef(function Autocomplete<T = unknown>(
   return (
     <MuiAutocomplete
       className={classes.root}
-      clearIcon={<DismissCircle20Filled />}
+      clearIcon={<DismissCircle16Filled />}
       componentsProps={{
         paper: { elevation: 8 },
         clearIndicator: {
