@@ -2,8 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { Search20Filled } from "@fluentui/react-icons";
-import CancelIcon from "@mui/icons-material/Cancel";
+import { DismissCircle16Filled, Search20Filled } from "@fluentui/react-icons";
 import { IconButton, TextField } from "@mui/material";
 import fuzzySort from "fuzzysort";
 import { countBy, isEmpty } from "lodash";
@@ -225,7 +224,7 @@ export const PanelCatalog = forwardRef<HTMLDivElement, Props>(function PanelCata
             startAdornment: <Search20Filled />,
             endAdornment: searchQuery && (
               <IconButton size="small" edge="end" onClick={() => setSearchQuery("")}>
-                <CancelIcon fontSize="small" />
+                <DismissCircle16Filled />
               </IconButton>
             ),
           }}
