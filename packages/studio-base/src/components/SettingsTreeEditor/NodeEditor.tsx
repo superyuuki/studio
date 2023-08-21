@@ -47,11 +47,11 @@ const NODE_HEADER_MIN_HEIGHT = 35;
 
 const useStyles = makeStyles()((theme) => ({
   actionButton: {
+    paddingBlock: theme.spacing(0.425),
+  },
+  iconButton: {
     padding: theme.spacing(0.5),
-
-    [`&.MuiIconButton-root, &.MuiCheckbox-root`]: {
-      fontSize: 18,
-    },
+    fontSize: 18,
   },
   editNameField: {
     font: "inherit",
@@ -375,7 +375,7 @@ function NodeEditorComponent(props: NodeEditorProps): JSX.Element {
               onFocus={(event) => event.target.select()}
               endAdornment={
                 <IconButton
-                  className={classes.actionButton}
+                  className={classes.iconButton}
                   title="Rename"
                   data-node-function="edit-label"
                   color="primary"
@@ -405,7 +405,7 @@ function NodeEditorComponent(props: NodeEditorProps): JSX.Element {
           {settings.renamable === true && !state.editing && (
             <IconButton
               size="small"
-              className={classes.actionButton}
+              className={classes.iconButton}
               title="Rename"
               data-node-function="edit-label"
               color="primary"
@@ -420,7 +420,7 @@ function NodeEditorComponent(props: NodeEditorProps): JSX.Element {
           )}
           {settings.visible != undefined && (
             <VisibilityToggle
-              className={classes.actionButton}
+              className={classes.iconButton}
               size="small"
               iconSize="inherit"
               checked={visible}
@@ -441,17 +441,17 @@ function NodeEditorComponent(props: NodeEditorProps): JSX.Element {
                 key={action.id}
                 onClick={handler}
                 title={action.label}
-                className={classes.actionButton}
+                className={classes.iconButton}
               >
                 <Icon fontSize="inherit" />
               </IconButton>
             ) : (
               <Button
+                className={classes.actionButton}
                 key={action.id}
                 onClick={handler}
                 size="small"
                 color="inherit"
-                className={classes.actionButton}
               >
                 {action.label}
               </Button>
@@ -466,7 +466,7 @@ function NodeEditorComponent(props: NodeEditorProps): JSX.Element {
                 </Typography>
               }
             >
-              <IconButton className={classes.actionButton} size="small" color="error">
+              <IconButton className={classes.iconButton} size="small" color="error">
                 <ErrorIcon fontSize="inherit" />
               </IconButton>
             </Tooltip>
@@ -474,7 +474,7 @@ function NodeEditorComponent(props: NodeEditorProps): JSX.Element {
 
           {menuActions.length > 0 && (
             <NodeActionsMenu
-              className={classes.actionButton}
+              className={classes.iconButton}
               actions={menuActions}
               onSelectAction={handleNodeAction}
             />
