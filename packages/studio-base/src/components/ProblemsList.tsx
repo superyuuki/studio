@@ -2,7 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { ErrorCircle20Regular, Info20Regular, Warning20Regular } from "@fluentui/react-icons";
+import { ErrorCircle16Regular, Info16Regular, Warning16Regular } from "@fluentui/react-icons";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import {
   Accordion,
@@ -91,11 +91,11 @@ function ProblemIcon({ severity }: { severity: NotificationSeverity }): JSX.Elem
 
   switch (severity) {
     case "warn":
-      return <Warning20Regular primaryFill={palette.warning.main} />;
+      return <Warning16Regular primaryFill={palette.warning.main} />;
     case "error":
-      return <ErrorCircle20Regular primaryFill={palette.error.main} />;
+      return <ErrorCircle16Regular primaryFill={palette.error.main} />;
     case "info":
-      return <Info20Regular primaryFill={palette.info.main} />;
+      return <Info16Regular primaryFill={palette.info.main} />;
     default:
       return <></>;
   }
