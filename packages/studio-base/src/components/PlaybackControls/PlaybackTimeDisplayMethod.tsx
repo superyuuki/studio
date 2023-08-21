@@ -293,13 +293,6 @@ export default function PlaybackTimeDisplayMethod({
           variant="filled"
           size="small"
           defaultValue={timeFormat.timeFormat === "SEC" ? "0000000000.000000000" : "00:00:00.000"}
-          InputProps={{
-            endAdornment: (
-              <IconButton edge="end" disabled>
-                <ArrowDropDownIcon />
-              </IconButton>
-            ),
-          }}
         />
       )}
     </Stack>
