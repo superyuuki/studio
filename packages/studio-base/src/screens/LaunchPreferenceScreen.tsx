@@ -107,6 +107,7 @@ export function LaunchPreferenceScreen(): ReactElement {
               control={
                 <Checkbox
                   color="primary"
+                  size="small"
                   checked={rememberPreference}
                   onChange={toggleRememberPreference}
                 />
