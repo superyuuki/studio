@@ -33,19 +33,6 @@ type MuiLabComponents = {
   };
 };
 
-const iconHack = {
-  "& svg:not(.MuiSvgIcon-root)": {
-    fill: "currentColor",
-    width: "1em",
-    height: "1em",
-    display: "inline-block",
-    fontSize: "1.2857142857142856rem",
-    transition: "fill 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
-    flexShrink: 0,
-    userSelect: "none",
-  },
-};
-
 const disableBackgroundColorTransition = {
   transition: "none",
 };
@@ -187,8 +174,11 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
         disableRipple: true,
       },
       styleOverrides: {
-        root: {
-          ...iconHack,
+        sizeMedium: {
+          fontSize: 24,
+        },
+        sizeSmall: {
+          fontSize: 20,
         },
       },
     },
@@ -299,15 +289,20 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
       styleOverrides: {
         root: {
           borderRadius: theme.shape.borderRadius,
-          ...iconHack,
 
-          ".root-span": {
-            display: "flex",
-          },
           "&:hover": {
             backgroundColor: theme.palette.action.hover,
           },
           ...disableBackgroundColorTransition,
+        },
+        sizeSmall: {
+          fontSize: 20,
+        },
+        sizeMedium: {
+          fontSize: 24,
+        },
+        sizeLarge: {
+          fontSize: 28,
         },
       },
     },
@@ -479,9 +474,21 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
         size: "small",
       },
     },
+    MuiSvgIcon: {
+      styleOverrides: {
+        fontSizeSmall: {
+          fontSize: 20,
+        },
+        fontSizeMedium: {
+          fontSize: 24,
+        },
+        fontSizeLarge: {
+          fontSize: 28,
+        },
+      },
+    },
     MuiTab: {
       styleOverrides: {
-        labelIcon: iconHack,
         root: {
           opacity: 0.8,
 
@@ -519,7 +526,15 @@ export default function muiComponents(theme: Theme): Theme["components"] & MuiLa
         disableRipple: true,
       },
       styleOverrides: {
-        label: iconHack,
+        sizeSmall: {
+          fontSize: 20,
+        },
+        sizeMedium: {
+          fontSize: 24,
+        },
+        sizeLarge: {
+          fontSize: 28,
+        },
         root: {
           "&:active": {
             backgroundColor: alpha(
