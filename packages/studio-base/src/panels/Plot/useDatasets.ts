@@ -11,14 +11,15 @@ import { useShallowMemo, useDeepMemo } from "@foxglove/hooks";
 import { Immutable } from "@foxglove/studio";
 import { useMessageReducer as useCurrent, useDataSourceInfo } from "@foxglove/studio-base/PanelAPI";
 import { useBlocksByTopic as useBlocks } from "@foxglove/studio-base/PanelAPI/useBlocksByTopic";
-import { getTopicsFromPaths } from "@foxglove/studio-base/components/MessagePathSyntax/parseRosPath";
+import { RosPath } from "@foxglove/studio-base/components/MessagePathSyntax/constants";
+import parseRosPath from "@foxglove/studio-base/components/MessagePathSyntax/parseRosPath";
 import {
   useMessagePipeline,
   MessagePipelineContext,
 } from "@foxglove/studio-base/components/MessagePipeline";
 import { TypedDataProvider } from "@foxglove/studio-base/components/TimeBasedChart/types";
 import useGlobalVariables from "@foxglove/studio-base/hooks/useGlobalVariables";
-import { MessageEvent } from "@foxglove/studio-base/players/types";
+import { SubscribePayload, MessageEvent } from "@foxglove/studio-base/players/types";
 
 import { PlotParams, Messages } from "./internalTypes";
 import { getPaths, PlotData } from "./plotData";
@@ -44,11 +45,62 @@ const getIsLive = (ctx: MessagePipelineContext) => ctx.seekPlayback == undefined
 type BlockStatus = Record<string, boolean>;
 let blockStatus: BlockStatus[] = [];
 
+const getPayloadString = (payload: SubscribePayload): string =>
+  `${payload.topic}:${(payload.fields ?? []).join(",")}`;
+
 type Client = {
-  topics: readonly string[];
-  setter: (topics: string[]) => void;
+  topics: SubscribePayload[];
+  setter: (topics: SubscribePayload[]) => void;
 };
 let clients: Record<string, Client> = {};
+
+function normalizePaths(topics: SubscribePayload[]): SubscribePayload[] {
+  return R.pipe(
+    R.groupBy((payload: SubscribePayload) => payload.topic),
+    // Combine subscriptions to the same topic (but different fields)
+    R.mapObjIndexed(
+      (payloads: SubscribePayload[] | undefined, topic: string): SubscribePayload => ({
+        topic,
+        fields: R.pipe(
+          // Aggregate all fields
+          R.chain((payload: SubscribePayload): string[] => payload.fields ?? []),
+          // Ensure there are no duplicates
+          R.uniq,
+        )(payloads ?? []),
+      }),
+    ),
+    R.values,
+  )(topics);
+}
+
+function getPayloadsFromPaths(paths: readonly string[]): SubscribePayload[] {
+  return R.pipe(
+    // Parse all of the paths
+    R.chain((path: string) => {
+      const parsed = parseRosPath(path);
+      if (parsed == undefined) {
+        return [];
+      }
+
+      return [parsed];
+    }),
+    // Then build field subscriptions
+    R.chain((path: RosPath): SubscribePayload[] => {
+      const field = R.head(path.messagePath);
+      if (field == undefined || field.type !== "name") {
+        return [];
+      }
+      return [
+        {
+          topic: path.topicName,
+          fields: [field.name],
+        },
+      ];
+    }),
+    // Then simplify
+    normalizePaths,
+  )(paths);
+}
 
 // Calculate the list of unique topics that _all_ of the plots need and
 // nominate one panel to subscribe to the topics on behalf of the rest.
@@ -60,18 +112,18 @@ function chooseClient() {
   const clientList = R.values(clients);
   const topics = R.pipe(
     R.chain((client: Client) => client.topics),
-    R.uniq,
+    normalizePaths,
   )(clientList);
   R.head(clientList)?.setter(topics);
 
   // Also clear the status of any topics we're no longer using
-  blockStatus = R.map((block) => R.pick(topics, block), blockStatus);
+  blockStatus = R.map((block) => R.pick(R.map(getPayloadString, topics), block), blockStatus);
 }
 
 // Subscribe to "current" messages (those near the seek head) and forward new
 // messages to the worker as they arrive.
-function useData(id: string, topics: readonly string[]) {
-  const [subscribed, setSubscribed] = React.useState<string[]>([]);
+function useData(id: string, topics: SubscribePayload[]) {
+  const [subscribed, setSubscribed] = React.useState<SubscribePayload[]>([]);
   useEffect(() => {
     clients = {
       ...clients,
@@ -124,13 +176,14 @@ function useData(id: string, topics: readonly string[]) {
       const messages: Messages = {};
       const status: BlockStatus = blockStatus[index] ?? {};
       for (const topic of subscribed) {
-        const topicMessages = block[topic];
-        if (topicMessages == undefined || status[topic] === true) {
+        const ref = getPayloadString(topic);
+        const topicMessages = block[topic.topic];
+        if (topicMessages == undefined || status[ref] === true) {
           continue;
         }
 
-        status[topic] = true;
-        messages[topic] = topicMessages as MessageEvent[];
+        status[ref] = true;
+        messages[topic.topic] = topicMessages as MessageEvent[];
       }
       blockStatus[index] = status;
 
@@ -169,7 +222,7 @@ export default function useDatasets(params: PlotParams): {
   }, [xAxisPath, yAxisPaths]);
 
   const stablePaths = useShallowMemo(allPaths);
-  const topics = useMemo(() => getTopicsFromPaths(stablePaths), [stablePaths]);
+  const topics = useMemo(() => getPayloadsFromPaths(stablePaths), [stablePaths]);
 
   useEffect(() => {
     if (worker == undefined) {
