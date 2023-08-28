@@ -207,6 +207,10 @@ function makeElectronBuilderConfig(params) {
       grade: "stable",
       summary: "Integrated visualization and diagnosis tool for robotics",
     },
+    flatpak: {
+      runtimeVersion: "22.08",
+      baseVersion: "22.08",
+    },
   };
 }
 
