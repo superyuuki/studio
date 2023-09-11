@@ -9,14 +9,23 @@ import { PinholeCameraModel } from "@foxglove/den/image";
 import Logger from "@foxglove/log";
 import { toNanoSec } from "@foxglove/rostime";
 import { IRenderer } from "@foxglove/studio-base/panels/ThreeDeeRender/IRenderer";
+import {
+  IVideoPlayer,
+  IVideoPlayerClass,
+} from "@foxglove/studio-base/panels/ThreeDeeRender/IVideoPlayerClass";
 import { BaseUserData, Renderable } from "@foxglove/studio-base/panels/ThreeDeeRender/Renderable";
 import { stringToRgba } from "@foxglove/studio-base/panels/ThreeDeeRender/color";
 import { WorkerImageDecoder } from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/Images/WorkerImageDecoder";
 import { projectPixel } from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/projections";
 import { RosValue } from "@foxglove/studio-base/players/types";
+import { Label } from "@foxglove/three-text";
 
-import { AnyImage } from "./ImageTypes";
-import { decodeCompressedImageToBitmap } from "./decodeImage";
+import { AnyImage, CompressedVideo } from "./ImageTypes";
+import {
+  decodeCompressedImageToBitmap,
+  decodeCompressedVideoToBitmap,
+  emptyVideoFrame,
+} from "./decodeImage";
 import { CameraInfo } from "../../ros";
 import { ColorModeSettings } from "../colorMode";
 
@@ -30,6 +39,9 @@ export interface ImageRenderableSettings extends Partial<ColorModeSettings> {
   planarProjectionFactor: number;
   color: string;
 }
+
+const IMAGE_FORMATS = new Set(["jpeg", "png", "webp"]);
+const VIDEO_FORMATS = new Set(["h264"]);
 
 const DECODE_IMAGE_ERR_KEY = "CreateBitmap";
 const IMAGE_TOPIC_PATH = ["imageMode", "imageTopic"];
@@ -50,6 +62,7 @@ export type ImageUserData = BaseUserData & {
   settings: ImageRenderableSettings;
   cameraInfo: CameraInfo | undefined;
   cameraModel: PinholeCameraModel | undefined;
+  firstMessageTime: bigint | undefined;
   image: AnyImage | undefined;
   texture: THREE.Texture | undefined;
   material: THREE.MeshBasicMaterial | undefined;
@@ -58,6 +71,10 @@ export type ImageUserData = BaseUserData & {
 };
 
 export class ImageRenderable extends Renderable<ImageUserData> {
+  // A lazily instantiated player for compressed video
+  #videoPlayer: IVideoPlayer | undefined;
+
+  #VideoPlayer: IVideoPlayerClass | undefined;
   // Make sure that everything is build the first time we render
   // set when camera info or image changes
   #geometryNeedsUpdate = true;
@@ -79,8 +96,19 @@ export class ImageRenderable extends Renderable<ImageUserData> {
 
   #disposed = false;
 
+  #waitingForKeyframeLabel?: Label;
+
   public constructor(topicName: string, renderer: IRenderer, userData: ImageUserData) {
     super(topicName, renderer, userData);
+    this.#VideoPlayer = this.renderer.VideoPlayer;
+  }
+
+  public handleSeek(): void {
+    this.#videoPlayer?.resetForSeek();
+    if (this.#waitingForKeyframeLabel != undefined) {
+      this.renderer.labelPool.release(this.#waitingForKeyframeLabel);
+    }
+    this.#waitingForKeyframeLabel = undefined;
   }
 
   public override dispose(): void {
@@ -89,7 +117,30 @@ export class ImageRenderable extends Renderable<ImageUserData> {
     this.userData.material?.dispose();
     this.userData.geometry?.dispose();
     this.#decoder?.terminate();
+    this.#videoPlayer?.resetForSeek();
+    if (this.#waitingForKeyframeLabel != undefined) {
+      this.renderer.labelPool.release(this.#waitingForKeyframeLabel);
+    }
+    this.#waitingForKeyframeLabel = undefined;
     super.dispose();
+  }
+
+  #initWaitingForKeyFrameLabel(): void {
+    this.#waitingForKeyframeLabel = this.renderer.labelPool.acquire();
+    this.#waitingForKeyframeLabel.setAnchorPoint(0.5, 0.5);
+    this.#waitingForKeyframeLabel.setText("Waiting for keyframe");
+    this.#waitingForKeyframeLabel.setColor(1, 1, 1);
+    this.#waitingForKeyframeLabel.setOpacity(1);
+    this.#waitingForKeyframeLabel.setBackgroundColor(0.05, 0.05, 0.05);
+    this.#waitingForKeyframeLabel.setLineHeight(20);
+    this.#waitingForKeyframeLabel.setBillboard(true);
+    this.#waitingForKeyframeLabel.visible = true;
+    this.#waitingForKeyframeLabel.setSizeAttenuation(false);
+
+    this.#waitingForKeyframeLabel.quaternion.set(0, 0, 0, 1);
+    this.#waitingForKeyframeLabel.position.set(0, 0, 1);
+
+    this.add(this.#waitingForKeyframeLabel);
   }
 
   public updateHeaderInfo(): void {
@@ -164,7 +215,6 @@ export class ImageRenderable extends Renderable<ImageUserData> {
 
     this.userData.settings = newSettings;
   }
-
   public setImage(
     image: AnyImage,
     resizeWidth?: number,
@@ -172,11 +222,93 @@ export class ImageRenderable extends Renderable<ImageUserData> {
   ): void {
     this.userData.image = image;
 
+    const setError = (err: Error): void => {
+      if (this.#disposed) {
+        return;
+      }
+      this.renderer.settings.errors.add(IMAGE_TOPIC_PATH, DECODE_IMAGE_ERR_KEY, err.message);
+      this.renderer.settings.errors.addToTopic(
+        this.userData.topic,
+        DECODE_IMAGE_ERR_KEY,
+        err.message,
+      );
+    };
+
     const seq = ++this.#receivedImageSequenceNumber;
-    const decodePromise =
-      "format" in image
-        ? decodeCompressedImageToBitmap(image, resizeWidth)
-        : (this.#decoder ??= new WorkerImageDecoder()).decode(image, this.userData.settings);
+    let decodePromise: Promise<ImageBitmap | ImageData> | undefined;
+
+    if ("format" in image) {
+      if (VIDEO_FORMATS.has(image.format)) {
+        if (!this.#VideoPlayer) {
+          setError(new Error("Must be paid user to use video"));
+          return;
+        }
+        if (this.#waitingForKeyframeLabel == undefined) {
+          this.#initWaitingForKeyFrameLabel();
+        }
+        const frameMsg = image as CompressedVideo;
+
+        if (frameMsg.data.byteLength === 0) {
+          setError(new Error("Empty video frame"));
+          return;
+        }
+
+        if (!this.#videoPlayer) {
+          this.#videoPlayer = new this.#VideoPlayer();
+          this.#videoPlayer.on("error", (err: unknown) => {
+            setError(err as Error);
+          });
+          this.#videoPlayer.on("warn", (msg) => {
+            log.warn(msg);
+          });
+        }
+        const videoPlayer = this.#videoPlayer;
+
+        decodePromise = (async () => {
+          if (!this.#VideoPlayer) {
+            setError(new Error("Must be paid user to visualize video topics"));
+            return await emptyVideoFrame(this.#videoPlayer, resizeWidth);
+          }
+          // Initialize the video player if needed
+          if (!videoPlayer.isInitialized()) {
+            const decoderConfig = this.#VideoPlayer.getVideoDecoderConfig(frameMsg);
+            if (decoderConfig) {
+              await videoPlayer.init(decoderConfig);
+            } else {
+              setError(new Error("Waiting for keyframe"));
+              return await emptyVideoFrame(this.#videoPlayer, resizeWidth);
+            }
+          }
+
+          assert(this.userData.firstMessageTime != undefined, "firstMessageTime must be set");
+          if (
+            this.#waitingForKeyframeLabel?.visible === true &&
+            this.#VideoPlayer.isVideoKeyframe(frameMsg)
+          ) {
+            this.#waitingForKeyframeLabel.visible = false;
+          }
+
+          return await decodeCompressedVideoToBitmap(
+            frameMsg,
+            videoPlayer,
+            this.userData.firstMessageTime,
+            this.#VideoPlayer,
+            resizeWidth,
+          );
+        })();
+      } else if (IMAGE_FORMATS.has(image.format)) {
+        decodePromise = decodeCompressedImageToBitmap(image, resizeWidth);
+      } else {
+        setError(new Error(`Unsupported format: "${image.format}"`));
+        return;
+      }
+    } else {
+      decodePromise = (this.#decoder ??= new WorkerImageDecoder()).decode(
+        image,
+        this.userData.settings,
+      );
+    }
+
     decodePromise
       .then((result) => {
         if (this.#disposed) {

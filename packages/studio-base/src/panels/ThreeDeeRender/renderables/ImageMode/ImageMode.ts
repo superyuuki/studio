@@ -36,6 +36,7 @@ import { SettingsTreeEntry } from "../../SettingsManager";
 import {
   CAMERA_CALIBRATION_DATATYPES,
   COMPRESSED_IMAGE_DATATYPES,
+  COMPRESSED_VIDEO_DATATYPES,
   RAW_IMAGE_DATATYPES,
 } from "../../foxglove";
 import {
@@ -71,6 +72,7 @@ export const ALL_SUPPORTED_IMAGE_SCHEMAS = new Set([
   ...ROS_COMPRESSED_IMAGE_DATATYPES,
   ...RAW_IMAGE_DATATYPES,
   ...COMPRESSED_IMAGE_DATATYPES,
+  ...COMPRESSED_VIDEO_DATATYPES,
 ]);
 
 const ALL_SUPPORTED_CALIBRATION_SCHEMAS = new Set([
@@ -262,6 +264,14 @@ export class ImageMode
           shouldSubscribe: this.#imageShouldSubscribe,
         },
       },
+      {
+        type: "schema",
+        schemaNames: COMPRESSED_VIDEO_DATATYPES,
+        subscription: {
+          handler: this.#messageHandler.handleCompressedVideo,
+          shouldSubscribe: this.#imageShouldSubscribe,
+        },
+      },
     ];
     return subscriptions.concat(this.#annotations.getSubscriptions());
   }
@@ -277,6 +287,9 @@ export class ImageMode
   }
 
   public override removeAllRenderables(): void {
+    if (this.#imageRenderable) {
+      this.#imageRenderable.handleSeek();
+    }
     // To avoid flickering while seeking or changing subscriptions, we avoid clearing the
     // ImageRenderable for a short timeout. When a new image message arrives, we cancel the timeout,
     // so the old image will continue displaying until the new one has been decoded.
@@ -635,9 +648,14 @@ export class ImageMode
       // planarProjectionFactor must be 1 to avoid imprecise projection due to small number of grid subdivisions
       planarProjectionFactor: 1,
     };
+    // fixme: this will not get updated if the topic changes
+    const messageTime = image
+      ? toNanoSec("header" in image ? image.header.stamp : image.timestamp)
+      : 0n;
     renderable = new ImageRenderable(topicName, this.renderer, {
       receiveTime,
       messageTime: image ? toNanoSec("header" in image ? image.header.stamp : image.timestamp) : 0n,
+      firstMessageTime: messageTime,
       frameId: this.renderer.normalizeFrameId(frameId),
       pose: makePose(),
       settingsPath: IMAGE_TOPIC_PATH,

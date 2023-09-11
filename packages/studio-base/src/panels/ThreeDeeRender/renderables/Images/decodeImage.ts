@@ -19,9 +19,14 @@ import {
   decodeUYVY,
   decodeYUYV,
 } from "@foxglove/den/image";
+import { toMicroSec } from "@foxglove/rostime";
 import { RawImage } from "@foxglove/schemas";
+import {
+  IVideoPlayer,
+  IVideoPlayerClass,
+} from "@foxglove/studio-base/panels/ThreeDeeRender/IVideoPlayerClass";
 
-import { CompressedImageTypes } from "./ImageTypes";
+import { CompressedImageTypes, CompressedVideo } from "./ImageTypes";
 import { Image as RosImage } from "../../ros";
 import { ColorModeSettings, getColorConverter } from "../colorMode";
 
@@ -31,6 +36,46 @@ export async function decodeCompressedImageToBitmap(
 ): Promise<ImageBitmap> {
   const bitmapData = new Blob([image.data], { type: `image/${image.format}` });
   return await createImageBitmap(bitmapData, { resizeWidth });
+}
+
+export async function decodeCompressedVideoToBitmap(
+  frameMsg: CompressedVideo,
+  videoPlayer: IVideoPlayer,
+  firstMessageTime: bigint,
+  VideoPlayer: IVideoPlayerClass,
+  resizeWidth?: number,
+): Promise<ImageBitmap> {
+  if (!videoPlayer.isInitialized()) {
+    return await emptyVideoFrame(videoPlayer, resizeWidth);
+  }
+
+  // Get the timestamp of this frame as microseconds relative to the first frame
+  const firstTimestampMicros = Number(firstMessageTime / 1000n);
+  const timestampMicros = toMicroSec(frameMsg.timestamp) - firstTimestampMicros;
+
+  const videoFrame = await videoPlayer.decode(
+    frameMsg.data,
+    timestampMicros,
+    VideoPlayer.isVideoKeyframe(frameMsg) ? "key" : "delta",
+  );
+  if (videoFrame) {
+    const imageBitmap = await self.createImageBitmap(videoFrame, { resizeWidth });
+    videoFrame.close();
+    return imageBitmap;
+  }
+  return await emptyVideoFrame(videoPlayer, resizeWidth);
+}
+
+// Performance sensitive, skip the extra await when returning a blank image
+// eslint-disable-next-line @typescript-eslint/promise-function-async
+export function emptyVideoFrame(
+  videoPlayer?: IVideoPlayer,
+  resizeWidth?: number,
+): Promise<ImageBitmap> {
+  const width = resizeWidth ?? 32;
+  const size = videoPlayer?.codedSize() ?? { width, height: width };
+  const data = new ImageData(size.width, size.height);
+  return createImageBitmap(data, { resizeWidth });
 }
 
 export const IMAGE_DEFAULT_COLOR_MODE_SETTINGS: Required<

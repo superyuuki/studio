@@ -21,10 +21,12 @@ import { Immutable, MessageEvent } from "@foxglove/studio";
 import { ImageModeConfig } from "@foxglove/studio-base/panels/ThreeDeeRender/IRenderer";
 import {
   AnyImage,
+  CompressedVideo,
   getTimestampFromImage,
 } from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/Images/ImageTypes";
 import {
   normalizeCompressedImage,
+  normalizeCompressedVideo,
   normalizeRawImage,
   normalizeRosCompressedImage,
   normalizeRosImage,
@@ -136,6 +138,10 @@ export class MessageHandler {
 
   public handleCompressedImage = (messageEvent: PartialMessageEvent<CompressedImage>): void => {
     this.#handleImage(messageEvent, normalizeCompressedImage(messageEvent.message));
+  };
+
+  public handleCompressedVideo = (messageEvent: PartialMessageEvent<CompressedVideo>): void => {
+    this.#handleImage(messageEvent, normalizeCompressedVideo(messageEvent.message));
   };
 
   #handleImage(message: PartialMessageEvent<AnyImage>, image: AnyImage) {

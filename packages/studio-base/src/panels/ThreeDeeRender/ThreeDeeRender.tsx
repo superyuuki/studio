@@ -25,6 +25,7 @@ import {
 } from "@foxglove/studio";
 import { AppSetting } from "@foxglove/studio-base/AppSetting";
 import { BuiltinPanelExtensionContext } from "@foxglove/studio-base/components/PanelExtensionAdapter";
+import { IVideoPlayerClass } from "@foxglove/studio-base/panels/ThreeDeeRender/IVideoPlayerClass";
 import { ALL_SUPPORTED_IMAGE_SCHEMAS } from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/ImageMode/ImageMode";
 import { ALL_SUPPORTED_ANNOTATION_SCHEMAS } from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/ImageMode/annotations/ImageAnnotations";
 import ThemeProvider from "@foxglove/studio-base/theme/ThemeProvider";
@@ -104,8 +105,9 @@ export function ThreeDeeRender(props: {
   onDownloadImage?: (blob: Blob, fileName: string) => void;
   /** Enable hitmap debugging by default, used for picking stories */
   debugPicking?: boolean;
+  VideoPlayer: IVideoPlayerClass | undefined;
 }): JSX.Element {
-  const { context, interfaceMode, onDownloadImage, debugPicking } = props;
+  const { context, interfaceMode, onDownloadImage, debugPicking, VideoPlayer } = props;
   const { initialState, saveState, unstable_fetchAsset: fetchAsset } = context;
 
   // Load and save the persisted panel configuration
@@ -147,9 +149,17 @@ export function ThreeDeeRender(props: {
   const rendererRef = useRef<IRenderer | undefined>(undefined);
   useEffect(() => {
     const newRenderer = canvas
-      ? new Renderer({ canvas, config: configRef.current, interfaceMode, fetchAsset, debugPicking })
+      ? new Renderer({
+          canvas,
+          config: configRef.current,
+          interfaceMode,
+          fetchAsset,
+          debugPicking,
+          VideoPlayer,
+        })
       : undefined;
     setRenderer(newRenderer);
+    console.log({ VideoPlayer });
     rendererRef.current = newRenderer;
     return () => {
       rendererRef.current?.dispose();
@@ -162,6 +172,7 @@ export function ThreeDeeRender(props: {
     interfaceMode,
     fetchAsset,
     debugPicking,
+    VideoPlayer,
   ]);
 
   useEffect(() => {

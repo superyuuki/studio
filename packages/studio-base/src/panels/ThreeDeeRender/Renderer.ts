@@ -27,6 +27,7 @@ import {
   Asset,
   BuiltinPanelExtensionContext,
 } from "@foxglove/studio-base/components/PanelExtensionAdapter";
+import { IVideoPlayerClass } from "@foxglove/studio-base/panels/ThreeDeeRender/IVideoPlayerClass";
 import { LayerErrors } from "@foxglove/studio-base/panels/ThreeDeeRender/LayerErrors";
 import { FoxgloveGrid } from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/FoxgloveGrid";
 import { ICameraHandler } from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/ICameraHandler";
@@ -210,6 +211,8 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
   public markerPool = new MarkerPool(this);
   public sharedGeometry = new SharedGeometry();
 
+  public VideoPlayer?: IVideoPlayerClass;
+
   #prevResolution = new THREE.Vector2();
   #pickingEnabled = false;
   #rendering = false;
@@ -224,6 +227,7 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
     interfaceMode: InterfaceMode;
     fetchAsset: BuiltinPanelExtensionContext["unstable_fetchAsset"];
     debugPicking?: boolean;
+    VideoPlayer?: IVideoPlayerClass;
   }) {
     super();
     // NOTE: Global side effect
@@ -234,6 +238,7 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
     const config = (this.config = args.config);
     this.#fetchAsset = args.fetchAsset;
     this.debugPicking = args.debugPicking ?? false;
+    this.VideoPlayer = args.VideoPlayer;
 
     this.settings = new SettingsManager(baseSettingsTree(this.interfaceMode));
     this.settings.on("update", () => this.emit("settingsTreeChange", this));

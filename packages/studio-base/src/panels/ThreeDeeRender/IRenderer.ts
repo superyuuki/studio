@@ -14,6 +14,7 @@ import {
   VariableValue,
 } from "@foxglove/studio";
 import { BuiltinPanelExtensionContext } from "@foxglove/studio-base/components/PanelExtensionAdapter";
+import { IVideoPlayerClass } from "@foxglove/studio-base/panels/ThreeDeeRender/IVideoPlayerClass";
 import { ICameraHandler } from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/ICameraHandler";
 import { LabelPool } from "@foxglove/three-text";
 
@@ -194,6 +195,7 @@ export class InstancedLineMaterial extends THREE.LineBasicMaterial {
 export interface IRenderer extends EventEmitter<RendererEvents> {
   readonly interfaceMode: InterfaceMode;
   readonly gl: THREE.WebGLRenderer;
+  readonly VideoPlayer?: IVideoPlayerClass | undefined;
   maxLod: DetailLevel;
   config: Immutable<RendererConfig>;
   settings: SettingsManager;

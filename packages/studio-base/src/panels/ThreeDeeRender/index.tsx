@@ -17,8 +17,10 @@ import {
   BuiltinPanelExtensionContext,
   PanelExtensionAdapter,
 } from "@foxglove/studio-base/components/PanelExtensionAdapter";
+import { useAppContext } from "@foxglove/studio-base/context/AppContext";
 import { SaveConfig } from "@foxglove/studio-base/types/panels";
 
+import { IVideoPlayerClass } from "./IVideoPlayerClass";
 import { ThreeDeeRender } from "./ThreeDeeRender";
 import { InterfaceMode } from "./types";
 
@@ -28,10 +30,12 @@ type InitPanelArgs = {
   interfaceMode: InterfaceMode;
   onDownloadImage: ((blob: Blob, fileName: string) => void) | undefined;
   debugPicking?: boolean;
+  VideoPlayer: IVideoPlayerClass | undefined;
 };
 
 function initPanel(args: InitPanelArgs, context: BuiltinPanelExtensionContext) {
-  const { crash, forwardedAnalytics, interfaceMode, onDownloadImage, debugPicking } = args;
+  const { crash, forwardedAnalytics, interfaceMode, onDownloadImage, debugPicking, VideoPlayer } =
+    args;
   ReactDOM.render(
     <StrictMode>
       <CaptureErrorBoundary onError={crash}>
@@ -41,6 +45,7 @@ function initPanel(args: InitPanelArgs, context: BuiltinPanelExtensionContext) {
             interfaceMode={interfaceMode}
             onDownloadImage={onDownloadImage}
             debugPicking={debugPicking}
+            VideoPlayer={VideoPlayer}
           />
         </ForwardAnalyticsContextProvider>
       </CaptureErrorBoundary>
@@ -63,6 +68,13 @@ function ThreeDeeRenderAdapter(interfaceMode: InterfaceMode, props: Props) {
   const crash = useCrash();
 
   const forwardedAnalytics = useForwardAnalytics();
+  const { gatedFeatureStore } = useAppContext();
+  const VideoPlayer = useMemo(() => {
+    if (!gatedFeatureStore) {
+      return undefined;
+    }
+    return gatedFeatureStore.useFeature("videoplayer");
+  }, [gatedFeatureStore]);
   const boundInitPanel = useMemo(
     () =>
       initPanel.bind(undefined, {
@@ -71,8 +83,16 @@ function ThreeDeeRenderAdapter(interfaceMode: InterfaceMode, props: Props) {
         interfaceMode,
         onDownloadImage: props.onDownloadImage,
         debugPicking: props.debugPicking,
+        VideoPlayer,
       }),
-    [crash, forwardedAnalytics, interfaceMode, props.onDownloadImage, props.debugPicking],
+    [
+      crash,
+      forwardedAnalytics,
+      interfaceMode,
+      props.onDownloadImage,
+      props.debugPicking,
+      VideoPlayer,
+    ],
   );
 
   return (
