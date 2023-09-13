@@ -11,11 +11,9 @@ import Stack from "@foxglove/studio-base/components/Stack";
 import { Script } from "@foxglove/studio-base/panels/NodePlayground/script";
 import { UserNodes } from "@foxglove/studio-base/types/panels";
 
-const useStyles = makeStyles<void, "action" | "unsavedIcon" | "deleteIcon">()((
-  theme,
-  _params,
-  classes,
-) => {
+type ToolbarClasses = "action" | "unsavedIcon" | "deleteIcon";
+
+const useStyles = makeStyles<void, ToolbarClasses>()((theme, _params, classes) => {
   const prefersDarkMode = theme.palette.mode === "dark";
   return {
     tab: {
@@ -32,23 +30,19 @@ const useStyles = makeStyles<void, "action" | "unsavedIcon" | "deleteIcon">()((
       justifyContent: "space-between",
       alignItems: "center",
 
-      "&:hover": {
+      ":hover": {
         backgroundColor: theme.palette.action.hover,
 
-        [`.${classes.action}`]: {
-          visibility: "visible",
-        },
+        [`.${classes.action}`]: { visibility: "visible" },
       },
-      "&:focus-visible": {
+      ":focus-visible": {
         outline: `1px solid ${theme.palette.primary.main}`,
         outlineOffset: -1,
       },
       [`&.${tabClasses.selected}`]: {
         backgroundColor: theme.palette.background[prefersDarkMode ? "default" : "paper"],
 
-        [`.${classes.action}`]: {
-          visibility: "visible",
-        },
+        [`.${classes.action}`]: { visibility: "visible" },
       },
       [`&.${buttonClasses.disabled}`]: {
         opacity: 0.5,
@@ -70,20 +64,13 @@ const useStyles = makeStyles<void, "action" | "unsavedIcon" | "deleteIcon">()((
       marginRight: theme.spacing(-0.5),
       visibility: "hidden",
 
-      [`.${classes.unsavedIcon}`]: {
-        display: "none",
-      },
-      [`.${classes.deleteIcon}`]: {},
+      [`.${classes.unsavedIcon}`]: { display: "none" },
     },
     unsaved: {
       visibility: "visible",
 
-      [`.${classes.unsavedIcon}`]: {
-        display: "block",
-      },
-      [`.${classes.deleteIcon}`]: {
-        display: "none",
-      },
+      [`.${classes.unsavedIcon}`]: { display: "block" },
+      [`.${classes.deleteIcon}`]: { display: "none" },
     },
     deleteIcon: {},
     unsavedIcon: {
