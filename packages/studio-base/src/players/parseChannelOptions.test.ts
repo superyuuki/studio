@@ -24,27 +24,27 @@ describe("parseChannelOptions", () => {
       ),
     );
     expect(poseInFrame).toMatchInlineSnapshot(`
-    {
-      "frame_id": "foo",
-      "pose": {
-        "orientation": {
-          "w": 1,
-          "x": 0,
-          "y": 0,
-          "z": 0,
+      {
+        "frame_id": "foo",
+        "pose": {
+          "orientation": {
+            "w": 1,
+            "x": 0,
+            "y": 0,
+            "z": 0,
+          },
+          "position": {
+            "x": 1,
+            "y": 2,
+            "z": 3,
+          },
         },
-        "position": {
-          "x": 1,
-          "y": 2,
-          "z": 3,
+        "timestamp": {
+          "nsec": 494227000,
+          "sec": 1681334599,
         },
-      },
-      "timestamp": {
-        "nsec": 494227000,
-        "sec": 1681334599,
-      },
-    }
-  `);
+      }
+    `);
 
     expect(() =>
       poseInFrameChannel.deserialize(
@@ -70,67 +70,67 @@ describe("parseChannelOptions", () => {
       Buffer.from("EhwKDAjHwtyhBhC4nNXrASIMCMfC3KEGELic1esB", "base64"),
     );
     expect(sceneUpdate).toMatchInlineSnapshot(`
-    {
-      "deletions": [],
-      "entities": [
-        {
-          "arrows": [],
-          "cubes": [],
-          "cylinders": [],
-          "frame_id": "",
-          "frame_locked": false,
-          "id": "",
-          "lifetime": {
-            "nsec": 494227000,
-            "sec": 1681334599,
+      {
+        "deletions": [],
+        "entities": [
+          {
+            "arrows": [],
+            "cubes": [],
+            "cylinders": [],
+            "frame_id": "",
+            "frame_locked": false,
+            "id": "",
+            "lifetime": {
+              "nsec": 494227000,
+              "sec": 1681334599,
+            },
+            "lines": [],
+            "metadata": [],
+            "models": [],
+            "spheres": [],
+            "texts": [],
+            "timestamp": {
+              "nsec": 494227000,
+              "sec": 1681334599,
+            },
+            "triangles": [],
           },
-          "lines": [],
-          "metadata": [],
-          "models": [],
-          "spheres": [],
-          "texts": [],
-          "timestamp": {
-            "nsec": 494227000,
-            "sec": 1681334599,
-          },
-          "triangles": [],
-        },
-      ],
-    }
-  `);
+        ],
+      }
+    `);
 
     expect(sceneUpdateChannel.datatypes.get("google.protobuf.Timestamp")).toMatchInlineSnapshot(`
-    {
-      "definitions": [
-        {
-          "isArray": false,
-          "name": "sec",
-          "type": "int32",
-        },
-        {
-          "isArray": false,
-          "name": "nsec",
-          "type": "int32",
-        },
-      ],
-    }
-  `);
+      {
+        "definitions": [
+          {
+            "isArray": false,
+            "name": "sec",
+            "type": "int32",
+          },
+          {
+            "isArray": false,
+            "name": "nsec",
+            "type": "int32",
+          },
+        ],
+      }
+    `);
     expect(sceneUpdateChannel.datatypes.get("google.protobuf.Duration")).toMatchInlineSnapshot(`
-    {
-      "definitions": [
-        {
-          "isArray": false,
-          "name": "sec",
-          "type": "int32",
-        },
-        {
-          "isArray": false,
-          "name": "nsec",
-          "type": "int32",
-        },
-      ],
-    }
-  `);
+      {
+        "definitions": [
+          {
+            "isArray": false,
+            "name": "sec",
+            "type": "int32",
+          },
+          {
+            "isArray": false,
+            "name": "nsec",
+            "type": "int32",
+          },
+        ],
+      }
+    `);
 
     // Duration too large
     expect(() =>
