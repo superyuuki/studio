@@ -2,13 +2,13 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+import { parseChannel, ParsedChannel } from "@mcap/support";
 import * as base64 from "@protobufjs/base64";
 import * as _ from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 
 import { debouncePromise } from "@foxglove/den/async";
 import Log from "@foxglove/log";
-import { parseChannel, ParsedChannel } from "@foxglove/mcap-support";
 import { MessageDefinition, isMsgDefEqual } from "@foxglove/message-definition";
 import CommonRosTypes from "@foxglove/rosmsg-msgs-common";
 import { MessageWriter as Ros1MessageWriter } from "@foxglove/rosmsg-serialization";
@@ -17,6 +17,7 @@ import { fromMillis, fromNanoSec, isGreaterThan, isLessThan, Time } from "@foxgl
 import { ParameterValue } from "@foxglove/studio";
 import { Asset } from "@foxglove/studio-base/components/PanelExtensionAdapter";
 import PlayerProblemManager from "@foxglove/studio-base/players/PlayerProblemManager";
+import { parseChannelOptions } from "@foxglove/studio-base/players/parseChannelOptions";
 import {
   AdvertiseOptions,
   MessageEvent,
@@ -435,10 +436,13 @@ export default class FoxgloveWebSocketPlayer implements Player {
               : `Unsupported message encoding ${channel.encoding}`;
             throw new Error(msg);
           }
-          parsedChannel = parseChannel({
-            messageEncoding: channel.encoding,
-            schema: { name: channel.schemaName, encoding: schemaEncoding, data: schemaData },
-          });
+          parsedChannel = parseChannel(
+            {
+              messageEncoding: channel.encoding,
+              schema: { name: channel.schemaName, encoding: schemaEncoding, data: schemaData },
+            },
+            parseChannelOptions,
+          );
         } catch (error) {
           this.#unsupportedChannelIds.add(channel.id);
           this.#problems.addProblem(`schema:${channel.topic}`, {
@@ -617,22 +621,28 @@ export default class FoxgloveWebSocketPlayer implements Player {
       for (const service of services) {
         const requestType = `${service.type}_Request`;
         const responseType = `${service.type}_Response`;
-        const parsedRequest = parseChannel({
-          messageEncoding: this.#serviceCallEncoding,
-          schema: {
-            name: requestType,
-            encoding: schemaEncoding,
-            data: textEncoder.encode(service.requestSchema),
+        const parsedRequest = parseChannel(
+          {
+            messageEncoding: this.#serviceCallEncoding,
+            schema: {
+              name: requestType,
+              encoding: schemaEncoding,
+              data: textEncoder.encode(service.requestSchema),
+            },
           },
-        });
-        const parsedResponse = parseChannel({
-          messageEncoding: this.#serviceCallEncoding,
-          schema: {
-            name: responseType,
-            encoding: schemaEncoding,
-            data: textEncoder.encode(service.responseSchema),
+          parseChannelOptions,
+        );
+        const parsedResponse = parseChannel(
+          {
+            messageEncoding: this.#serviceCallEncoding,
+            schema: {
+              name: responseType,
+              encoding: schemaEncoding,
+              data: textEncoder.encode(service.responseSchema),
+            },
           },
-        });
+          parseChannelOptions,
+        );
         const requestMsgDef = rosDatatypesToMessageDefinition(parsedRequest.datatypes, requestType);
         const requestMessageWriter = ROS_ENCODINGS.includes(this.#serviceCallEncoding)
           ? this.#serviceCallEncoding === "ros1"

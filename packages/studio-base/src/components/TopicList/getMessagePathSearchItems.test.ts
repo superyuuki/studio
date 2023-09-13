@@ -2,10 +2,12 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { parseChannel } from "@foxglove/mcap-support";
+import { parseChannel } from "@mcap/support";
+
 import { MessageDefinition } from "@foxglove/message-definition";
 import { ImageAnnotations } from "@foxglove/schemas/jsonschema";
 import { getMessagePathSearchItems } from "@foxglove/studio-base/components/TopicList/getMessagePathSearchItems";
+import { parseChannelOptions } from "@foxglove/studio-base/players/parseChannelOptions";
 import { Topic } from "@foxglove/studio-base/players/types";
 
 describe("getMessagePathSearchItems", () => {
@@ -247,14 +249,17 @@ describe("getMessagePathSearchItems", () => {
   });
 
   it("works for foxglove.ImageAnnotations", () => {
-    const { datatypes } = parseChannel({
-      messageEncoding: "json",
-      schema: {
-        name: "foxglove.ImageAnnotations",
-        encoding: "jsonschema",
-        data: new TextEncoder().encode(JSON.stringify(ImageAnnotations)),
+    const { datatypes } = parseChannel(
+      {
+        messageEncoding: "json",
+        schema: {
+          name: "foxglove.ImageAnnotations",
+          encoding: "jsonschema",
+          data: new TextEncoder().encode(JSON.stringify(ImageAnnotations)),
+        },
       },
-    });
+      parseChannelOptions,
+    );
 
     expect(
       getMessagePathSearchItems(

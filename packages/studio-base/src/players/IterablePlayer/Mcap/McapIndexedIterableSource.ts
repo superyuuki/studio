@@ -3,10 +3,10 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { McapIndexedReader, McapTypes } from "@mcap/core";
+import { ParsedChannel, parseChannel } from "@mcap/support";
 
 import { pickFields } from "@foxglove/den/records";
 import Logger from "@foxglove/log";
-import { ParsedChannel, parseChannel } from "@foxglove/mcap-support";
 import { Time, fromNanoSec, toNanoSec, compare } from "@foxglove/rostime";
 import { MessageEvent } from "@foxglove/studio";
 import {
@@ -16,6 +16,7 @@ import {
   IteratorResult,
   MessageIteratorArgs,
 } from "@foxglove/studio-base/players/IterablePlayer/IIterableSource";
+import { parseChannelOptions } from "@foxglove/studio-base/players/parseChannelOptions";
 import { PlayerProblem, Topic, TopicStats } from "@foxglove/studio-base/players/types";
 import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 
@@ -64,7 +65,10 @@ export class McapIndexedIterableSource implements IIterableSource {
 
       let parsedChannel;
       try {
-        parsedChannel = parseChannel({ messageEncoding: channel.messageEncoding, schema });
+        parsedChannel = parseChannel(
+          { messageEncoding: channel.messageEncoding, schema },
+          parseChannelOptions,
+        );
       } catch (error) {
         problems.push({
           severity: "error",

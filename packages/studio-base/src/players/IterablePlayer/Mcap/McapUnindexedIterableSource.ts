@@ -3,9 +3,9 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { McapStreamReader, McapTypes } from "@mcap/core";
+import { loadDecompressHandlers, parseChannel, ParsedChannel } from "@mcap/support";
 import * as _ from "lodash-es";
 
-import { loadDecompressHandlers, parseChannel, ParsedChannel } from "@foxglove/mcap-support";
 import {
   Time,
   isLessThan,
@@ -25,6 +25,7 @@ import {
   IteratorResult,
   MessageIteratorArgs,
 } from "@foxglove/studio-base/players/IterablePlayer/IIterableSource";
+import { parseChannelOptions } from "@foxglove/studio-base/players/parseChannelOptions";
 import { PlayerProblem, Topic, TopicStats } from "@foxglove/studio-base/players/types";
 import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 
@@ -107,7 +108,10 @@ export class McapUnindexedIterableSource implements IIterableSource {
           }
 
           try {
-            const parsedChannel = parseChannel({ messageEncoding: record.messageEncoding, schema });
+            const parsedChannel = parseChannel(
+              { messageEncoding: record.messageEncoding, schema },
+              parseChannelOptions,
+            );
             channelInfoById.set(record.id, {
               channel: record,
               parsedChannel,
