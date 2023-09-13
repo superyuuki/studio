@@ -3498,14 +3498,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mcap/core@npm:1.3.0":
+"@mcap/core@github:foxglove/mcap#workspace=@mcap/core&commit=350e423d27cb5fadc1ac04b57e7a0547b85a5c06":
   version: 1.3.0
-  resolution: "@mcap/core@npm:1.3.0"
+  resolution: "@mcap/core@https://github.com/foxglove/mcap.git#workspace=%40mcap%2Fcore&commit=350e423d27cb5fadc1ac04b57e7a0547b85a5c06"
   dependencies:
     "@foxglove/crc": ^0.0.3
     heap-js: ^2.2.0
     tslib: ^2.5.0
-  checksum: 339c783c57ac9538234f76a1986105fb441c7331805d3c3a1f135c79123980ba649f1b2ba4d7b5f43ed43371fd51af7660e268f96224c6bca55cebc750ab4fa3
+  checksum: 3309d6273d4c7f370eabd4ab6278d273f74527a4872a137887f2877faa3f1cf19656a95b6a070901771ee80b91dfd2e7e3fefbe854eb314c87926947b5c702c1
   languageName: node
   linkType: hard
 
