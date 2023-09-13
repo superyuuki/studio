@@ -2,12 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import {
-  CircleSmall20Filled,
-  Add20Regular,
-  ArrowLeft20Regular,
-  Dismiss12Regular,
-} from "@fluentui/react-icons";
+import { Add20Regular, ArrowLeft20Regular, Dismiss12Regular } from "@fluentui/react-icons";
 import { TabsList, Tab, Tabs, buttonClasses, tabClasses } from "@mui/base";
 import { IconButton } from "@mui/material";
 import { makeStyles } from "tss-react/mui";
@@ -16,52 +11,86 @@ import Stack from "@foxglove/studio-base/components/Stack";
 import { Script } from "@foxglove/studio-base/panels/NodePlayground/script";
 import { UserNodes } from "@foxglove/studio-base/types/panels";
 
-const useStyles = makeStyles()((theme) => ({
-  unsavedDot: {
-    color: theme.palette.text.secondary,
-    marginRight: theme.spacing(-0.75),
-  },
-  // input: {
-  //   [`.${inputClasses.input}`]: {
-  //     padding: theme.spacing(1),
-  //   },
-  // },
-  tab: {
-    minWidth: 120,
-    minHeight: 38,
-    color: "inherit",
-    cursor: "pointer",
-    gap: theme.spacing(1),
-    backgroundColor: "transparent",
-    padding: theme.spacing(1, 1.5),
-    border: "none",
-    borderRadius: 0,
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
+const useStyles = makeStyles<void, "action" | "unsavedIcon" | "deleteIcon">()((
+  theme,
+  _params,
+  classes,
+) => {
+  const prefersDarkMode = theme.palette.mode === "dark";
+  return {
+    tab: {
+      minWidth: 120,
+      minHeight: 30,
+      color: "inherit",
+      cursor: "pointer",
+      gap: theme.spacing(1),
+      backgroundColor: "transparent",
+      padding: theme.spacing(0.75, 1.5),
+      border: "none",
+      borderRadius: 0,
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
 
-    "&:hover": {
-      backgroundColor: theme.palette.action.hover,
-    },
-    "&:focus": {},
+      "&:hover": {
+        backgroundColor: theme.palette.action.hover,
 
-    [`&.${tabClasses.selected}`]: {
-      backgroundColor: theme.palette.background.default,
+        [`.${classes.action}`]: {
+          visibility: "visible",
+        },
+      },
+      "&:focus-visible": {
+        outline: `1px solid ${theme.palette.primary.main}`,
+        outlineOffset: -1,
+      },
+      [`&.${tabClasses.selected}`]: {
+        backgroundColor: theme.palette.background[prefersDarkMode ? "default" : "paper"],
+
+        [`.${classes.action}`]: {
+          visibility: "visible",
+        },
+      },
+      [`&.${buttonClasses.disabled}`]: {
+        opacity: 0.5,
+        cursor: "not-allowed",
+      },
     },
-    [`&.${buttonClasses.disabled}`]: {
-      opacity: 0.5,
-      cursor: "not-allowed",
+    tabs: {
+      backgroundColor: theme.palette.background[prefersDarkMode ? "paper" : "default"],
+      overflow: "auto",
+      maxWidth: "100%",
     },
-  },
-  tabs: {
-    backgroundColor: theme.palette.background[theme.palette.mode === "dark" ? "paper" : "default"],
-    overflow: "auto",
-    maxWidth: "100%",
-  },
-  tabsList: {
-    display: "flex",
-  },
-}));
+    tabsList: {
+      display: "flex",
+    },
+    action: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: theme.spacing(-0.5),
+      visibility: "hidden",
+
+      [`.${classes.unsavedIcon}`]: {
+        display: "none",
+      },
+      [`.${classes.deleteIcon}`]: {},
+    },
+    unsaved: {
+      visibility: "visible",
+
+      [`.${classes.unsavedIcon}`]: {
+        display: "block",
+      },
+      [`.${classes.deleteIcon}`]: {
+        display: "none",
+      },
+    },
+    deleteIcon: {},
+    unsavedIcon: {
+      color: theme.palette.text.secondary,
+    },
+  };
+});
 
 type ToolbarProps = {
   isNodeSaved: boolean;
@@ -84,7 +113,7 @@ export function Toolbar({
   goBack,
   selectNode,
 }: ToolbarProps): JSX.Element {
-  const { classes } = useStyles();
+  const { classes, cx } = useStyles();
 
   return (
     <Stack direction="row" alignItems="center">
@@ -104,15 +133,17 @@ export function Toolbar({
           {Object.keys(nodes).map((nodeId) => (
             <Tab className={classes.tab} key={nodeId} value={nodeId}>
               {nodes[nodeId]?.name ?? ""}
-              {isNodeSaved ? (
+              <div className={cx(classes.action, { [classes.unsaved]: !isNodeSaved })}>
                 <Dismiss12Regular
+                  className={classes.deleteIcon}
                   onClick={() => {
                     deleteNode(nodeId);
                   }}
                 />
-              ) : (
-                <CircleSmall20Filled className={classes.unsavedDot} />
-              )}
+                <svg viewBox="0 0 12 12" height="12" width="12" className={classes.unsavedIcon}>
+                  <circle fill="currentColor" cx={6} cy={6} r={3} />
+                </svg>
+              </div>
             </Tab>
           ))}
         </TabsList>
