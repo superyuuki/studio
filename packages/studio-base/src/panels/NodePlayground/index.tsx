@@ -12,19 +12,14 @@
 //   You may not use this file except in compliance with the License.
 
 import AddIcon from "@mui/icons-material/Add";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { Button, CircularProgress, Container, Divider, Link, Typography } from "@mui/material";
 import {
-  Button,
-  CircularProgress,
-  Container,
-  Divider,
-  IconButton,
-  Input,
-  Link,
-  Typography,
-  inputClasses,
-} from "@mui/material";
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  // useState
+} from "react";
 import {
   ImperativePanelHandle,
   PanelGroup,
@@ -52,6 +47,7 @@ import { usePanelSettingsTreeUpdate } from "@foxglove/studio-base/providers/Pane
 import { SaveConfig, UserNodes } from "@foxglove/studio-base/types/panels";
 
 import Config from "./Config";
+import { Toolbar } from "./Toolbar";
 import { Script } from "./script";
 
 const Editor = React.lazy(
@@ -102,21 +98,6 @@ type Props = {
 const useStyles = makeStyles()((theme) => ({
   emptyState: {
     backgroundColor: theme.palette.background.default,
-  },
-  unsavedDot: {
-    width: 6,
-    height: 6,
-    borderRadius: "50%",
-    top: "50%",
-    position: "absolute",
-    right: theme.spacing(1),
-    transform: "translateY(-50%)",
-    backgroundColor: theme.palette.text.secondary,
-  },
-  input: {
-    [`.${inputClasses.input}`]: {
-      padding: theme.spacing(1),
-    },
   },
   resizeHandle: {
     position: "relative",
@@ -233,18 +214,18 @@ function NodePlayground(props: Props) {
   // For this we use setInputTitle within the onChange event of the input control.
   //
   // We also update the input title when the script changes using a layout effect below.
-  const [inputTitle, setInputTitle] = useState<string>(() => {
-    return currentScript
-      ? currentScript.filePath + (currentScript.readOnly ? " (READONLY)" : "")
-      : "script name";
-  });
+  // const [inputTitle, setInputTitle] = useState<string>(() => {
+  //   return currentScript
+  //     ? currentScript.filePath + (currentScript.readOnly ? " (READONLY)" : "")
+  //     : "script name";
+  // });
 
   const prefersDarkMode = theme.palette.mode === "dark";
 
-  const inputStyle = {
-    backgroundColor: theme.palette.background[prefersDarkMode ? "default" : "paper"],
-    width: `${Math.max(inputTitle.length + 4, 10)}ch`, // Width based on character count of title + padding
-  };
+  // const inputStyle = {
+  //   backgroundColor: theme.palette.background[prefersDarkMode ? "default" : "paper"],
+  //   width: `${Math.max(inputTitle.length + 4, 10)}ch`, // Width based on character count of title + padding
+  // };
 
   const actionHandler = useCallback(
     (action: SettingsTreeAction) => {
@@ -277,13 +258,13 @@ function NodePlayground(props: Props) {
     }
   }, [props.config.additionalBackStackItems, selectedNode]);
 
-  React.useLayoutEffect(() => {
-    setInputTitle(() => {
-      return currentScript
-        ? currentScript.filePath + (currentScript.readOnly ? " (READONLY)" : "")
-        : "script name";
-    });
-  }, [currentScript]);
+  // React.useLayoutEffect(() => {
+  //   setInputTitle(() => {
+  //     return currentScript
+  //       ? currentScript.filePath + (currentScript.readOnly ? " (READONLY)" : "")
+  //       : "script name";
+  //   });
+  // }, [currentScript]);
 
   const saveCurrentNode = useCallback(() => {
     if (
@@ -408,45 +389,22 @@ function NodePlayground(props: Props) {
             backgroundColor: theme.palette.background[prefersDarkMode ? "paper" : "default"],
           }}
         >
-          <Stack direction="row" alignItems="center">
-            {scriptBackStack.length > 1 && (
-              <IconButton title="Go back" data-testid="go-back" size="small" onClick={goBack}>
-                <ArrowBackIcon />
-              </IconButton>
-            )}
-            {selectedNodeId != undefined && selectedNode && (
-              <div style={{ position: "relative" }}>
-                <Input
-                  className={classes.input}
-                  size="small"
-                  disableUnderline
-                  placeholder="script name"
-                  value={inputTitle}
-                  disabled={!currentScript || currentScript.readOnly}
-                  onChange={(ev) => {
-                    const newNodeName = ev.target.value;
-                    setInputTitle(newNodeName);
-                    setUserNodes({
-                      ...userNodes,
-                      [selectedNodeId]: { ...selectedNode, name: newNodeName },
-                    });
-                  }}
-                  inputProps={{ spellCheck: false, style: inputStyle }}
-                />
-                {!isNodeSaved && <div className={classes.unsavedDot} />}
-              </div>
-            )}
-            <IconButton
-              title="New node"
-              data-testid="new-node"
-              size="small"
-              onClick={() => {
-                addNewNode();
-              }}
-            >
-              <AddIcon />
-            </IconButton>
-          </Stack>
+          <Toolbar
+            isNodeSaved={isNodeSaved}
+            goBack={goBack}
+            scriptBackStack={scriptBackStack}
+            selectNode={(nodeId) => {
+              saveCurrentNode();
+              saveConfig({ selectedNodeId: nodeId });
+            }}
+            deleteNode={(nodeId) => {
+              setUserNodes({ ...userNodes, [nodeId]: undefined });
+              saveConfig({ selectedNodeId: undefined });
+            }}
+            selectedNodeId={selectedNodeId}
+            nodes={userNodes}
+            addNewNode={addNewNode}
+          />
 
           <PanelGroup direction="vertical" units="pixels">
             {selectedNodeId == undefined && <WelcomeScreen addNewNode={addNewNode} />}
