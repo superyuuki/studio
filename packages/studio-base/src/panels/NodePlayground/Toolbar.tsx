@@ -4,20 +4,55 @@
 
 import { Add16Filled, ArrowLeft16Filled, Dismiss12Regular } from "@fluentui/react-icons";
 import { TabsList, Tab, TabProps, Tabs, buttonClasses, tabClasses } from "@mui/base";
-import { IconButton } from "@mui/material";
+import { ClickAwayListener, IconButton, InputBase, inputBaseClasses } from "@mui/material";
+import {
+  ChangeEventHandler,
+  FocusEventHandler,
+  KeyboardEvent,
+  KeyboardEventHandler,
+  useCallback,
+  useState,
+} from "react";
+import textMetrics from "text-metrics";
 import { makeStyles } from "tss-react/mui";
 
 import Stack from "@foxglove/studio-base/components/Stack";
 import { Script } from "@foxglove/studio-base/panels/NodePlayground/script";
-import { UserNodes } from "@foxglove/studio-base/types/panels";
+import { UserNode, UserNodes } from "@foxglove/studio-base/types/panels";
+import { fonts } from "@foxglove/studio-base/util/sharedStyleConstants";
+
+const MAX_TAB_WIDTH = 120;
+const MIN_ACTIVE_TAB_WIDTH = 40;
+const MIN_OTHER_TAB_WIDTH = 14;
 
 type ToolbarClasses = "action" | "unsavedIcon" | "deleteIcon";
+
+let textMeasure: undefined | textMetrics.TextMeasure;
+
+const fontFamily = fonts.SANS_SERIF;
+const fontSize = "12px";
+
+function measureText(text: string): number {
+  if (textMeasure == undefined) {
+    textMeasure = textMetrics.init({ fontFamily, fontSize });
+  }
+  return textMeasure.width(text) + 3;
+}
 
 const useStyles = makeStyles<void, ToolbarClasses>()((theme, _params, classes) => {
   const prefersDarkMode = theme.palette.mode === "dark";
   return {
+    input: {
+      font: "inherit",
+
+      [`.${inputBaseClasses.input}`]: {
+        padding: 0,
+      },
+    },
     tab: {
-      minWidth: 120,
+      fontSize: theme.typography.body2.fontSize,
+      fontWeight: theme.typography.body2.fontWeight,
+      minWidth: MIN_OTHER_TAB_WIDTH,
       minHeight: 30,
       color: "inherit",
       cursor: "pointer",
@@ -85,49 +120,134 @@ const useStyles = makeStyles<void, ToolbarClasses>()((theme, _params, classes) =
   };
 });
 
+type ToolbarTabProps = TabProps & {
+  isNodeSaved: boolean;
+  deleteNode: (id: string) => void;
+  setUserNodes: (nodes: Partial<UserNodes>) => void;
+  selectedNode?: UserNode;
+  selectedNodeId?: string;
+  nodes: UserNodes;
+  label: string;
+  value: string;
+  tabCount: number;
+};
+
+function ToolbarTab(props: ToolbarTabProps): JSX.Element {
+  const {
+    label,
+    isNodeSaved,
+    deleteNode,
+    className,
+    value,
+    children: _children,
+    setUserNodes,
+    selectedNodeId,
+    selectedNode,
+    nodes,
+    tabCount,
+    ...other
+  } = props;
+  const { classes, cx } = useStyles();
+  const [editMode, setEditMode] = useState(false);
+  const [title, setTitle] = useState(label);
+
+  const onBlur: FocusEventHandler<HTMLInputElement> = useCallback(() => {
+    setEditMode(false);
+  }, [setEditMode]);
+
+  const onClickAway = useCallback(() => {
+    setEditMode(false);
+  }, [setEditMode]);
+
+  const onChange: ChangeEventHandler<HTMLInputElement> = useCallback(
+    (event) => {
+      const name = event.target.value;
+      setTitle(name);
+      setUserNodes({
+        ...nodes,
+        [selectedNodeId]: { ...selectedNode, name },
+      });
+    },
+    [nodes, selectedNode, selectedNodeId, setUserNodes],
+  );
+
+  const onDoubleClick = useCallback(() => {
+    setEditMode(true);
+  }, []);
+
+  const onFocus: FocusEventHandler<HTMLInputElement> = useCallback((event) => {
+    event.target.select();
+  }, []);
+
+  const onKeyDown: KeyboardEventHandler<HTMLInputElement> = useCallback(
+    (event: KeyboardEvent) => {
+      if (event.key === "Enter" || event.key === "Escape" || event.key === "Tab") {
+        setEditMode(false);
+      }
+      event.stopPropagation();
+    },
+    [setEditMode],
+  );
+
+  return (
+    <ClickAwayListener onClickAway={onClickAway}>
+      <Tab
+        {...other}
+        onDoubleClick={onDoubleClick}
+        className={cx(className, classes.tab)}
+        value={value}
+        style={{
+          minWidth: editMode
+            ? `calc(max(${MIN_ACTIVE_TAB_WIDTH}px,  min(${Math.ceil(
+                measureText(title) + 30,
+              )}px, ${MAX_TAB_WIDTH}px, 100% - ${MIN_OTHER_TAB_WIDTH * (tabCount - 1)}px)))`
+            : MIN_OTHER_TAB_WIDTH,
+        }}
+      >
+        {editMode ? (
+          <InputBase
+            onBlur={onBlur}
+            onChange={onChange}
+            onFocus={onFocus}
+            onKeyDown={onKeyDown}
+            value={title}
+            className={classes.input}
+          />
+        ) : (
+          label
+        )}
+        <div className={cx(classes.action, { [classes.unsaved]: !isNodeSaved })}>
+          <div
+            role="button"
+            className={classes.deleteIcon}
+            onClick={(event) => {
+              event.stopPropagation();
+              deleteNode(value);
+            }}
+          >
+            <Dismiss12Regular />
+          </div>
+          <svg viewBox="0 0 12 12" height="12" width="12" className={classes.unsavedIcon}>
+            <circle fill="currentColor" cx={6} cy={6} r={3} />
+          </svg>
+        </div>
+      </Tab>
+    </ClickAwayListener>
+  );
+}
+
 type ToolbarProps = {
   isNodeSaved: boolean;
   nodes: UserNodes;
+  selectedNode?: UserNode;
   selectedNodeId?: string;
   scriptBackStack: Script[];
   addNewNode: () => void;
   deleteNode: (id: string) => void;
   goBack: () => void;
   selectNode: (id: string) => void;
+  setUserNodes: (nodes: Partial<UserNodes>) => void;
 };
-
-type ToolbarTabProps = TabProps & {
-  isNodeSaved: boolean;
-  deleteNode: (id: string) => void;
-  label: string;
-  value: string;
-};
-
-function ToolbarTab(props: ToolbarTabProps): JSX.Element {
-  const { label, isNodeSaved, deleteNode, className, value, children: _children, ...other } = props;
-  const { classes, cx } = useStyles();
-
-  return (
-    <Tab {...other} className={cx(className, classes.tab)} value={value}>
-      {label}
-      <div className={cx(classes.action, { [classes.unsaved]: !isNodeSaved })}>
-        <div
-          role="button"
-          className={classes.deleteIcon}
-          onClick={(event) => {
-            event.stopPropagation();
-            deleteNode(value);
-          }}
-        >
-          <Dismiss12Regular />
-        </div>
-        <svg viewBox="0 0 12 12" height="12" width="12" className={classes.unsavedIcon}>
-          <circle fill="currentColor" cx={6} cy={6} r={3} />
-        </svg>
-      </div>
-    </Tab>
-  );
-}
 
 export function Toolbar(props: ToolbarProps): JSX.Element {
   const {
@@ -139,6 +259,8 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
     deleteNode,
     goBack,
     selectNode,
+    selectedNode,
+    setUserNodes,
   } = props;
   const { classes } = useStyles();
 
@@ -164,6 +286,11 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
               isNodeSaved={isNodeSaved}
               deleteNode={deleteNode}
               label={nodes[nodeId]?.name ?? ""}
+              selectedNode={selectedNode}
+              selectedNodeId={selectedNodeId}
+              setUserNodes={setUserNodes}
+              nodes={nodes}
+              tabCount={Object.keys(nodes).length}
             />
           ))}
         </TabsList>

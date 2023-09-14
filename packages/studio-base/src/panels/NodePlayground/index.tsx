@@ -403,7 +403,9 @@ function NodePlayground(props: Props) {
             scriptBackStack={scriptBackStack}
             selectNode={selectNode}
             deleteNode={deleteNode}
+            selectedNode={selectedNode}
             selectedNodeId={selectedNodeId}
+            setUserNodes={setUserNodes}
             nodes={userNodes}
             addNewNode={addNewNode}
           />
