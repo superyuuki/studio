@@ -8,6 +8,7 @@ import { StoreApi } from "zustand";
 import { AppBarMenuItem } from "@foxglove/studio-base/components/AppBar/types";
 import { LayoutData } from "@foxglove/studio-base/context/CurrentLayoutContext";
 import { WorkspaceContextStore } from "@foxglove/studio-base/context/Workspace/WorkspaceContext";
+import { SceneExtensionOverrides } from "@foxglove/studio-base/panels/ThreeDeeRender/IRenderer";
 
 interface IAppContext {
   appBarLayoutButton?: JSX.Element;
@@ -18,6 +19,7 @@ interface IAppContext {
     durationNanos: string;
     metadata: Record<string, string>;
   }) => Promise<void>;
+  gatedFeatureStore?: GatedFeatureStore;
   importLayoutFile?: (fileName: string, data: LayoutData) => Promise<void>;
   layoutEmptyState?: JSX.Element;
   syncAdapters?: readonly JSX.Element[];
@@ -26,7 +28,15 @@ interface IAppContext {
     initialState?: Partial<WorkspaceContextStore>,
   ) => StoreApi<WorkspaceContextStore>;
 }
+export type GatedFeatureMap = {
+  "pro-three-dee": { sceneExtensionOverrides: SceneExtensionOverrides };
+};
 
+export type GatedFeatureType = keyof GatedFeatureMap;
+
+export interface GatedFeatureStore {
+  useFeature<T extends GatedFeatureType>(feature: T): GatedFeatureMap[T] | undefined;
+}
 const AppContext = createContext<IAppContext>({});
 AppContext.displayName = "AppContext";
 

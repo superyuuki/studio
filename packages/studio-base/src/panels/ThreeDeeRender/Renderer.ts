@@ -40,6 +40,7 @@ import {
   RendererConfig,
   RendererEvents,
   RendererSubscription,
+  SceneExtensionOverrides,
 } from "./IRenderer";
 import { Input } from "./Input";
 import { DEFAULT_MESH_UP_AXIS, ModelCache } from "./ModelCache";
@@ -222,6 +223,7 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
     canvas: HTMLCanvasElement;
     config: Immutable<RendererConfig>;
     interfaceMode: InterfaceMode;
+    sceneExtensionOverrides?: SceneExtensionOverrides;
     fetchAsset: BuiltinPanelExtensionContext["unstable_fetchAsset"];
     debugPicking?: boolean;
   }) {
@@ -317,31 +319,25 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
 
     const aspect = renderSize.width / renderSize.height;
     switch (interfaceMode) {
-      case "image":
-        this.#imageModeExtension = new ImageMode(this, {
-          canvasSize: this.input.canvasSize,
-          // eslint-disable-next-line @foxglove/no-boolean-parameters
-          setHasCalibrationTopic: (hasCameraCalibrationTopic: boolean) => {
-            if (hasCameraCalibrationTopic) {
-              this.#disableImageOnlySubscriptionMode();
-            } else {
-              this.#enableImageOnlySubscriptionMode();
-            }
-          },
-        });
+      case "image": {
+        const imageModeOverride = args.sceneExtensionOverrides?.imageMode?.init(this);
+        this.#imageModeExtension = imageModeOverride ?? new ImageMode(this);
         this.cameraHandler = this.#imageModeExtension;
         this.#imageModeExtension.addEventListener("hasModifiedViewChanged", () => {
           this.emit("resetViewChanged", this);
         });
         this.#addSceneExtension(this.cameraHandler);
         break;
-      case "3d":
+      }
+      case "3d": {
         this.cameraHandler = new CameraStateSettings(this, this.#canvas, aspect);
         this.#addSceneExtension(this.cameraHandler);
         this.#addSceneExtension(new PublishSettings(this));
-        this.#addSceneExtension(new Images(this));
+        const imagesOverride = args.sceneExtensionOverrides?.images?.init(this);
+        this.#addSceneExtension(imagesOverride ?? new Images(this));
         this.#addSceneExtension(new Cameras(this));
         break;
+      }
     }
 
     this.#addSceneExtension(new SceneSettings(this));
@@ -361,7 +357,7 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
     this.#addSceneExtension(this.measurementTool);
     this.#addSceneExtension(this.publishClickTool);
     if (interfaceMode === "image" && config.imageMode.calibrationTopic == undefined) {
-      this.#enableImageOnlySubscriptionMode();
+      this.enableImageOnlySubscriptionMode();
     } else {
       this.#addTransformSubscriptions();
       this.#addSubscriptionsFromSceneExtensions();
@@ -673,7 +669,7 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
    * This mode should only be enabled in ImageMode when there is no calibration topic selected. Disabling these subscriptions
    * prevents the 3D aspects of the scene from being rendered from an insufficient camera info.
    */
-  #enableImageOnlySubscriptionMode = (): void => {
+  public enableImageOnlySubscriptionMode = (): void => {
     assert(
       this.#imageModeExtension,
       "Image mode extension should be defined when calling enable Image only mode",
@@ -686,7 +682,7 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
     this.settings.addNodeValidator(this.#imageOnlyModeTopicSettingsValidator);
   };
 
-  #disableImageOnlySubscriptionMode = (): void => {
+  public disableImageOnlySubscriptionMode = (): void => {
     // .clear() will clean up remaining errors on topics
     this.settings.removeNodeValidator(this.#imageOnlyModeTopicSettingsValidator);
     this.clear({ clearTransforms: true, resetAllFramesCursor: true });

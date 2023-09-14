@@ -17,6 +17,8 @@ import {
   BuiltinPanelExtensionContext,
   PanelExtensionAdapter,
 } from "@foxglove/studio-base/components/PanelExtensionAdapter";
+import { useAppContext } from "@foxglove/studio-base/context/AppContext";
+import { SceneExtensionOverrides } from "@foxglove/studio-base/panels/ThreeDeeRender/IRenderer";
 import { SaveConfig } from "@foxglove/studio-base/types/panels";
 
 import { ThreeDeeRender } from "./ThreeDeeRender";
@@ -26,12 +28,20 @@ type InitPanelArgs = {
   crash: ReturnType<typeof useCrash>;
   forwardedAnalytics: ForwardedAnalytics;
   interfaceMode: InterfaceMode;
+  sceneExtensionOverrides?: SceneExtensionOverrides;
   onDownloadImage: ((blob: Blob, fileName: string) => void) | undefined;
   debugPicking?: boolean;
 };
 
 function initPanel(args: InitPanelArgs, context: BuiltinPanelExtensionContext) {
-  const { crash, forwardedAnalytics, interfaceMode, onDownloadImage, debugPicking } = args;
+  const {
+    crash,
+    forwardedAnalytics,
+    interfaceMode,
+    onDownloadImage,
+    debugPicking,
+    sceneExtensionOverrides,
+  } = args;
   ReactDOM.render(
     <StrictMode>
       <CaptureErrorBoundary onError={crash}>
@@ -41,6 +51,7 @@ function initPanel(args: InitPanelArgs, context: BuiltinPanelExtensionContext) {
             interfaceMode={interfaceMode}
             onDownloadImage={onDownloadImage}
             debugPicking={debugPicking}
+            sceneExtensionOverrides={sceneExtensionOverrides}
           />
         </ForwardAnalyticsContextProvider>
       </CaptureErrorBoundary>
@@ -63,6 +74,15 @@ function ThreeDeeRenderAdapter(interfaceMode: InterfaceMode, props: Props) {
   const crash = useCrash();
 
   const forwardedAnalytics = useForwardAnalytics();
+  const { gatedFeatureStore } = useAppContext();
+  const sceneExtensionOverrides = useMemo(() => {
+    if (gatedFeatureStore == undefined) {
+      return undefined;
+    }
+    const extensionOverrides =
+      gatedFeatureStore.useFeature("pro-three-dee")?.sceneExtensionOverrides;
+    return extensionOverrides;
+  }, [gatedFeatureStore]);
   const boundInitPanel = useMemo(
     () =>
       initPanel.bind(undefined, {
@@ -70,9 +90,17 @@ function ThreeDeeRenderAdapter(interfaceMode: InterfaceMode, props: Props) {
         forwardedAnalytics,
         interfaceMode,
         onDownloadImage: props.onDownloadImage,
+        sceneExtensionOverrides,
         debugPicking: props.debugPicking,
       }),
-    [crash, forwardedAnalytics, interfaceMode, props.onDownloadImage, props.debugPicking],
+    [
+      crash,
+      forwardedAnalytics,
+      interfaceMode,
+      props.onDownloadImage,
+      props.debugPicking,
+      sceneExtensionOverrides,
+    ],
   );
 
   return (
