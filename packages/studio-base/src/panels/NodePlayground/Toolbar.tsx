@@ -2,8 +2,8 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { Add20Regular, ArrowLeft20Regular, Dismiss12Regular } from "@fluentui/react-icons";
-import { TabsList, Tab, Tabs, buttonClasses, tabClasses } from "@mui/base";
+import { Add16Filled, ArrowLeft16Filled, Dismiss12Regular } from "@fluentui/react-icons";
+import { TabsList, Tab, TabProps, Tabs, buttonClasses, tabClasses } from "@mui/base";
 import { IconButton } from "@mui/material";
 import { makeStyles } from "tss-react/mui";
 
@@ -38,6 +38,8 @@ const useStyles = makeStyles<void, ToolbarClasses>()((theme, _params, classes) =
       ":focus-visible": {
         outline: `1px solid ${theme.palette.primary.main}`,
         outlineOffset: -1,
+
+        [`.${classes.action}`]: { visibility: "visible" },
       },
       [`&.${tabClasses.selected}`]: {
         backgroundColor: theme.palette.background[prefersDarkMode ? "default" : "paper"],
@@ -72,7 +74,11 @@ const useStyles = makeStyles<void, ToolbarClasses>()((theme, _params, classes) =
       [`.${classes.unsavedIcon}`]: { display: "block" },
       [`.${classes.deleteIcon}`]: { display: "none" },
     },
-    deleteIcon: {},
+    deleteIcon: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    },
     unsavedIcon: {
       color: theme.palette.text.secondary,
     },
@@ -90,23 +96,57 @@ type ToolbarProps = {
   selectNode: (id: string) => void;
 };
 
-export function Toolbar({
-  isNodeSaved,
-  nodes,
-  selectedNodeId,
-  scriptBackStack,
-  addNewNode,
-  deleteNode,
-  goBack,
-  selectNode,
-}: ToolbarProps): JSX.Element {
+type ToolbarTabProps = TabProps & {
+  isNodeSaved: boolean;
+  deleteNode: (id: string) => void;
+  label: string;
+  value: string;
+};
+
+function ToolbarTab(props: ToolbarTabProps): JSX.Element {
+  const { label, isNodeSaved, deleteNode, className, value, children: _children, ...other } = props;
   const { classes, cx } = useStyles();
+
+  return (
+    <Tab {...other} className={cx(className, classes.tab)} value={value}>
+      {label}
+      <div className={cx(classes.action, { [classes.unsaved]: !isNodeSaved })}>
+        <div
+          role="button"
+          className={classes.deleteIcon}
+          onClick={(event) => {
+            event.stopPropagation();
+            deleteNode(value);
+          }}
+        >
+          <Dismiss12Regular />
+        </div>
+        <svg viewBox="0 0 12 12" height="12" width="12" className={classes.unsavedIcon}>
+          <circle fill="currentColor" cx={6} cy={6} r={3} />
+        </svg>
+      </div>
+    </Tab>
+  );
+}
+
+export function Toolbar(props: ToolbarProps): JSX.Element {
+  const {
+    isNodeSaved,
+    nodes,
+    selectedNodeId,
+    scriptBackStack,
+    addNewNode,
+    deleteNode,
+    goBack,
+    selectNode,
+  } = props;
+  const { classes } = useStyles();
 
   return (
     <Stack direction="row" alignItems="center">
       {scriptBackStack.length > 1 && (
         <IconButton title="Go back" data-testid="go-back" size="small" onClick={goBack}>
-          <ArrowLeft20Regular />
+          <ArrowLeft16Filled />
         </IconButton>
       )}
       <Tabs
@@ -118,20 +158,13 @@ export function Toolbar({
       >
         <TabsList className={classes.tabsList}>
           {Object.keys(nodes).map((nodeId) => (
-            <Tab className={classes.tab} key={nodeId} value={nodeId}>
-              {nodes[nodeId]?.name ?? ""}
-              <div className={cx(classes.action, { [classes.unsaved]: !isNodeSaved })}>
-                <Dismiss12Regular
-                  className={classes.deleteIcon}
-                  onClick={() => {
-                    deleteNode(nodeId);
-                  }}
-                />
-                <svg viewBox="0 0 12 12" height="12" width="12" className={classes.unsavedIcon}>
-                  <circle fill="currentColor" cx={6} cy={6} r={3} />
-                </svg>
-              </div>
-            </Tab>
+            <ToolbarTab
+              key={nodeId}
+              value={nodeId}
+              isNodeSaved={isNodeSaved}
+              deleteNode={deleteNode}
+              label={nodes[nodeId]?.name ?? ""}
+            />
           ))}
         </TabsList>
       </Tabs>
@@ -165,7 +198,7 @@ export function Toolbar({
           addNewNode();
         }}
       >
-        <Add20Regular />
+        <Add16Filled />
       </IconButton>
     </Stack>
   );

@@ -13,13 +13,7 @@
 
 import AddIcon from "@mui/icons-material/Add";
 import { Button, CircularProgress, Container, Divider, Link, Typography } from "@mui/material";
-import {
-  Suspense,
-  useCallback,
-  useEffect,
-  useRef,
-  // useState
-} from "react";
+import { Suspense, useCallback, useEffect, useRef } from "react";
 import {
   ImperativePanelHandle,
   PanelGroup,
@@ -279,7 +273,7 @@ function NodePlayground(props: Props) {
     }
   }, [currentScript, isCurrentScriptSelectedNode, selectedNode, selectedNodeId, setUserNodes]);
 
-  const addNewNode = React.useCallback(
+  const addNewNode = useCallback(
     (code?: string) => {
       saveCurrentNode();
       const newNodeId = uuidv4();
@@ -295,7 +289,7 @@ function NodePlayground(props: Props) {
     [saveConfig, saveCurrentNode, setUserNodes],
   );
 
-  const saveNode = React.useCallback(
+  const saveNode = useCallback(
     (script: string | undefined) => {
       if (selectedNodeId == undefined || script == undefined || script === "" || !selectedNode) {
         return;
@@ -305,7 +299,7 @@ function NodePlayground(props: Props) {
     [selectedNode, selectedNodeId, setUserNodes],
   );
 
-  const setScriptOverride = React.useCallback(
+  const setScriptOverride = useCallback(
     (script: Script, maxDepth?: number) => {
       if (maxDepth != undefined && maxDepth > 0 && scriptBackStack.length >= maxDepth) {
         setScriptBackStack([...scriptBackStack.slice(0, maxDepth - 1), script]);
@@ -316,11 +310,11 @@ function NodePlayground(props: Props) {
     [scriptBackStack],
   );
 
-  const goBack = React.useCallback(() => {
+  const goBack = useCallback(() => {
     setScriptBackStack(scriptBackStack.slice(0, scriptBackStack.length - 1));
   }, [scriptBackStack]);
 
-  const setScriptCode = React.useCallback(
+  const setScriptCode = useCallback(
     (code: string) => {
       // update code at top of backstack
       const backStack = [...scriptBackStack];
@@ -353,6 +347,26 @@ function NodePlayground(props: Props) {
     };
   }, []);
 
+  const selectNode = useCallback(
+    (nodeId: string) => {
+      saveCurrentNode();
+      saveConfig({ selectedNodeId: nodeId });
+    },
+    [saveConfig, saveCurrentNode],
+  );
+
+  const deleteNode = useCallback(
+    (nodeId: string) => {
+      setUserNodes({ ...userNodes, [nodeId]: undefined });
+
+      // If the deleted node is the selected node, select the first node in the list
+      if (nodeId === selectedNodeId) {
+        saveConfig({ selectedNodeId: Object.keys(userNodes)[0] });
+      }
+    },
+    [saveConfig, selectedNodeId, setUserNodes, userNodes],
+  );
+
   const bottomBarRef = useRef<ImperativePanelHandle>(ReactNull);
 
   const onChangeBottomBarTab = useCallback(() => {
@@ -367,14 +381,8 @@ function NodePlayground(props: Props) {
         <Sidebar
           explorer={explorer}
           updateExplorer={updateExplorer}
-          selectNode={(nodeId) => {
-            saveCurrentNode();
-            saveConfig({ selectedNodeId: nodeId });
-          }}
-          deleteNode={(nodeId) => {
-            setUserNodes({ ...userNodes, [nodeId]: undefined });
-            saveConfig({ selectedNodeId: undefined });
-          }}
+          selectNode={selectNode}
+          deleteNode={deleteNode}
           selectedNodeId={selectedNodeId}
           userNodes={userNodes}
           script={currentScript}
@@ -393,14 +401,8 @@ function NodePlayground(props: Props) {
             isNodeSaved={isNodeSaved}
             goBack={goBack}
             scriptBackStack={scriptBackStack}
-            selectNode={(nodeId) => {
-              saveCurrentNode();
-              saveConfig({ selectedNodeId: nodeId });
-            }}
-            deleteNode={(nodeId) => {
-              setUserNodes({ ...userNodes, [nodeId]: undefined });
-              saveConfig({ selectedNodeId: undefined });
-            }}
+            selectNode={selectNode}
+            deleteNode={deleteNode}
             selectedNodeId={selectedNodeId}
             nodes={userNodes}
             addNewNode={addNewNode}
