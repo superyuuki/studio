@@ -189,6 +189,16 @@ function ToolbarTab(props: ToolbarTabProps): JSX.Element {
     [setEditMode],
   );
 
+  const minWidth = editMode
+    ? `calc(${[
+        `max(${MIN_ACTIVE_TAB_WIDTH}px`,
+        `min(
+          ${Math.ceil(measureText(title) + 30)}px,
+          ${MAX_TAB_WIDTH}px, 100% - ${MIN_OTHER_TAB_WIDTH * (tabCount - 1)}px
+        )`,
+      ].join(",")})`
+    : MIN_OTHER_TAB_WIDTH;
+
   return (
     <ClickAwayListener onClickAway={onClickAway}>
       <Tab
@@ -196,13 +206,7 @@ function ToolbarTab(props: ToolbarTabProps): JSX.Element {
         onDoubleClick={onDoubleClick}
         className={cx(className, classes.tab)}
         value={value}
-        style={{
-          minWidth: editMode
-            ? `calc(max(${MIN_ACTIVE_TAB_WIDTH}px,  min(${Math.ceil(
-                measureText(title) + 30,
-              )}px, ${MAX_TAB_WIDTH}px, 100% - ${MIN_OTHER_TAB_WIDTH * (tabCount - 1)}px)))`
-            : MIN_OTHER_TAB_WIDTH,
-        }}
+        style={{ minWidth }}
       >
         {editMode ? (
           <InputBase
