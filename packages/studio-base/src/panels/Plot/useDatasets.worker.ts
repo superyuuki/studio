@@ -30,7 +30,7 @@ import {
   TypedData,
   Messages,
 } from "./internalTypes";
-import { isSingleMessage, isBounded, getParamPaths, getParamTopics } from "./params";
+import { isSingleMessage, isBounded, isCurrentOnly, getParamPaths, getParamTopics } from "./params";
 import {
   buildPlotData,
   resolvePath,
@@ -65,7 +65,6 @@ type Client = {
   queueRebuild: () => void;
 };
 
-let isLive: boolean = false;
 let clients: Record<string, Client> = {};
 let globalVariables: GlobalVariables = {};
 let blocks: Messages = {};
@@ -143,6 +142,24 @@ function accumulate(previous: Accumulated, params: PlotParams, messages: Message
   };
 }
 
+function downsamplePlot(plot: PlotData, view: PlotViewport): PlotData {
+  return {
+    ...plot,
+    datasets: mapDatasets((dataset) => {
+      const indices = downsample(dataset, iterateTyped(dataset.data), view);
+      const resolved = resolveTypedIndices(dataset.data, indices);
+      if (resolved == undefined) {
+        return dataset;
+      }
+
+      return {
+        ...dataset,
+        data: resolved,
+      };
+    }, plot.datasets),
+  };
+}
+
 // Throttle rebuilds to only occur at most every 100ms. This is slightly
 // different from the throttled/debounced functions we use elsewhere in our
 // codebase in that calls during the cooldown period will schedule at most one
@@ -195,7 +212,7 @@ function getClientData(client: Client): PlotData | undefined {
   const { bounds: currentBounds } = currentData;
 
   let datasets: PlotData[] = [];
-  if (isSingleMessage(params) || isBounded(params)) {
+  if (isCurrentOnly(params)) {
     // bounded and single-message plots _only_ use current data
     datasets = [currentData];
   } else if (blockBounds.x.min <= currentBounds.x.min && blockBounds.x.max > currentBounds.x.max) {
@@ -250,28 +267,7 @@ function rebuild(id: string) {
     return;
   }
 
-  const downsampled = mapDatasets((dataset) => {
-    const indices = downsample(dataset, iterateTyped(dataset.data), view);
-    const resolved = resolveTypedIndices(dataset.data, indices);
-    if (resolved == undefined) {
-      return dataset;
-    }
-
-    return {
-      ...dataset,
-      data: resolved,
-    };
-  }, newData.datasets);
-
-  sendPlotData(client, {
-    ...newData,
-    datasets: downsampled,
-  });
-}
-
-// eslint-disable-next-line @foxglove/no-boolean-parameters
-function setLive(value: boolean): void {
-  isLive = value;
+  sendPlotData(client, downsamplePlot(newData, view));
 }
 
 function unregister(id: string): void {
@@ -404,41 +400,11 @@ function addCurrent(events: readonly MessageEvent[]): void {
     current[topic]?.push(message);
   }
 
-  if (!isLive) {
-    for (const client of R.values(clients)) {
-      const { params } = client;
-      if (params == undefined) {
-        continue;
-      }
-
-      if (isSingleMessage(params)) {
-        sendPlotData(
-          client,
-          buildPlot(
-            params,
-            R.map((messages) => messages.slice(-1), current),
-          ),
-        );
-        continue;
-      }
-
-      mutateClient(client.id, {
-        ...client,
-        current: accumulate(client.current, params, current),
-      });
-      client.queueRebuild();
-    }
-    return;
-  }
-
   for (const client of R.values(clients)) {
     const { params, current: previous } = client;
     if (params == undefined) {
       continue;
     }
-
-    const { cursors: oldCursors, data: oldData } = previous;
-    const [newCursors, newMessages] = getNewMessages(oldCursors, current);
 
     if (isSingleMessage(params)) {
       sendPlotData(
@@ -451,13 +417,23 @@ function addCurrent(events: readonly MessageEvent[]): void {
       continue;
     }
 
+    if (!isBounded(params)) {
+      mutateClient(client.id, {
+        ...client,
+        current: accumulate(client.current, params, current),
+      });
+      client.queueRebuild();
+      continue;
+    }
+
+    const { cursors: oldCursors, data: oldData } = previous;
+    const [newCursors, newMessages] = getNewMessages(oldCursors, current);
     if (R.isEmpty(newMessages)) {
       continue;
     }
 
     const newData = buildPlot(params, newMessages);
     client.addPartial?.(getProvidedData(newData));
-
     mutateClient(client.id, {
       ...client,
       current: {
@@ -498,9 +474,14 @@ function updateView(id: string, view: PlotViewport): void {
 const MESSAGE_CULL_THRESHOLD = 15_000;
 
 function compressClients(): void {
-  if (!isLive) {
-    return;
-  }
+  // Get a list of all of the topics whose messages will be culled so we can
+  // rebuild only those clients
+  const culledTopics = R.pipe(
+    R.toPairs,
+    R.filter(([, messages]) => messages.length > MESSAGE_CULL_THRESHOLD),
+    R.map(([topic]) => topic),
+    R.uniq,
+  )(current);
 
   current = R.map(
     (messages) =>
@@ -511,8 +492,9 @@ function compressClients(): void {
   );
 
   for (const client of R.values(clients)) {
-    const { params } = client;
-    if (params == undefined) {
+    const { params, topics } = client;
+    const affectedTopics = R.intersection(culledTopics, topics);
+    if (params == undefined || !isCurrentOnly(params) || affectedTopics.length === 0) {
       continue;
     }
 
@@ -571,7 +553,6 @@ export const service = {
   receiveMetadata,
   receiveVariables,
   register,
-  setLive,
   unregister,
   updateParams,
   updateView,

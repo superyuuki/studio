@@ -16,10 +16,6 @@ import {
   MessagePathPart,
 } from "@foxglove/studio-base/components/MessagePathSyntax/constants";
 import parseRosPath from "@foxglove/studio-base/components/MessagePathSyntax/parseRosPath";
-import {
-  useMessagePipeline,
-  MessagePipelineContext,
-} from "@foxglove/studio-base/components/MessagePipeline";
 import { mergeSubscriptions } from "@foxglove/studio-base/components/MessagePipeline/subscriptions";
 import { TypedDataProvider } from "@foxglove/studio-base/components/TimeBasedChart/types";
 import useGlobalVariables from "@foxglove/studio-base/hooks/useGlobalVariables";
@@ -56,8 +52,6 @@ async function waitService(): Promise<Service> {
     pending.push(resolve);
   });
 }
-
-const getIsLive = (ctx: MessagePipelineContext) => ctx.seekPlayback == undefined;
 
 const getPayloadString = (payload: SubscribePayload): string =>
   `${payload.topic}:${(payload.fields ?? []).join(",")}`;
@@ -185,14 +179,6 @@ function useData(id: string, params: PlotParams) {
       chooseClient();
     };
   }, [id, params]);
-
-  const isLive = useMessagePipeline<boolean>(getIsLive);
-  useEffect(() => {
-    void (async () => {
-      const s = await waitService();
-      await s.setLive(isLive);
-    })();
-  }, [isLive]);
 
   const [blockSubscriptions, currentSubscriptions] = React.useMemo(
     () => R.partition((v) => v.preloadType === "full", subscriptions),

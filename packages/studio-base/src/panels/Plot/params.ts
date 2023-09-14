@@ -31,6 +31,10 @@ export function isBounded(params: PlotParams): boolean {
   return followingViewWidth != undefined && followingViewWidth > 0;
 }
 
+export function isCurrentOnly(params: PlotParams): boolean {
+  return isBounded(params) || isSingleMessage(params);
+}
+
 export function getParamPaths(params: PlotParams): readonly string[] {
   return getPaths(params.paths, params.xAxisPath);
 }
