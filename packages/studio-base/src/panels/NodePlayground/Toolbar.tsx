@@ -163,10 +163,13 @@ function ToolbarTab(props: ToolbarTabProps): JSX.Element {
     (event) => {
       const name = event.target.value;
       setTitle(name);
-      setUserNodes({
-        ...nodes,
-        [selectedNodeId]: { ...selectedNode, name },
-      });
+
+      if (selectedNodeId != undefined && selectedNode != undefined) {
+        setUserNodes({
+          ...nodes,
+          [selectedNodeId]: { ...selectedNode, name },
+        });
+      }
     },
     [nodes, selectedNode, selectedNodeId, setUserNodes],
   );
