@@ -40,13 +40,13 @@ import {
   RendererConfig,
   RendererEvents,
   RendererSubscription,
-  SceneExtensionOverrides,
 } from "./IRenderer";
 import { Input } from "./Input";
 import { DEFAULT_MESH_UP_AXIS, ModelCache } from "./ModelCache";
 import { PickedRenderable, Picker } from "./Picker";
 import type { Renderable } from "./Renderable";
 import { SceneExtension } from "./SceneExtension";
+import { SceneExtensionConfig } from "./SceneExtensionConfig";
 import { ScreenOverlay } from "./ScreenOverlay";
 import { SettingsManager, SettingsTreeEntry } from "./SettingsManager";
 import { SharedGeometry } from "./SharedGeometry";
@@ -65,10 +65,8 @@ import { Cameras } from "./renderables/Cameras";
 import { FrameAxes } from "./renderables/FrameAxes";
 import { Grids } from "./renderables/Grids";
 import { ImageMode } from "./renderables/ImageMode/ImageMode";
-import { Images } from "./renderables/Images";
 import { DownloadImageInfo } from "./renderables/Images/ImageTypes";
 import { LaserScans } from "./renderables/LaserScans";
-import { Markers } from "./renderables/Markers";
 import { MeasurementTool } from "./renderables/MeasurementTool";
 import { OccupancyGrids } from "./renderables/OccupancyGrids";
 import { PointClouds } from "./renderables/PointClouds";
@@ -76,7 +74,6 @@ import { Polygons } from "./renderables/Polygons";
 import { PoseArrays } from "./renderables/PoseArrays";
 import { Poses } from "./renderables/Poses";
 import { PublishClickTool } from "./renderables/PublishClickTool";
-import { PublishSettings } from "./renderables/PublishSettings";
 import { FoxgloveSceneEntities } from "./renderables/SceneEntities";
 import { SceneSettings } from "./renderables/SceneSettings";
 import { Urdfs } from "./renderables/Urdfs";
@@ -223,7 +220,7 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
     canvas: HTMLCanvasElement;
     config: Immutable<RendererConfig>;
     interfaceMode: InterfaceMode;
-    sceneExtensionOverrides?: SceneExtensionOverrides;
+    sceneExtensionConfig: SceneExtensionConfig;
     fetchAsset: BuiltinPanelExtensionContext["unstable_fetchAsset"];
     debugPicking?: boolean;
   }) {
@@ -314,36 +311,45 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
     const renderSize = this.gl.getDrawingBufferSize(tempVec2);
     log.debug(`Initialized ${renderSize.width}x${renderSize.height} renderer (${samples}x MSAA)`);
 
-    this.measurementTool = new MeasurementTool(this);
-    this.publishClickTool = new PublishClickTool(this);
+    const { reserved } = args.sceneExtensionConfig;
+
+    this.measurementTool = reserved.measurementTool.init(this);
+    this.publishClickTool = reserved.publishClickTool.init(this);
+    this.#addSceneExtension(this.measurementTool);
+    this.#addSceneExtension(this.publishClickTool);
 
     const aspect = renderSize.width / renderSize.height;
     switch (interfaceMode) {
       case "image": {
-        const imageModeOverride = args.sceneExtensionOverrides?.imageMode?.init(this);
-        this.#imageModeExtension = imageModeOverride ?? new ImageMode(this);
+        const imageMode = reserved.imageMode.init(this);
+        this.#imageModeExtension = imageMode;
         this.cameraHandler = this.#imageModeExtension;
         this.#imageModeExtension.addEventListener("hasModifiedViewChanged", () => {
           this.emit("resetViewChanged", this);
         });
-        this.#addSceneExtension(this.cameraHandler);
+        this.#addSceneExtension(this.#imageModeExtension);
         break;
       }
       case "3d": {
         this.cameraHandler = new CameraStateSettings(this, this.#canvas, aspect);
         this.#addSceneExtension(this.cameraHandler);
-        this.#addSceneExtension(new PublishSettings(this));
-        const imagesOverride = args.sceneExtensionOverrides?.images?.init(this);
-        this.#addSceneExtension(imagesOverride ?? new Images(this));
         this.#addSceneExtension(new Cameras(this));
         break;
+      }
+    }
+    const { extensionsById } = args.sceneExtensionConfig;
+    for (const extensionItem of Object.values(extensionsById)) {
+      if (
+        extensionItem.supportedModes == undefined ||
+        extensionItem.supportedModes.includes(interfaceMode)
+      ) {
+        this.#addSceneExtension(extensionItem.init(this));
       }
     }
 
     this.#addSceneExtension(new SceneSettings(this));
     this.#addSceneExtension(new FrameAxes(this, { visible: interfaceMode === "3d" }));
     this.#addSceneExtension(new Grids(this));
-    this.#addSceneExtension(new Markers(this));
     this.#addSceneExtension(new FoxgloveSceneEntities(this));
     this.#addSceneExtension(new FoxgloveGrid(this));
     this.#addSceneExtension(new LaserScans(this));
@@ -354,8 +360,7 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
     this.#addSceneExtension(new PoseArrays(this));
     this.#addSceneExtension(new Urdfs(this));
     this.#addSceneExtension(new VelodyneScans(this));
-    this.#addSceneExtension(this.measurementTool);
-    this.#addSceneExtension(this.publishClickTool);
+
     if (interfaceMode === "image" && config.imageMode.calibrationTopic == undefined) {
       this.enableImageOnlySubscriptionMode();
     } else {

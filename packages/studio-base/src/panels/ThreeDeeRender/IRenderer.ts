@@ -15,8 +15,6 @@ import {
 } from "@foxglove/studio";
 import { BuiltinPanelExtensionContext } from "@foxglove/studio-base/components/PanelExtensionAdapter";
 import { ICameraHandler } from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/ICameraHandler";
-import { ImageMode } from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/ImageMode/ImageMode";
-import { Images } from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/Images";
 import { LabelPool } from "@foxglove/three-text";
 
 import { Input } from "./Input";
@@ -67,16 +65,6 @@ export type FollowMode = "follow-pose" | "follow-position" | "follow-none";
 
 export type ImageAnnotationSettings = {
   visible: boolean;
-};
-
-export type ExtensionOverride<ExtensionType extends SceneExtension> = {
-  init: (renderer: IRenderer) => ExtensionType;
-  name: string;
-};
-
-export type SceneExtensionOverrides = {
-  imageMode?: ExtensionOverride<ImageMode>;
-  images?: ExtensionOverride<Images>;
 };
 
 /** Settings pertaining to Image mode */

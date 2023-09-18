@@ -36,13 +36,13 @@ import type {
   RendererConfig,
   RendererEvents,
   RendererSubscription,
-  SceneExtensionOverrides,
 } from "./IRenderer";
 import type { PickedRenderable } from "./Picker";
 import { SELECTED_ID_VARIABLE } from "./Renderable";
 import { Renderer } from "./Renderer";
 import { RendererContext, useRendererEvent } from "./RendererContext";
 import { RendererOverlay } from "./RendererOverlay";
+import type { SceneExtensionConfig } from "./SceneExtensionConfig";
 import { CameraState, DEFAULT_CAMERA_STATE } from "./camera";
 import {
   PublishRos1Datatypes,
@@ -101,13 +101,13 @@ function useRendererProperty<K extends keyof IRenderer>(
 export function ThreeDeeRender(props: {
   context: BuiltinPanelExtensionContext;
   interfaceMode: InterfaceMode;
-  sceneExtensionOverrides?: SceneExtensionOverrides;
+  sceneExtensionConfig: SceneExtensionConfig;
   /** Override default downloading behavior, used for Storybook */
   onDownloadImage?: (blob: Blob, fileName: string) => void;
   /** Enable hitmap debugging by default, used for picking stories */
   debugPicking?: boolean;
 }): JSX.Element {
-  const { context, interfaceMode, onDownloadImage, debugPicking, sceneExtensionOverrides } = props;
+  const { context, interfaceMode, onDownloadImage, debugPicking, sceneExtensionConfig } = props;
   const { initialState, saveState, unstable_fetchAsset: fetchAsset } = context;
 
   // Load and save the persisted panel configuration
@@ -155,7 +155,7 @@ export function ThreeDeeRender(props: {
           interfaceMode,
           fetchAsset,
           debugPicking,
-          sceneExtensionOverrides,
+          sceneExtensionConfig,
         })
       : undefined;
     setRenderer(newRenderer);
@@ -171,7 +171,7 @@ export function ThreeDeeRender(props: {
     interfaceMode,
     fetchAsset,
     debugPicking,
-    sceneExtensionOverrides,
+    sceneExtensionConfig,
   ]);
 
   useEffect(() => {

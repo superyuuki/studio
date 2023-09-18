@@ -8,7 +8,8 @@ import { StoreApi } from "zustand";
 import { AppBarMenuItem } from "@foxglove/studio-base/components/AppBar/types";
 import { LayoutData } from "@foxglove/studio-base/context/CurrentLayoutContext";
 import { WorkspaceContextStore } from "@foxglove/studio-base/context/Workspace/WorkspaceContext";
-import { SceneExtensionOverrides } from "@foxglove/studio-base/panels/ThreeDeeRender/IRenderer";
+
+import { SceneExtensionConfig } from "../panels/ThreeDeeRender/SceneExtensionConfig";
 
 interface IAppContext {
   appBarLayoutButton?: JSX.Element;
@@ -29,7 +30,7 @@ interface IAppContext {
   ) => StoreApi<WorkspaceContextStore>;
 }
 export type GatedFeatureMap = {
-  "pro-three-dee": { sceneExtensionOverrides: SceneExtensionOverrides };
+  "ThreeDeeRender.sceneExtensionConfig": { sceneExtensionConfig: SceneExtensionConfig };
 };
 
 export type GatedFeatureType = keyof GatedFeatureMap;
