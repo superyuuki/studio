@@ -3,7 +3,14 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { init, initClient, State, rebuildClient } from "./state";
-import { refreshClient, receiveVariables, updateParams, updateView } from "./clients";
+import {
+  unregister,
+  register,
+  refreshClient,
+  receiveVariables,
+  updateParams,
+  updateView,
+} from "./clients";
 import { DATA_PATH, CLIENT_ID, createState, createParams } from "./testing";
 import { PlotViewport } from "@foxglove/studio-base/components/TimeBasedChart/types";
 
@@ -84,5 +91,25 @@ describe("updateView", () => {
     const [after, effects] = updateView(CLIENT_ID, view, before);
     expect(after.clients[0]?.view).toEqual(view);
     expect(effects).toEqual([rebuildClient(CLIENT_ID)]);
+  });
+});
+
+describe("register", () => {
+  it("ignores missing params", () => {
+    const [after, effects] = register(CLIENT_ID, undefined, init());
+    expect(after.clients.length).toEqual(1);
+    expect(effects).toEqual([]);
+  });
+  it("updates the client's params after registration", () => {
+    const [after, effects] = register(CLIENT_ID, createParams(DATA_PATH), init());
+    expect(after.clients.length).toEqual(1);
+    expect(effects).toEqual([rebuildClient(CLIENT_ID)]);
+  });
+});
+
+describe("unregister", () => {
+  it("removes an existing client", () => {
+    const after = unregister(CLIENT_ID, createState());
+    expect(after.clients.length).toEqual(0);
   });
 });
