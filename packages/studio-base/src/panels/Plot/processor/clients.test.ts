@@ -3,8 +3,9 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { init, initClient, State, rebuildClient } from "./state";
-import { refreshClient, receiveVariables, updateParams } from "./clients";
+import { refreshClient, receiveVariables, updateParams, updateView } from "./clients";
 import { DATA_PATH, CLIENT_ID, createState, createParams } from "./testing";
+import { PlotViewport } from "@foxglove/studio-base/components/TimeBasedChart/types";
 
 describe("refreshClient", () => {
   it("ignores client without params", () => {
@@ -60,6 +61,28 @@ describe("updateParams", () => {
     const [after, effects] = updateParams(CLIENT_ID, params, before);
     expect(after.clients[0]?.params).not.toEqual(before.clients[0]?.params);
     expect(after.clients[0]?.topics).toEqual(["/some"]);
+    expect(effects).toEqual([rebuildClient(CLIENT_ID)]);
+  });
+});
+
+describe("updateView", () => {
+  const view: PlotViewport = {
+    width: 0,
+    height: 0,
+    bounds: {
+      x: { min: 0, max: 0 },
+      y: { min: 0, max: 0 },
+    },
+  };
+  it("ignores missing id", () => {
+    const before = createState();
+    const [after] = updateView("123", view, before);
+    expect(after.clients[0]).toEqual(before.clients[0]);
+  });
+  it("updates client", () => {
+    const before = createState("/foo.bar");
+    const [after, effects] = updateView(CLIENT_ID, view, before);
+    expect(after.clients[0]?.view).toEqual(view);
     expect(effects).toEqual([rebuildClient(CLIENT_ID)]);
   });
 });
