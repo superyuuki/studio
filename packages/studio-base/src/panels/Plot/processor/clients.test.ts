@@ -3,8 +3,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { init, initClient, State, rebuildClient } from "./state";
-import { refreshClient, receiveVariables } from "./clients";
-import { DATA_PATH, CLIENT_ID, createState } from "./testing";
+import { refreshClient, receiveVariables, updateParams } from "./clients";
+import { DATA_PATH, CLIENT_ID, createState, createParams } from "./testing";
 
 describe("refreshClient", () => {
   it("ignores client without params", () => {
@@ -44,6 +44,22 @@ describe("receiveVariables", () => {
     const before = createState(`/topic.field[:]{id==$foo}`);
     const [after, effects] = receiveVariables(vars, before);
     expect(after.clients[0]).not.toEqual(before.clients[0]);
-    expect(effects).toEqual([rebuildClient(after.clients[0]?.id ?? "")]);
+    expect(effects).toEqual([rebuildClient(CLIENT_ID)]);
+  });
+});
+
+describe("updateParams", () => {
+  it("ignores missing id", () => {
+    const before = createState();
+    const [after] = updateParams("123", createParams(), before);
+    expect(after.clients[0]).toEqual(before.clients[0]);
+  });
+  it("updates client", () => {
+    const before = createState("/foo.bar");
+    const params = createParams("/some.test");
+    const [after, effects] = updateParams(CLIENT_ID, params, before);
+    expect(after.clients[0]?.params).not.toEqual(before.clients[0]?.params);
+    expect(after.clients[0]?.topics).toEqual(["/some"]);
+    expect(effects).toEqual([rebuildClient(CLIENT_ID)]);
   });
 });
