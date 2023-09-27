@@ -141,7 +141,7 @@ export function unregister(id: string, state: State): State {
   });
 }
 
-const MESSAGE_CULL_THRESHOLD = 15_000;
+export const MESSAGE_CULL_THRESHOLD = 15_000;
 
 export function compressClients(state: State): StateAndEffects {
   const { isLive, current } = state;
@@ -185,5 +185,5 @@ export function getClientData(client: Client): PlotData | undefined {
     datasets = [blockData, currentData];
   }
 
-  return R.pipe(reducePlotData, applyDerivativeToPlotData, sortPlotDataByHeaderStamp)(datasets);
+  return R.pipe(reducePlotData, applyDerivativeToPlotData, sortPlotDataByHeaderStamp, R.tap(console.log))(datasets);
 }
