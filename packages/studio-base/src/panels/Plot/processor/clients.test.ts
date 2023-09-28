@@ -26,7 +26,7 @@ import {
   createMessages,
   createParams,
 } from "./testing";
-import { DatasetsByPath, TypedDataSet } from "../internalTypes";
+import { DatasetsByPath, PlotPath, TypedDataSet } from "../internalTypes";
 
 describe("refreshClient", () => {
   it("ignores client without params", () => {
@@ -48,8 +48,8 @@ describe("refreshClient", () => {
     const [newClient, effects] = refreshClient(client, initial);
     expect(effects).toEqual([rebuildClient(client.id)]);
     // we aren't testing accumulate(); just check whether the reference changed
-    expect(newClient.blocks).not.toEqual(client.blocks);
-    expect(newClient.current).not.toEqual(client.current);
+    expect(newClient.blocks).not.toBe(client.blocks);
+    expect(newClient.current).not.toBe(client.current);
   });
 });
 
@@ -76,7 +76,7 @@ describe("receiveVariables", () => {
   it("refreshes the client when it does use variables", () => {
     const before = createState(`/topic.field[:]{id==$foo}`);
     const [after, effects] = receiveVariables(vars, before);
-    expect(after.clients[0]).not.toEqual(before.clients[0]);
+    expect(after.clients[0]).not.toBe(before.clients[0]);
     expect(effects).toEqual([rebuildClient(CLIENT_ID)]);
   });
 });
@@ -178,7 +178,7 @@ describe("getClientData", () => {
       return undefined;
     }
 
-    const first = datasets.keys().next().value;
+    const first: PlotPath | undefined = datasets.keys().next().value;
     if (first == undefined) {
       return undefined;
     }

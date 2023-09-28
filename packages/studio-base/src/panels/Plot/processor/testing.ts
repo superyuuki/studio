@@ -5,7 +5,10 @@
 import * as R from "ramda";
 
 import { fromSec } from "@foxglove/rostime";
+import { Immutable } from "@foxglove/studio";
 import { MessageEvent } from "@foxglove/studio-base/players/types";
+import { Topic } from "@foxglove/studio-base/players/types";
+import { RosDatatypes, OptionalMessageDefinition } from "@foxglove/studio-base/types/RosDatatypes";
 
 import { initAccumulated } from "./accumulate";
 import { init, initClient, Client, State } from "./state";
@@ -18,13 +21,26 @@ export const CLIENT_ID = "foobar";
 export const FAKE_TOPIC = "/foo";
 export const FAKE_PATH = `${FAKE_TOPIC}.data`;
 export const FAKE_SCHEMA = "foo/Bar";
+export const FAKE_TOPICS: readonly Topic[] = [
+  {
+    name: FAKE_TOPIC,
+    schemaName: FAKE_SCHEMA,
+  },
+];
+export const FAKE_DATATYPES: Immutable<RosDatatypes> = new Map<
+  string,
+  OptionalMessageDefinition
+>().set(FAKE_SCHEMA, {
+  definitions: [{ name: "data", type: "float64", isArray: false }],
+});
 
 export const createMessageEvents = (
   topic: string,
   schemaName: string,
   count: number,
 ): MessageEvent[] =>
-  (R.range(0, count)).map((i): MessageEvent => ({
+  R.range(0, count).map(
+    (i): MessageEvent => ({
       topic,
       schemaName,
       receiveTime: fromSec(i),
@@ -32,7 +48,8 @@ export const createMessageEvents = (
         data: i,
       },
       sizeInBytes: 0,
-    }));
+    }),
+  );
 
 export const createMessages = (topic: string, schemaName: string, count: number): Messages => ({
   [topic]: createMessageEvents(topic, schemaName, count),
