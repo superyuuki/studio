@@ -185,5 +185,5 @@ export function getClientData(client: Client): PlotData | undefined {
     datasets = [blockData, currentData];
   }
 
-  return R.pipe(reducePlotData, applyDerivativeToPlotData, sortPlotDataByHeaderStamp, R.tap(console.log))(datasets);
+  return R.pipe(reducePlotData, applyDerivativeToPlotData, sortPlotDataByHeaderStamp)(datasets);
 }
