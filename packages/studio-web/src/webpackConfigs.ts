@@ -43,6 +43,22 @@ export const devServerConfig = (params: ConfigParams): WebpackConfiguration => (
     static: {
       directory: params.outputPath,
     },
+    historyApiFallback: {
+      rewrites: [
+        {
+          from: /./,
+          to: (ctx) => {
+            // Rewrite nested requests back to root.
+            const urlPath = ctx.parsedUrl.pathname;
+            if (urlPath == undefined || path.extname(urlPath) === "") {
+              return "/index.html";
+            } else {
+              return "/" + path.basename(urlPath);
+            }
+          },
+        },
+      ],
+    },
     hot: true,
     // The problem and solution are described at <https://github.com/webpack/webpack-dev-server/issues/1604>.
     // When running in dev mode two errors are logged to the dev console:
