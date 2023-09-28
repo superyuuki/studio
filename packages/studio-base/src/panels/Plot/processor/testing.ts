@@ -6,8 +6,7 @@ import * as R from "ramda";
 
 import { fromSec } from "@foxglove/rostime";
 import { Immutable } from "@foxglove/studio";
-import { MessageEvent } from "@foxglove/studio-base/players/types";
-import { Topic } from "@foxglove/studio-base/players/types";
+import { MessageEvent, Topic } from "@foxglove/studio-base/players/types";
 import { RosDatatypes, OptionalMessageDefinition } from "@foxglove/studio-base/types/RosDatatypes";
 
 import { initAccumulated } from "./accumulate";
