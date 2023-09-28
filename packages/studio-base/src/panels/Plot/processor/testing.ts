@@ -61,7 +61,7 @@ export const createPath = (path: string): PlotPath => ({
 });
 
 /**
- * createParams turns a list of signal paths into a full PlotParams.
+ * Turn a list of signal paths into a full PlotParams.
  */
 export const createParams = (...paths: string[]): PlotParams => ({
   startTime: fromSec(0),
@@ -75,6 +75,9 @@ export const createParams = (...paths: string[]): PlotParams => ({
   maxYValue: undefined,
 });
 
+/**
+ * Initialize a PlotData with fake data for the given `path`.
+ */
 export const createData = (path: PlotPath, count: number): PlotData => {
   const datasets = new Map<PlotPath, TypedDataSet>();
   datasets.set(path, {
@@ -99,7 +102,7 @@ export const createData = (path: PlotPath, count: number): PlotData => {
 };
 
 /**
- * createClient creates a Client that plots all of the given message paths.
+ * Create a Client that plots all of the given message paths.
  */
 export const createClient = (...paths: string[]): Client => {
   if (paths.length === 0) {
@@ -119,8 +122,8 @@ export const createClient = (...paths: string[]): Client => {
 };
 
 /**
- * createState creates a State with a single Client that plots all of the
- * given message paths.
+ * Creates a State with a single Client that plots all of the given message
+ * paths.
  */
 export const createState = (...paths: string[]): State => ({
   ...init(),
