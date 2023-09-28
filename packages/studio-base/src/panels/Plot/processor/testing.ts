@@ -3,14 +3,16 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import * as R from "ramda";
-import { init, initClient, Client, State } from "./state";
-import { PlotParams, PlotPath, Messages, TypedDataSet } from "../internalTypes";
+
 import { fromSec } from "@foxglove/rostime";
 import { MessageEvent } from "@foxglove/studio-base/players/types";
-import { PlotData } from "../plotData";
-import { datumToTyped } from "../datasets";
-import { getParamTopics } from "../params";
+
 import { initAccumulated } from "./accumulate";
+import { init, initClient, Client, State } from "./state";
+import { datumToTyped } from "../datasets";
+import { PlotParams, PlotPath, Messages, TypedDataSet } from "../internalTypes";
+import { getParamTopics } from "../params";
+import { PlotData } from "../plotData";
 
 export const CLIENT_ID = "foobar";
 export const FAKE_TOPIC = "/foo";
@@ -22,8 +24,7 @@ export const createMessageEvents = (
   schemaName: string,
   count: number,
 ): MessageEvent[] =>
-  R.map(
-    (i): MessageEvent => ({
+  (R.range(0, count)).map((i): MessageEvent => ({
       topic,
       schemaName,
       receiveTime: fromSec(i),
@@ -31,9 +32,7 @@ export const createMessageEvents = (
         data: i,
       },
       sizeInBytes: 0,
-    }),
-    R.range(0, count),
-  );
+    }));
 
 export const createMessages = (topic: string, schemaName: string, count: number): Messages => ({
   [topic]: createMessageEvents(topic, schemaName, count),

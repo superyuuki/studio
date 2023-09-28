@@ -2,7 +2,8 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { init, initClient, State, rebuildClient } from "./state";
+import { PlotViewport } from "@foxglove/studio-base/components/TimeBasedChart/types";
+
 import {
   unregister,
   compressClients,
@@ -14,6 +15,7 @@ import {
   updateView,
   getClientData,
 } from "./clients";
+import { init, initClient, State, rebuildClient } from "./state";
 import {
   FAKE_PATH,
   CLIENT_ID,
@@ -24,7 +26,6 @@ import {
   createMessages,
   createParams,
 } from "./testing";
-import { PlotViewport } from "@foxglove/studio-base/components/TimeBasedChart/types";
 import { DatasetsByPath, TypedDataSet } from "../internalTypes";
 
 describe("refreshClient", () => {
@@ -177,7 +178,7 @@ describe("getClientData", () => {
       return undefined;
     }
 
-    const first = datasets.keys().next()?.value;
+    const first = datasets.keys().next().value;
     if (first == undefined) {
       return undefined;
     }

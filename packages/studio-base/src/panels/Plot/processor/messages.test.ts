@@ -3,9 +3,11 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { Immutable } from "@foxglove/studio";
-import { init, rebuildClient, SideEffectType, State } from "./state";
 import { Topic } from "@foxglove/studio-base/players/types";
 import { RosDatatypes, OptionalMessageDefinition } from "@foxglove/studio-base/types/RosDatatypes";
+
+import { addBlock, addCurrent, receiveMetadata, evictCache, clearCurrent } from "./messages";
+import { init, rebuildClient, SideEffectType, State } from "./state";
 import {
   createParams,
   createClient,
@@ -17,7 +19,6 @@ import {
   FAKE_TOPIC,
   FAKE_SCHEMA,
 } from "./testing";
-import { addBlock, addCurrent, receiveMetadata, evictCache, clearCurrent } from "./messages";
 import { EmptyPlotData } from "../plotData";
 
 const FAKE_TOPICS: readonly Topic[] = [
