@@ -9,6 +9,8 @@ import { fromSec } from "@foxglove/rostime";
 import { MessageEvent } from "@foxglove/studio-base/players/types";
 import { PlotData } from "../plotData";
 import { datumToTyped } from "../datasets";
+import { getParamTopics } from "../params";
+import { initAccumulated } from "./accumulate";
 
 export const CLIENT_ID = "foobar";
 export const FAKE_TOPIC = "/foo";
@@ -77,10 +79,22 @@ export const createData = (path: PlotPath, count: number): PlotData => {
 /**
  * createClient creates a Client that plots all of the given message paths.
  */
-export const createClient = (...paths: string[]): Client => ({
-  ...initClient(CLIENT_ID, undefined),
-  params: createParams(...paths),
-});
+export const createClient = (...paths: string[]): Client => {
+  if (paths.length === 0) {
+    return initClient(CLIENT_ID, undefined);
+  }
+
+  const params = createParams(...paths);
+  const topics = getParamTopics(params);
+
+  return {
+    ...initClient(CLIENT_ID, undefined),
+    params,
+    topics,
+    blocks: initAccumulated(topics),
+    current: initAccumulated(topics),
+  };
+};
 
 /**
  * createState creates a State with a single Client that plots all of the
