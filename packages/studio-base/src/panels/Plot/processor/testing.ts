@@ -11,7 +11,9 @@ import { PlotData } from "../plotData";
 import { datumToTyped } from "../datasets";
 
 export const CLIENT_ID = "foobar";
-export const DATA_PATH = "/foo.data";
+export const FAKE_TOPIC = "/foo";
+export const FAKE_PATH = `${FAKE_TOPIC}.data`;
+export const FAKE_SCHEMA = "foo/Bar";
 
 export const createMessages = (topic: string, schemaName: string, count: number): Messages => ({
   [topic]: R.map(

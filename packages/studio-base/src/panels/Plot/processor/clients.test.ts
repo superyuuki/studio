@@ -15,7 +15,7 @@ import {
   getClientData,
 } from "./clients";
 import {
-  DATA_PATH,
+  FAKE_PATH,
   CLIENT_ID,
   createClient,
   createData,
@@ -37,7 +37,7 @@ describe("refreshClient", () => {
   });
 
   it("regenerates plots and triggers a rebuild", () => {
-    const initial = createState(DATA_PATH);
+    const initial = createState(FAKE_PATH);
     const {
       clients: [client],
     } = initial;
@@ -57,7 +57,7 @@ describe("receiveVariables", () => {
     foo: "bar",
   };
   it("does nothing when client does not use variables", () => {
-    const before = createState(DATA_PATH);
+    const before = createState(FAKE_PATH);
     const [after] = receiveVariables(vars, before);
     expect(after.clients[0]).toEqual(before.clients[0]);
   });
@@ -125,7 +125,7 @@ describe("register", () => {
     expect(effects).toEqual([]);
   });
   it("updates the client's params after registration", () => {
-    const [after, effects] = register(CLIENT_ID, createParams(DATA_PATH), init());
+    const [after, effects] = register(CLIENT_ID, createParams(FAKE_PATH), init());
     expect(after.clients.length).toEqual(1);
     expect(effects).toEqual([rebuildClient(CLIENT_ID)]);
   });
@@ -184,11 +184,11 @@ describe("getClientData", () => {
     return datasets.get(first);
   };
   it("returns only block data if block contains current", () => {
-    const initialClient = createClient(DATA_PATH);
-    const path = createPath(DATA_PATH);
+    const initialClient = createClient(FAKE_PATH);
+    const path = createPath(FAKE_PATH);
     const client = {
       ...initialClient,
-      params: createParams(DATA_PATH),
+      params: createParams(FAKE_PATH),
       view: {
         width: 0,
         height: 0,
@@ -222,11 +222,11 @@ describe("getClientData", () => {
     expect(getDataset(result?.datasets)?.data.length).toEqual(1);
   });
   it("returns both kinds of data if they do not overlap", () => {
-    const initialClient = createClient(DATA_PATH);
-    const path = createPath(DATA_PATH);
+    const initialClient = createClient(FAKE_PATH);
+    const path = createPath(FAKE_PATH);
     const client = {
       ...initialClient,
-      params: createParams(DATA_PATH),
+      params: createParams(FAKE_PATH),
       view: {
         width: 0,
         height: 0,
