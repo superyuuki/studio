@@ -17,7 +17,8 @@ import {
   FAKE_TOPIC,
   FAKE_SCHEMA,
 } from "./testing";
-import { addBlock, addCurrent, receiveMetadata, evictCache } from "./messages";
+import { addBlock, addCurrent, receiveMetadata, evictCache, clearCurrent } from "./messages";
+import { EmptyPlotData } from "../plotData";
 
 const FAKE_TOPICS: readonly Topic[] = [
   {
@@ -108,6 +109,17 @@ describe("addBlock", () => {
     expect(effects).toEqual([rebuildClient(CLIENT_ID)]);
     expect(after.clients[0]?.blocks).not.toEqual(before.clients[0]?.blocks);
   });
+  it("clears out the plot data for a client", () => {
+    const before: State = receiveMetadata(FAKE_TOPICS, FAKE_DATATYPES, createState(FAKE_PATH));
+    const [after, effects] = addBlock(
+      createMessages(FAKE_TOPIC, FAKE_SCHEMA, 1),
+      [FAKE_TOPIC],
+      before,
+    );
+    expect(effects).toEqual([rebuildClient(CLIENT_ID)]);
+    expect(after.clients[0]?.blocks).not.toEqual(before.clients[0]?.blocks);
+    expect(after.clients[0]?.blocks.cursors?.[FAKE_TOPIC]).toEqual(1);
+  });
 });
 
 describe("addCurrent", () => {
@@ -150,5 +162,18 @@ describe("addCurrent", () => {
     const [after, effects] = addCurrent(createMessageEvents(FAKE_TOPIC, FAKE_SCHEMA, 1), before);
     expect(effects).toEqual([rebuildClient(CLIENT_ID)]);
     expect(after.clients[0]?.current).not.toEqual(before.clients[0]?.current);
+  });
+});
+
+describe("clearCurrent", () => {
+  it("clears existing client state", () => {
+    const [before] = addCurrent(
+      createMessageEvents(FAKE_TOPIC, FAKE_SCHEMA, 1),
+      createState(FAKE_PATH),
+    );
+    const [after, effects] = clearCurrent(before);
+    expect(effects).toEqual([rebuildClient(CLIENT_ID)]);
+    expect(after.clients[0]?.current).not.toEqual(before.clients[0]?.current);
+    expect(after.clients[0]?.current.data).toEqual(EmptyPlotData);
   });
 });
