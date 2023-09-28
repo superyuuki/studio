@@ -17,8 +17,12 @@ export const FAKE_TOPIC = "/foo";
 export const FAKE_PATH = `${FAKE_TOPIC}.data`;
 export const FAKE_SCHEMA = "foo/Bar";
 
-export const createMessages = (topic: string, schemaName: string, count: number): Messages => ({
-  [topic]: R.map(
+export const createMessageEvents = (
+  topic: string,
+  schemaName: string,
+  count: number,
+): MessageEvent[] =>
+  R.map(
     (i): MessageEvent => ({
       topic,
       schemaName,
@@ -29,7 +33,10 @@ export const createMessages = (topic: string, schemaName: string, count: number)
       sizeInBytes: 0,
     }),
     R.range(0, count),
-  ),
+  );
+
+export const createMessages = (topic: string, schemaName: string, count: number): Messages => ({
+  [topic]: createMessageEvents(topic, schemaName, count),
 });
 
 export const createPath = (path: string): PlotPath => ({
