@@ -24,28 +24,39 @@ import { mergeSubscriptions } from "@foxglove/studio-base/components/MessagePipe
 import { TypedDataProvider } from "@foxglove/studio-base/components/TimeBasedChart/types";
 import useGlobalVariables from "@foxglove/studio-base/hooks/useGlobalVariables";
 import { SubscribePayload, MessageEvent } from "@foxglove/studio-base/players/types";
+import { fillInGlobalVariablesInPath } from "@foxglove/studio-base/components/MessagePathSyntax/useCachedGetMessagePathDataItems";
 
-import { PlotParams, Messages } from "./internalTypes";
-import { getPaths } from "./params";
-import { PlotData } from "./plotData";
+import { PlotParams, BasePlotPath, Messages, PlotDataItem } from "./internalTypes";
+import { PlotData, getMetadata, buildResolver } from "./plotData";
 
 type Service = Comlink.Remote<(typeof import("./useDatasets.worker"))["service"]>;
 
-// We need to keep track of the block data we've already sent to the worker and
-// detect when it has changed, which can happen when the user changes a user
-// script or they trigger a subscription to different fields.
-// mapping from topic -> the first message on that topic in the block
-type BlockStatus = Record<string, unknown>;
+type SubscriberState = { subscriptions: SubscribePayload[]; paths: string[] };
 type Client = {
   params: PlotParams | undefined;
-  setter: (topics: SubscribePayload[]) => void;
+  setter: (state: SubscriberState) => void;
+};
+
+type DataBuilder = {
+  path: string;
+  parsed: RosPath;
+  topic: string;
+  resolve: (messages: Messages) => PlotDataItem[] | undefined;
+};
+
+type BlockStatus = {
+  builder: DataBuilder;
+  // We need to keep track of the block data we've already sent to the worker and
+  // detect when it has changed, which can happen when the user changes a user
+  // script or they trigger a subscription to different fields.
+  // this is the first message on that topic in the block
+  messages: unknown[];
+  cursor: number;
 };
 
 let worker: Worker | undefined;
 let service: Service | undefined;
 let numClients: number = 0;
-let blockStatus: BlockStatus[] = [];
-let lastBlockSent: Record<string, number> = {};
 let clients: Record<string, Client> = {};
 
 const pending: ((service: Service) => void)[] = [];
@@ -59,9 +70,6 @@ async function waitService(): Promise<Service> {
 }
 
 const getIsLive = (ctx: MessagePipelineContext) => ctx.seekPlayback == undefined;
-
-const getPayloadString = (payload: SubscribePayload): string =>
-  `${payload.topic}:${(payload.fields ?? []).join(",")}`;
 
 /**
  * Get the SubscribePayload for a single path by subscribing to all fields
@@ -129,55 +137,41 @@ function chooseClient() {
   }
 
   const clientList = R.values(clients);
-  const subscriptions = R.pipe(
-    R.chain((client: Client): SubscribePayload[] => {
+  const paths = R.pipe(
+    R.chain((client: Client): BasePlotPath[] => {
       const { params } = client;
       if (params == undefined) {
         return [];
       }
 
       const { xAxisPath, paths: yAxisPaths } = params;
-
-      return R.pipe(
-        getPayloadsFromPaths,
-        R.chain((v): SubscribePayload[] => {
-          const partial: SubscribePayload = {
-            ...v,
-            preloadType: "partial",
-          };
-
-          // Subscribe to both "partial" and "full" when using "full" In
-          // theory, "full" should imply "partial" but not doing this breaks
-          // MockMessagePipelineProvider
-          return [partial, { ...partial, preloadType: "full" }];
-        }),
-      )(getPaths(yAxisPaths, xAxisPath));
+      return [...(xAxisPath != undefined ? [xAxisPath] : []), ...yAxisPaths];
     }),
-    (v) => mergeSubscriptions(v) as SubscribePayload[],
+    R.uniqBy((path) => path.value),
+    R.map((path: BasePlotPath) => path.value),
   )(clientList);
-  clientList[0]?.setter(subscriptions);
-
-  const blockTopics = R.pipe(
-    R.filter((v: SubscribePayload) => v.preloadType === "full"),
-    R.map(getPayloadString),
-  )(subscriptions);
-
-  // Also clear the status of any topics we're no longer using
-  blockStatus = blockStatus.map((block) => R.pick(blockTopics, block));
-  lastBlockSent = R.pick(blockTopics, lastBlockSent);
+  const subscriptions = R.pipe(
+    getPayloadsFromPaths,
+    (v) => mergeSubscriptions(v) as SubscribePayload[],
+    R.map((v: SubscribePayload): SubscribePayload => ({ ...v, preloadType: "full" })),
+  )(paths);
+  clientList[0]?.setter({ subscriptions, paths });
 }
 
 // Subscribe to "current" messages (those near the seek head) and forward new
 // messages to the worker as they arrive.
 function useData(id: string, params: PlotParams) {
-  const [subscriptions, setSubscribed] = React.useState<SubscribePayload[]>([]);
+  const [{ subscriptions, paths }, setState] = React.useState<SubscriberState>({
+    paths: [],
+    subscriptions: [],
+  });
   // Register client when the panel mounts and unregister when it unmounts
   useEffect(() => {
     clients = {
       ...clients,
       [id]: {
         params: undefined,
-        setter: setSubscribed,
+        setter: setState,
       },
     };
     chooseClient();
@@ -202,6 +196,56 @@ function useData(id: string, params: PlotParams) {
     chooseClient();
   }, [id, params]);
 
+  // go from paths -> vars/meta -> (Message -> TypedData | undefined)
+  // need path -> block cursor, data builder
+  // lastBlockSent: the block cursor
+  // blockStatus: the first message on each topic for each block
+
+  const { topics, datatypes } = useDataSourceInfo();
+  const metadata = React.useMemo(() => getMetadata(topics, datatypes), [topics, datatypes]);
+  const { globalVariables } = useGlobalVariables();
+
+  const dataBuilders = React.useMemo(() => {
+    return R.chain((path: string): DataBuilder[] => {
+      const parsed = parseRosPath(path);
+      if (parsed == undefined) {
+        return [];
+      }
+
+      const filled = fillInGlobalVariablesInPath(parsed, globalVariables);
+      return [
+        {
+          path,
+          topic: filled.topicName,
+          parsed: filled,
+          resolve: buildResolver(metadata, filled),
+        },
+      ];
+    }, paths);
+  }, [paths, globalVariables, metadata]);
+
+  // contains what lastBlockSent and blockStatus used to
+  const sendStatus = React.useRef<Record<string, BlockStatus>>({});
+  React.useEffect(() => {
+    const { current } = sendStatus;
+    for (const builder of dataBuilders) {
+      const { path } = builder;
+      const existing = current[path];
+      if (existing != undefined && R.equals(builder.parsed, existing.builder.parsed)) {
+        continue;
+      }
+
+      current[path] = {
+        cursor: 0,
+        messages: [],
+        builder,
+      };
+    }
+  }, [dataBuilders]);
+
+  // make worker responsible for clearing out paths that use globalVariables in
+  // response to changes
+
   const isLive = useMessagePipeline<boolean>(getIsLive);
   useEffect(() => {
     void (async () => {
@@ -210,13 +254,8 @@ function useData(id: string, params: PlotParams) {
     })();
   }, [isLive]);
 
-  const [blockSubscriptions, currentSubscriptions] = React.useMemo(
-    () => R.partition((v) => v.preloadType === "full", subscriptions),
-    [subscriptions],
-  );
-
   useCurrent<number>({
-    topics: currentSubscriptions,
+    topics: subscriptions,
     restore: React.useCallback((state: number | undefined): number => {
       if (state == undefined) {
         void service?.clearCurrent();
@@ -252,75 +291,71 @@ function useData(id: string, params: PlotParams) {
     ),
   });
 
-  const blocks = useBlocks(blockSubscriptions);
+  const blocks = useBlocks(subscriptions);
   useEffect(() => {
+    const { current } = sendStatus;
     for (const [index, block] of blocks.entries()) {
       if (R.isEmpty(block)) {
         continue;
       }
 
-      // Package any new messages into a single bundle to send to the worker
-      const messages: Messages = {};
+      const newData: Record<string, PlotDataItem[]> = {};
       // Make a note of any topics that had new data so we can clear out
       // accumulated points in the worker
       const resetData: Set<string> = new Set<string>();
-      const status: BlockStatus = blockStatus[index] ?? {};
-      for (const payload of blockSubscriptions) {
-        const ref = getPayloadString(payload);
-        const topicMessages = block[payload.topic];
+
+      for (const builder of dataBuilders) {
+        const { path, topic, resolve } = builder;
+        const builderStatus = current[path];
+        if (builderStatus == undefined) {
+          continue;
+        }
+
+        const topicMessages = block[topic];
         if (topicMessages == undefined) {
           continue;
         }
 
         const first = topicMessages[0]?.message;
-        const existing = status[ref];
-
-        // keep track of the block index that we last sent; if there's a new
-        // change BEFORE that index, we need to reset the plot data; otherwise
-        // we do not
-        const lastSent = lastBlockSent[ref];
+        const existing = builderStatus.messages[index];
         if (R.equals(existing, first)) {
           continue;
         }
 
+        // keep track of the block index that we last sent; if there's a new
+        // change BEFORE that index, we need to reset the plot data; otherwise
+        // we do not
+        const lastSent = builderStatus.cursor;
         // we already had a message in this block, meaning the data itself has
         // changed; we have to rebuild the plots
         if (existing != undefined && lastSent != undefined && index < lastSent) {
-          resetData.add(payload.topic);
-
+          resetData.add(path);
           // clear out the status of all subsequent blocks for this ref
-          for (let i = index + 1; i < blockStatus.length; i++) {
-            blockStatus[i] = R.omit([ref], blockStatus[i]);
+          for (let i = index + 1; i < builderStatus.messages.length; i++) {
+            builderStatus.messages[i] = undefined;
           }
         }
+        builderStatus.messages[index] = first;
+        builderStatus.cursor = index;
 
-        status[ref] = first;
-        messages[payload.topic] = topicMessages as MessageEvent[];
-        lastBlockSent[ref] = index;
+        const data = resolve(block as Messages);
+        if (data == undefined) {
+          continue;
+        }
+        newData[path] = data;
       }
-      blockStatus[index] = status;
 
-      if (R.isEmpty(messages)) {
+      if (R.isEmpty(newData) && resetData.size === 0) {
         continue;
       }
 
-      void service?.addBlock(messages, Array.from(resetData));
+      void service?.addBlock(newData, Array.from(resetData));
     }
-  }, [blockSubscriptions, blocks]);
+  }, [subscriptions, blocks, dataBuilders]);
 }
 
 // Mirror all of the topics and datatypes to the worker as necessary.
-function useMetadata() {
-  const { topics, datatypes } = useDataSourceInfo();
-  useEffect(() => {
-    void service?.receiveMetadata(topics, datatypes);
-  }, [topics, datatypes]);
-
-  const { globalVariables } = useGlobalVariables();
-  useEffect(() => {
-    void service?.receiveVariables(globalVariables);
-  }, [globalVariables]);
-}
+function useMetadata() {}
 
 /**
  * useDatasets uses a Web Worker to collect, aggregate, and downsample plot
@@ -353,7 +388,6 @@ export default function useDatasets(params: PlotParams): {
       if (numClients === 0) {
         worker?.terminate();
         worker = service = undefined;
-        blockStatus = [];
       }
     };
   }, []);

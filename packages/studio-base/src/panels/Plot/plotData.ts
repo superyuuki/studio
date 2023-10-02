@@ -5,6 +5,7 @@
 import * as _ from "lodash-es";
 import * as R from "ramda";
 
+import { Immutable } from "@foxglove/studio";
 import { Time } from "@foxglove/rostime";
 import { Immutable as Im } from "@foxglove/studio";
 import { iterateTyped, getTypedLength } from "@foxglove/studio-base/components/Chart/datasets";
@@ -17,10 +18,13 @@ import {
   concatTyped,
   mergeTyped,
 } from "@foxglove/studio-base/panels/Plot/datasets";
-import { MessageEvent } from "@foxglove/studio-base/players/types";
+import { Topic, MessageEvent } from "@foxglove/studio-base/players/types";
 import { Bounds, makeInvertedBounds, unionBounds } from "@foxglove/studio-base/types/Bounds";
 import { Range } from "@foxglove/studio-base/util/ranges";
 import { getTimestampForMessage } from "@foxglove/studio-base/util/time";
+import { enumValuesByDatatypeAndField } from "@foxglove/studio-base/util/enums";
+import { messagePathStructures } from "@foxglove/studio-base/components/MessagePathSyntax/messagePathsForDatatype";
+import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 
 import { resolveTypedIndices, derivative } from "./datasets";
 import {
@@ -33,6 +37,7 @@ import {
   MetadataEnums,
   TypedData,
   TypedDataSet,
+  Messages,
 } from "./internalTypes";
 import * as maps from "./maps";
 
@@ -242,12 +247,25 @@ export function buildPlotData(
   };
 }
 
+export function getMetadata(
+  topics: readonly Topic[],
+  datatypes: Immutable<RosDatatypes>,
+): MetadataEnums {
+  return {
+    topics,
+    datatypes,
+    enumValues: enumValuesByDatatypeAndField(datatypes),
+    structures: messagePathStructures(datatypes),
+  };
+}
+
 export function resolvePath(
   metadata: MetadataEnums,
   messages: readonly MessageEvent[],
   path: RosPath,
 ): PlotDataItem[] {
   const { structures, enumValues } = metadata;
+  // TODO(cfoust): 10/02/23 this should not be here
   const topics = R.indexBy((topic) => topic.name, metadata.topics);
 
   return R.chain((message: MessageEvent): PlotDataItem[] => {
@@ -265,6 +283,19 @@ export function resolvePath(
     ];
   }, messages);
 }
+
+/**
+ * buildResolver is a partially curried version of resolvePath.
+ */
+export const buildResolver =
+  (metadata: MetadataEnums, path: RosPath) =>
+  (messages: Messages): PlotDataItem[] | undefined => {
+    const topicMessages = messages[path.topicName];
+    if (topicMessages == undefined) {
+      return undefined;
+    }
+    return resolvePath(metadata, topicMessages, path);
+  };
 
 const createPlotMapping =
   (map: (dataset: TypedDataSet, path: PlotPath) => TypedDataSet) =>
