@@ -3,9 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 import * as R from "ramda";
 
-import { RosPath } from "@foxglove/studio-base/components/MessagePathSyntax/constants";
-import parseRosPath from "@foxglove/studio-base/components/MessagePathSyntax/parseRosPath";
-
 import { PlotParams, BasePlotPath, PlotPath } from "./internalTypes";
 
 export function getPaths(paths: readonly PlotPath[], xAxisPath?: BasePlotPath): string[] {
@@ -27,30 +24,5 @@ export function isSingleMessage(params: PlotParams): boolean {
 }
 
 export function getParamPaths(params: PlotParams): readonly string[] {
-  return getPaths(params.paths, params.xAxisPath);
-}
-
-type ParsedPath = {
-  parsed: RosPath;
-  value: string;
-};
-
-export function getParamTopics(params: PlotParams): readonly string[] {
-  return R.pipe(
-    R.chain((path: string): ParsedPath[] => {
-      const parsed = parseRosPath(path);
-      if (parsed == undefined) {
-        return [];
-      }
-
-      return [
-        {
-          parsed,
-          value: path,
-        },
-      ];
-    }),
-    R.map((v: ParsedPath) => v.parsed.topicName),
-    R.uniq,
-  )(getParamPaths(params));
+  return R.uniq(getPaths(params.paths, params.xAxisPath));
 }

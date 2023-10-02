@@ -14,7 +14,7 @@ import { initProcessor, initClient } from "./state";
 import { Client, State } from "./types";
 import { datumToTyped } from "../datasets";
 import { PlotParams, PlotPath, Messages, TypedDataSet } from "../internalTypes";
-import { getParamTopics } from "../params";
+import { getParamPaths } from "../params";
 import { PlotData } from "../plotData";
 
 export const CLIENT_ID = "foobar";
@@ -111,7 +111,7 @@ export const createClient = (...paths: string[]): Client => {
   }
 
   const params = createParams(...paths);
-  const topics = getParamTopics(params);
+  const topics = getParamPaths(params);
 
   return {
     ...initClient(CLIENT_ID, undefined),

@@ -27,7 +27,7 @@ import { SubscribePayload, MessageEvent } from "@foxglove/studio-base/players/ty
 import { fillInGlobalVariablesInPath } from "@foxglove/studio-base/components/MessagePathSyntax/useCachedGetMessagePathDataItems";
 
 import { initBlockState, refreshBlockTopics, processBlocks } from "./blocks";
-import { PlotParams, BasePlotPath, Messages, PlotDataItem } from "./internalTypes";
+import { PlotParams, BasePlotPath, Messages, Datapoints } from "./internalTypes";
 import { PlotData, getMetadata, buildResolver } from "./plotData";
 
 type Service = Comlink.Remote<(typeof import("./useDatasets.worker"))["service"]>;
@@ -42,7 +42,7 @@ type DataBuilder = {
   path: string;
   parsed: RosPath;
   topic: string;
-  resolve: (messages: Messages) => PlotDataItem[] | undefined;
+  resolve: (messages: Messages) => Datapoints | undefined;
 };
 
 type BlockStatus = {

@@ -38,6 +38,8 @@ import {
   TypedData,
   TypedDataSet,
   Messages,
+  createTimeArray,
+  Datapoints,
 } from "./internalTypes";
 import * as maps from "./maps";
 
@@ -190,17 +192,15 @@ export function reducePlotData(data: PlotData[]): PlotData {
   return reduced;
 }
 
-type PathData = [PlotPath, PlotDataItem[] | undefined];
-export function buildPlotData(
-  args: Im<{
-    invertedTheme?: boolean;
-    paths: PathData[];
-    startTime: Time;
-    xAxisPath?: BasePlotPath;
-    xAxisData: PlotDataItem[] | undefined;
-    xAxisVal: PlotXAxisVal;
-  }>,
-): PlotData {
+type PathData = [PlotPath, Datapoints[] | undefined];
+export function buildPlotData(args: {
+  invertedTheme?: boolean;
+  paths: PathData[];
+  startTime: Time;
+  xAxisPath?: BasePlotPath;
+  xAxisData: Datapoints[] | undefined;
+  xAxisVal: PlotXAxisVal;
+}): PlotData {
   const { paths, startTime, xAxisVal, xAxisPath, xAxisData, invertedTheme } = args;
   const bounds: Bounds = makeInvertedBounds();
   const pathsWithMismatchedDataLengths: string[] = [];
@@ -263,12 +263,11 @@ export function resolvePath(
   metadata: MetadataEnums,
   messages: readonly MessageEvent[],
   path: RosPath,
-): PlotDataItem[] {
+): Datapoints | undefined {
   const { structures, enumValues } = metadata;
   // TODO(cfoust): 10/02/23 this should not be here
   const topics = R.indexBy((topic) => topic.name, metadata.topics);
-
-  return R.chain((message: MessageEvent): PlotDataItem[] => {
+  const plotDataItems = R.chain((message: MessageEvent): PlotDataItem[] => {
     const items = getMessagePathDataItems(message, path, topics, structures, enumValues);
     if (items == undefined) {
       return [];
@@ -282,6 +281,50 @@ export function resolvePath(
       },
     ];
   }, messages);
+
+  if (plotDataItems.length === 0) {
+    return undefined;
+  }
+
+  const haveHeaderStamp = plotDataItems[0]?.headerStamp != undefined;
+  const { length: numItems } = plotDataItems;
+  const numPoints = R.pipe(
+    R.map((v: PlotDataItem) => v.queriedData.length),
+    R.sum,
+  )(plotDataItems);
+  const result: Datapoints = {
+    index: new Int16Array(numItems),
+    receiveTime: createTimeArray(numItems),
+    ...(haveHeaderStamp ? { headerStamp: createTimeArray(numItems) } : {}),
+
+    value: new Float32Array(numPoints),
+  };
+
+  let pointIndex = 0;
+  for (let i = 0; i < numItems; i++) {
+    const item = plotDataItems[i];
+    if (item == undefined) {
+      continue;
+    }
+
+    result.index[i] = pointIndex;
+    result.receiveTime.sec[i] = item.receiveTime.sec;
+    result.receiveTime.nsec[i] = item.receiveTime.nsec;
+
+    const headerStamp = result.headerStamp;
+    if (headerStamp != undefined) {
+      headerStamp.sec[i] = item.headerStamp?.sec ?? 0;
+      headerStamp.nsec[i] = item.headerStamp?.nsec ?? 0;
+    }
+
+    for (const point of item.queriedData) {
+      // TODO(cfoust): 10/03/23 handle Time
+      result.value[pointIndex] = Number(point.value);
+      pointIndex++;
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -289,7 +332,7 @@ export function resolvePath(
  */
 export const buildResolver =
   (metadata: MetadataEnums, path: RosPath) =>
-  (messages: Messages): PlotDataItem[] | undefined => {
+  (messages: Messages): Datapoints | undefined => {
     const topicMessages = messages[path.topicName];
     if (topicMessages == undefined) {
       return undefined;

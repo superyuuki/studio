@@ -11,7 +11,7 @@ import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 import { initAccumulated, accumulate, buildPlot } from "./accumulate";
 import { rebuildClient, sendData, mapClients, noEffects, keepEffects } from "./state";
 import { State, StateAndEffects, Client, SideEffects } from "./types";
-import { Messages } from "../internalTypes";
+import { PointData } from "../internalTypes";
 import { isSingleMessage } from "../params";
 import { getMetadata } from "../plotData";
 
@@ -28,37 +28,37 @@ export function receiveMetadata(
 
 export function evictCache(state: State): State {
   const { clients, blocks, current } = state;
-  const topics = R.pipe(
-    R.chain(({ topics: clientTopics }: Client) => clientTopics),
+  const paths = R.pipe(
+    R.chain(({ paths: clientPaths }: Client) => clientPaths),
     R.uniq,
   )(clients);
 
   return {
     ...state,
-    blocks: R.pick(topics, blocks),
-    current: R.pick(topics, current),
+    blocks: R.pick(paths, blocks),
+    current: R.pick(paths, current),
   };
 }
 
-export function addBlock(block: Messages, resetTopics: string[], state: State): StateAndEffects {
-  const { blocks, metadata, globalVariables } = state;
-  const topics = R.keys(block);
+export function addBlock(data: PointData, resetPaths: string[], state: State): StateAndEffects {
+  const { blocks } = state;
+  const paths = R.keys(data);
 
-  const newState = {
+  const newState: State = {
     ...state,
     blocks: R.pipe(
       // Remove data for any topics that have been reset
-      R.omit(resetTopics),
+      R.omit(resetPaths),
       // Merge the new block into the existing blocks
-      (newBlocks) => R.mergeWith(R.concat, newBlocks, block),
+      (newBlocks) => R.mergeWith(R.concat, newBlocks, data),
     )(blocks),
   };
 
   return mapClients((client, { blocks: newBlocks }): [Client, SideEffects] => {
     const { id, params } = client;
-    const relevantTopics = R.intersection(topics, client.topics);
-    const shouldReset = R.intersection(relevantTopics, resetTopics).length > 0;
-    if (params == undefined || isSingleMessage(params) || relevantTopics.length === 0) {
+    const relevantPaths = R.intersection(paths, client.paths);
+    const shouldReset = R.intersection(relevantPaths, resetPaths).length > 0;
+    if (params == undefined || isSingleMessage(params) || relevantPaths.length === 0) {
       return [client, []];
     }
 
@@ -66,9 +66,7 @@ export function addBlock(block: Messages, resetTopics: string[], state: State): 
       {
         ...client,
         blocks: accumulate(
-          metadata,
-          globalVariables,
-          shouldReset ? initAccumulated(client.topics) : client.blocks,
+          shouldReset ? initAccumulated(client.paths) : client.blocks,
           params,
           newBlocks,
         ),
@@ -90,7 +88,7 @@ export function addCurrent(events: readonly MessageEvent[], state: State): State
 
   return R.pipe(
     mapClients((client): [Client, SideEffects] => {
-      const { current, metadata, globalVariables } = newState;
+      const { current } = newState;
       const { id, params } = client;
       if (params == undefined) {
         return noEffects(client);
@@ -98,8 +96,6 @@ export function addCurrent(events: readonly MessageEvent[], state: State): State
 
       if (isSingleMessage(params)) {
         const plotData = buildPlot(
-          metadata,
-          globalVariables,
           params,
           R.map((messages) => messages.slice(-1), current),
         );
@@ -109,7 +105,7 @@ export function addCurrent(events: readonly MessageEvent[], state: State): State
       return [
         {
           ...client,
-          current: accumulate(metadata, globalVariables, client.current, params, current),
+          current: accumulate(client.current, params, current),
         },
         [rebuildClient(id)],
       ];
@@ -128,7 +124,7 @@ export function clearCurrent(state: State): StateAndEffects {
     return [
       {
         ...client,
-        current: initAccumulated(client.topics),
+        current: initAccumulated(client.paths),
       },
       [rebuildClient(client.id)],
     ];

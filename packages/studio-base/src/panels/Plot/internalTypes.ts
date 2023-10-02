@@ -23,7 +23,32 @@ import { Topic, MessageEvent } from "@foxglove/studio-base/players/types";
 import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 import { TimestampMethod } from "@foxglove/studio-base/util/time";
 
+export type TimeArray = {
+  sec: Float64Array;
+  nsec: Float64Array;
+};
+
+export const createTimeArray = (size: number): TimeArray => ({
+  sec: new Float64Array(size),
+  nsec: new Float64Array(size),
+});
+
+export type Datapoints = {
+  // a single message can produce arbitrarily many individual data points, such
+  // as in single-message plots.
+  // `index` contains an entry for each _message_ and points to the offset
+  // inside of `value` at which this message's points begin
+  index: Int16Array;
+  // each entry in `index` has a receiveTime and headerStamp that is shared for
+  // all of the values it references
+  receiveTime: TimeArray;
+  headerStamp?: TimeArray;
+
+  value: Float32Array;
+};
+
 export type Messages = Record<string, MessageEvent[]>;
+export type PointData = Record<string, Datapoints[]>;
 
 export type BasePlotPath = {
   value: string;
