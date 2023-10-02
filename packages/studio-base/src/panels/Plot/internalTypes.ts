@@ -24,6 +24,7 @@ import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 import { TimestampMethod } from "@foxglove/studio-base/util/time";
 
 export type Messages = Record<string, MessageEvent[]>;
+export type PointData = Record<string, PlotDataItem[]>;
 
 export type BasePlotPath = {
   value: string;

@@ -302,7 +302,7 @@ function useData(id: string, params: PlotParams) {
       const newData: Record<string, PlotDataItem[]> = {};
       // Make a note of any topics that had new data so we can clear out
       // accumulated points in the worker
-      const resetData: Set<string> = new Set<string>();
+      const resetPaths: Set<string> = new Set<string>();
 
       for (const builder of dataBuilders) {
         const { path, topic, resolve } = builder;
@@ -329,7 +329,7 @@ function useData(id: string, params: PlotParams) {
         // we already had a message in this block, meaning the data itself has
         // changed; we have to rebuild the plots
         if (existing != undefined && lastSent != undefined && index < lastSent) {
-          resetData.add(path);
+          resetPaths.add(path);
           // clear out the status of all subsequent blocks for this ref
           for (let i = index + 1; i < builderStatus.messages.length; i++) {
             builderStatus.messages[i] = undefined;
@@ -345,11 +345,11 @@ function useData(id: string, params: PlotParams) {
         newData[path] = data;
       }
 
-      if (R.isEmpty(newData) && resetData.size === 0) {
+      if (R.isEmpty(newData) && resetPaths.size === 0) {
         continue;
       }
 
-      void service?.addBlock(newData, Array.from(resetData));
+      void service?.addBlock(newData, Array.from(resetPaths));
     }
   }, [subscriptions, blocks, dataBuilders]);
 }

@@ -8,13 +8,13 @@ import { PlotViewport } from "@foxglove/studio-base/components/TimeBasedChart/ty
 import { GlobalVariables } from "@foxglove/studio-base/hooks/useGlobalVariables";
 
 import { Accumulated, initAccumulated } from "./accumulate";
-import { PlotParams, Messages, MetadataEnums } from "../internalTypes";
+import { PlotParams, PointData, MetadataEnums } from "../internalTypes";
 import { PlotData } from "../plotData";
 
 export type Client = {
   id: string;
   params: PlotParams | undefined;
-  topics: readonly string[];
+  paths: readonly string[];
   view: PlotViewport | undefined;
   blocks: Accumulated;
   current: Accumulated;
@@ -24,7 +24,7 @@ export function initClient(id: string, params: PlotParams | undefined): Client {
   return {
     id,
     params,
-    topics: [],
+    paths: [],
     view: undefined,
     blocks: initAccumulated([]),
     current: initAccumulated([]),
@@ -35,8 +35,8 @@ export type State = {
   isLive: boolean;
   clients: Client[];
   globalVariables: GlobalVariables;
-  blocks: Messages;
-  current: Messages;
+  blocks: PointData;
+  current: PointData;
   metadata: MetadataEnums;
 };
 

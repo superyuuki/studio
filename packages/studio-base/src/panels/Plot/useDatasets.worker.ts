@@ -16,14 +16,13 @@ import { Topic, MessageEvent } from "@foxglove/studio-base/players/types";
 import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 
 import { resolveTypedIndices } from "./datasets";
-import { PlotParams, TypedData, Messages } from "./internalTypes";
+import { PlotParams, TypedData, PlotDataItem } from "./internalTypes";
 import { isSingleMessage } from "./params";
 import { PlotData, StateHandler, mapDatasets, getProvidedData } from "./plotData";
 import {
   SideEffectType,
   State as ProcessorState,
   StateAndEffects,
-  addBlock,
   addCurrent,
   clearCurrent,
   findClient,
@@ -34,6 +33,7 @@ import {
   register,
   setLive,
   unregister,
+  addBlock,
   updateParams,
   updateView,
   compressClients,
@@ -156,8 +156,8 @@ setInterval(() => {
 }, 2000);
 
 export const service = {
-  addBlock(block: Messages, resetTopics: string[]): void {
-    handleEffects(addBlock(block, resetTopics, state));
+  addBlock(data: Record<string, PlotDataItem[]>, resetPaths: string[]): void {
+    handleEffects(addBlock(data, resetPaths, state));
   },
   addCurrent(events: readonly MessageEvent[]): void {
     handleEffects(addCurrent(events, state));

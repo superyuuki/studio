@@ -25,7 +25,7 @@ import {
   initClient,
 } from "./state";
 import { PlotParams } from "../internalTypes";
-import { getParamTopics, getParamPaths } from "../params";
+import { getParamPaths } from "../params";
 import {
   reducePlotData,
   PlotData,
@@ -34,20 +34,20 @@ import {
 } from "../plotData";
 
 export function refreshClient(client: Client, state: State): [Client, SideEffects] {
-  const { blocks, current, metadata, globalVariables } = state;
+  const { blocks, current } = state;
   const { id, params } = client;
   if (params == undefined) {
     return noEffects(client);
   }
 
-  const topics = getParamTopics(params);
-  const initialState = initAccumulated(topics);
+  const paths = getParamPaths(params);
+  const initialState = initAccumulated(client.paths);
   return [
     {
       ...client,
-      topics,
-      blocks: accumulate(metadata, globalVariables, initialState, params, blocks),
-      current: accumulate(metadata, globalVariables, initialState, params, current),
+      paths,
+      blocks: accumulate(initialState, params, blocks),
+      current: accumulate(initialState, params, current),
     },
     [rebuildClient(id)],
   ];
@@ -99,7 +99,7 @@ export function updateParams(id: string, params: PlotParams, state: State): Stat
         {
           ...client,
           params,
-          topics: getParamTopics(params),
+          paths: getParamPaths(params),
         },
         state,
       );
