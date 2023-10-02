@@ -5,16 +5,15 @@
 import * as R from "ramda";
 
 import { Immutable } from "@foxglove/studio";
-import { messagePathStructures } from "@foxglove/studio-base/components/MessagePathSyntax/messagePathsForDatatype";
 import { Topic, MessageEvent } from "@foxglove/studio-base/players/types";
 import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
-import { enumValuesByDatatypeAndField } from "@foxglove/studio-base/util/enums";
 
 import { initAccumulated, accumulate, buildPlot } from "./accumulate";
 import { rebuildClient, sendData, mapClients, noEffects, keepEffects } from "./state";
 import { State, StateAndEffects, Client, SideEffects } from "./types";
 import { Messages } from "../internalTypes";
 import { isSingleMessage } from "../params";
+import { getMetadata } from "../plotData";
 
 export function receiveMetadata(
   topics: readonly Topic[],
@@ -23,12 +22,7 @@ export function receiveMetadata(
 ): State {
   return {
     ...state,
-    metadata: {
-      topics,
-      datatypes,
-      enumValues: enumValuesByDatatypeAndField(datatypes),
-      structures: messagePathStructures(datatypes),
-    },
+    metadata: getMetadata(topics, datatypes),
   };
 }
 
