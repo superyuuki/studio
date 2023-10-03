@@ -24,13 +24,13 @@ import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 import { TimestampMethod } from "@foxglove/studio-base/util/time";
 
 export type TimeArray = {
-  sec: Float32Array;
-  nsec: Float32Array;
+  sec: Float64Array;
+  nsec: Float64Array;
 };
 
 export const createTimeArray = (size: number): TimeArray => ({
-  sec: new Float32Array(size),
-  nsec: new Float32Array(size),
+  sec: new Float64Array(size),
+  nsec: new Float64Array(size),
 });
 
 export type Datapoints = {

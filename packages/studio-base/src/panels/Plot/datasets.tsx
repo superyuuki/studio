@@ -5,7 +5,6 @@
 import * as R from "ramda";
 
 import { isTime, subtract, Time, toSec } from "@foxglove/rostime";
-import { Immutable } from "@foxglove/studio";
 import {
   iterateTyped,
   findIndices,
@@ -22,7 +21,6 @@ import {
   TypedDataSet,
   TypedData,
   isReferenceLinePlotPathType,
-  PlotDataItem,
   PlotPath,
   PlotXAxisVal,
 } from "./internalTypes";
@@ -37,8 +35,8 @@ function getXForPoint(
   xAxisVal: PlotXAxisVal,
   timestamp: number,
   innerIdx: number,
-  xAxisRanges: Immutable<PlotDataItem[]> | undefined,
-  xItem: undefined | Immutable<PlotDataItem>,
+  xAxisRanges: Datapoints[] | undefined,
+  xItem: Items | undefined,
   xAxisPath: BasePlotPath | undefined,
 ): number | bigint {
   if (isCustomScale(xAxisVal) && xAxisPath) {
@@ -49,7 +47,7 @@ function getXForPoint(
       if (!xItem) {
         return NaN;
       }
-      const value = xItem.queriedData[innerIdx]?.value;
+      const value = xItem.values[innerIdx];
       return isTime(value) ? toSec(value) : typeof value === "bigint" ? value : Number(value);
     }
   }
@@ -96,13 +94,13 @@ export function concatTyped(a: TypedData[], b: TypedData[]): TypedData[] {
 }
 
 function getDatumsForMessagePathItem(
-  yItem: Immutable<PlotDataItem>,
-  xItem: undefined | Immutable<PlotDataItem>,
+  yItem: Items,
+  xItem: Items | undefined,
   startTime: Time,
   timestampMethod: TimestampMethod,
   xAxisVal: PlotXAxisVal,
   xAxisPath?: BasePlotPath,
-  xAxisRanges?: Immutable<PlotDataItem[]>,
+  xAxisRanges?: Datapoints[] | undefined,
 ): { data: Datum[]; hasMismatchedData: boolean } {
   const timestamp = timestampMethod === "headerStamp" ? yItem.headerStamp : yItem.receiveTime;
   if (!timestamp) {
@@ -110,8 +108,8 @@ function getDatumsForMessagePathItem(
   }
   const data: Datum[] = [];
   const elapsedTime = toSec(subtract(timestamp, startTime));
-  for (const entry of yItem.queriedData.entries()) {
-    const [innerIdx, { value, constantName }] = entry;
+  for (const entry of yItem.values.entries()) {
+    const [innerIdx, value] = entry;
     if (
       typeof value === "number" ||
       typeof value === "boolean" ||
@@ -127,7 +125,8 @@ function getDatumsForMessagePathItem(
           x: Number(x),
           y: Number(y),
           value,
-          constantName,
+          // TODO(cfoust): 10/03/23
+          constantName: "",
           receiveTime: yItem.receiveTime,
           headerStamp: yItem.headerStamp,
         });
@@ -142,24 +141,25 @@ function getDatumsForMessagePathItem(
         receiveTime: yItem.receiveTime,
         headerStamp: yItem.headerStamp,
         value: `${format(value)} (${formatTimeRaw(value)})`,
-        constantName,
+        // TODO(cfoust): 10/03/23
+        constantName: "",
       });
     }
   }
 
   const hasMismatchedData =
-    isCustomScale(xAxisVal) && (!xItem || yItem.queriedData.length !== xItem.queriedData.length);
+    isCustomScale(xAxisVal) && (!xItem || yItem.values.length !== xItem.values.length);
   return { data, hasMismatchedData };
 }
 
-type Datapoint = {
-  value: number;
+type Items = {
+  values: number[];
   receiveTime: Time;
   headerStamp?: Time;
 };
-export function* iterateDatapoints(data: Datapoints[]): Generator<Datapoint> {
-  let point: Datapoint = {
-    value: 0,
+export function* iterateDatapoints(data: Datapoints[]): Generator<Items> {
+  let items: Items = {
+    values: [],
     receiveTime: {
       sec: 0,
       nsec: 0,
@@ -167,20 +167,28 @@ export function* iterateDatapoints(data: Datapoints[]): Generator<Datapoint> {
   };
 
   for (const slice of data) {
-    for (let i = 0; i < slice.value.length; i++) {
+    const { value } = slice;
+    for (let i = 0; i < slice.index.length; i++) {
       const {
-        value: { [i]: value },
+        index: { [i]: startIndex },
         receiveTime: {
           sec: { [i]: receiveTimeSec },
           nsec: { [i]: receiveTimeNsec },
         },
       } = slice;
-      if (value == undefined || receiveTimeSec == undefined || receiveTimeNsec == undefined) {
+      const endIndex = slice.index[i + 1] ?? value.length;
+      if (
+        startIndex == undefined ||
+        receiveTimeSec == undefined ||
+        receiveTimeNsec == undefined ||
+        endIndex === 0
+      ) {
         continue;
       }
-      point.value = value;
-      point.receiveTime.sec = receiveTimeSec;
-      point.receiveTime.nsec = receiveTimeNsec;
+      items.receiveTime.sec = receiveTimeSec;
+      items.receiveTime.nsec = receiveTimeNsec;
+      // probably inefficient, revisit this
+      items.values = Array.from(value.slice(startIndex, endIndex));
 
       if (slice.headerStamp != undefined) {
         const {
@@ -192,15 +200,15 @@ export function* iterateDatapoints(data: Datapoints[]): Generator<Datapoint> {
         if (headerStampSec == undefined || headerStampNsec == undefined) {
           continue;
         }
-        point.headerStamp = {
+        items.headerStamp = {
           sec: headerStampSec,
           nsec: headerStampNsec,
         };
       } else {
-        point.headerStamp = undefined;
+        items.headerStamp = undefined;
       }
 
-      yield point;
+      yield items;
     }
   }
 }
@@ -248,7 +256,7 @@ export function getDatasetsFromMessagePlotPath({
   const rangeData: Datum[] = [];
   const xIterator = iterateDatapoints(xAxisRanges ?? []);
   for (const item of iterateDatapoints(yAxisRanges)) {
-    const xItem = xIterator.next();
+    const xItem = xIterator.next().value;
     const { data: datums, hasMismatchedData: itemHasMismatchedData } = getDatumsForMessagePathItem(
       item,
       xItem,
@@ -269,7 +277,7 @@ export function getDatasetsFromMessagePlotPath({
 
     hasMismatchedData = hasMismatchedData || itemHasMismatchedData;
     // If we have added more than one point for this message, make it a scatter plot.
-    if (item.queriedData.length > 1 && xAxisVal !== "index") {
+    if (item.values.length > 1 && xAxisVal !== "index") {
       showLine = false;
     }
   }
