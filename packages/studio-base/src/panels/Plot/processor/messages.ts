@@ -53,7 +53,7 @@ export function addBlock(data: PointData, resetPaths: string[], state: State): S
   const { blocks } = state;
   const paths = R.keys(data);
 
-  const newState = {
+  const newState: State = {
     ...state,
     blocks: R.pipe(
       // Remove data for any topics that have been reset

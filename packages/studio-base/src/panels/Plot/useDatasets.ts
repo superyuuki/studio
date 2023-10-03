@@ -26,7 +26,7 @@ import useGlobalVariables from "@foxglove/studio-base/hooks/useGlobalVariables";
 import { SubscribePayload, MessageEvent } from "@foxglove/studio-base/players/types";
 import { fillInGlobalVariablesInPath } from "@foxglove/studio-base/components/MessagePathSyntax/useCachedGetMessagePathDataItems";
 
-import { PlotParams, BasePlotPath, Messages, PlotDataItem } from "./internalTypes";
+import { PlotParams, BasePlotPath, Messages, PlotDataItem, Datapoints } from "./internalTypes";
 import { PlotData, getMetadata, buildResolver } from "./plotData";
 
 type Service = Comlink.Remote<(typeof import("./useDatasets.worker"))["service"]>;
@@ -41,7 +41,7 @@ type DataBuilder = {
   path: string;
   parsed: RosPath;
   topic: string;
-  resolve: (messages: Messages) => PlotDataItem[] | undefined;
+  resolve: (messages: Messages) => Datapoints | undefined;
 };
 
 type BlockStatus = {
@@ -299,7 +299,7 @@ function useData(id: string, params: PlotParams) {
         continue;
       }
 
-      const newData: Record<string, PlotDataItem[]> = {};
+      const newData: Record<string, Datapoints[]> = {};
       // Make a note of any topics that had new data so we can clear out
       // accumulated points in the worker
       const resetPaths: Set<string> = new Set<string>();
@@ -342,7 +342,7 @@ function useData(id: string, params: PlotParams) {
         if (data == undefined) {
           continue;
         }
-        newData[path] = data;
+        newData[path] = [data];
       }
 
       if (R.isEmpty(newData) && resetPaths.size === 0) {

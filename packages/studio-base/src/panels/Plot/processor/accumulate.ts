@@ -2,7 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { PlotParams, PointData, PlotDataItem, BasePlotPath } from "../internalTypes";
+import { PlotParams, PointData, Datapoints, BasePlotPath } from "../internalTypes";
 import { PlotData, EmptyPlotData, appendPlotData, buildPlotData } from "../plotData";
 
 type Cursors = Record<string, number>;
@@ -11,7 +11,7 @@ export type Accumulated = {
   data: PlotData;
 };
 
-function getPathData(data: PointData, path: BasePlotPath): PlotDataItem[] | undefined {
+function getPathData(data: PointData, path: BasePlotPath): Datapoints[] | undefined {
   return data[path.value];
 }
 

@@ -17,6 +17,7 @@ import { formatTimeRaw, TimestampMethod } from "@foxglove/studio-base/util/time"
 
 import {
   BasePlotPath,
+  Datapoints,
   Datum,
   TypedDataSet,
   TypedData,
@@ -151,6 +152,59 @@ function getDatumsForMessagePathItem(
   return { data, hasMismatchedData };
 }
 
+type Datapoint = {
+  value: number;
+  receiveTime: Time;
+  headerStamp?: Time;
+};
+export function* iterateDatapoints(data: Datapoints[]): Generator<Datapoint> {
+  let point: Datapoint = {
+    value: 0,
+    receiveTime: {
+      sec: 0,
+      nsec: 0,
+    },
+  };
+
+  for (const slice of data) {
+    for (let i = 0; i < slice.value.length; i++) {
+      const {
+        value: { [i]: value },
+        receiveTime: {
+          sec: { [i]: receiveTimeSec },
+          nsec: { [i]: receiveTimeNsec },
+        },
+      } = slice;
+      if (value == undefined || receiveTimeSec == undefined || receiveTimeNsec == undefined) {
+        continue;
+      }
+      point.value = value;
+      point.receiveTime.sec = receiveTimeSec;
+      point.receiveTime.nsec = receiveTimeNsec;
+
+      if (slice.headerStamp != undefined) {
+        const {
+          headerStamp: {
+            sec: { [i]: headerStampSec },
+            nsec: { [i]: headerStampNsec },
+          },
+        } = slice;
+        if (headerStampSec == undefined || headerStampNsec == undefined) {
+          continue;
+        }
+        point.headerStamp = {
+          sec: headerStampSec,
+          nsec: headerStampNsec,
+        };
+      } else {
+        point.headerStamp = undefined;
+      }
+
+      yield point;
+    }
+  }
+}
+
 export function getDatasetsFromMessagePlotPath({
   path,
   yAxisRanges,
@@ -162,11 +216,11 @@ export function getDatasetsFromMessagePlotPath({
   invertedTheme = false,
 }: {
   path: PlotPath;
-  yAxisRanges: Immutable<PlotDataItem[]>;
+  yAxisRanges: Datapoints[];
   index: number;
   startTime: Time;
   xAxisVal: PlotXAxisVal;
-  xAxisRanges: Immutable<PlotDataItem[]> | undefined;
+  xAxisRanges: Datapoints[] | undefined;
   xAxisPath?: BasePlotPath;
   invertedTheme?: boolean;
 }): {
@@ -192,8 +246,9 @@ export function getDatasetsFromMessagePlotPath({
   }
 
   const rangeData: Datum[] = [];
-  for (const [rangeIdx, item] of yAxisRanges.entries()) {
-    const xItem = xAxisRanges?.[rangeIdx];
+  const xIterator = iterateDatapoints(xAxisRanges ?? []);
+  for (const item of iterateDatapoints(yAxisRanges)) {
+    const xItem = xIterator.next();
     const { data: datums, hasMismatchedData: itemHasMismatchedData } = getDatumsForMessagePathItem(
       item,
       xItem,

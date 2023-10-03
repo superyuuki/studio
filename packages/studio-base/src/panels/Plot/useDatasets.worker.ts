@@ -16,7 +16,7 @@ import { Topic, MessageEvent } from "@foxglove/studio-base/players/types";
 import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 
 import { resolveTypedIndices } from "./datasets";
-import { PlotParams, TypedData, PlotDataItem } from "./internalTypes";
+import { PlotParams, TypedData, PointData } from "./internalTypes";
 import { isSingleMessage } from "./params";
 import { PlotData, StateHandler, mapDatasets, getProvidedData } from "./plotData";
 import {
@@ -156,7 +156,7 @@ setInterval(() => {
 }, 2000);
 
 export const service = {
-  addBlock(data: Record<string, PlotDataItem[]>, resetPaths: string[]): void {
+  addBlock(data: PointData, resetPaths: string[]): void {
     handleEffects(addBlock(data, resetPaths, state));
   },
   addCurrent(events: readonly MessageEvent[]): void {
