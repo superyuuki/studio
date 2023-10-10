@@ -158,13 +158,13 @@ setInterval(() => {
 
 export const service = {
   addBlock(data: PointData, resetPaths: string[]): void {
-    handleEffects(addBlock(data, resetPaths, state));
+    //handleEffects(addBlock(data, resetPaths, state));
   },
   addCurrent(events: readonly MessageEvent[]): void {
-    handleEffects(addCurrent(events, state));
+    //handleEffects(addCurrent(events, state));
   },
   clearCurrent(): void {
-    handleEffects(clearCurrent(state));
+    //handleEffects(clearCurrent(state));
   },
   getFullData(id: string): PlotData | undefined {
     const client = findClient(state, id);
@@ -206,7 +206,7 @@ export const service = {
     state = unregister(id, state);
   },
   updateParams(id: string, params: PlotParams): void {
-    handleEffects(updateParams(id, params, state));
+    //handleEffects(updateParams(id, params, state));
   },
   updateView(id: string, view: PlotViewport): void {
     handleEffects(updateView(id, view, state));

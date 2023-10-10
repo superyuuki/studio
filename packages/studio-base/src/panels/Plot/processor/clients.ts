@@ -33,21 +33,19 @@ import {
 export function refreshClient(client: Client, state: State): [Client, SideEffects] {
   const { blocks, current } = state;
   const { id, params } = client;
-  if (params == undefined) {
-    return noEffects(client);
-  }
+  return noEffects(client);
 
-  const paths = getParamPaths(params);
-  const initialState = initAccumulated(client.paths);
-  return [
-    {
-      ...client,
-      paths,
-      blocks: accumulate(initialState, params, blocks),
-      current: accumulate(initialState, params, current),
-    },
-    [rebuildClient(id)],
-  ];
+  //const paths = getParamPaths(params);
+  //const initialState = initAccumulated(client.paths);
+  //return [
+    //{
+      //...client,
+      //paths,
+      //blocks: accumulate(initialState, params, blocks),
+      //current: accumulate(initialState, params, current),
+    //},
+    //[rebuildClient(id)],
+  //];
 }
 
 export function updateVariables(variables: GlobalVariables, state: State): StateAndEffects {

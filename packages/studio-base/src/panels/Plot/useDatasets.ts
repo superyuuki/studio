@@ -24,41 +24,28 @@ import { mergeSubscriptions } from "@foxglove/studio-base/components/MessagePipe
 import { TypedDataProvider } from "@foxglove/studio-base/components/TimeBasedChart/types";
 import useGlobalVariables from "@foxglove/studio-base/hooks/useGlobalVariables";
 import { SubscribePayload, MessageEvent } from "@foxglove/studio-base/players/types";
-import { fillInGlobalVariablesInPath } from "@foxglove/studio-base/components/MessagePathSyntax/useCachedGetMessagePathDataItems";
 
-import { initBlockState, refreshBlockTopics, processBlocks } from "./blocks";
-import { PlotParams, BasePlotPath, Messages, Datapoints } from "./internalTypes";
-import { PlotData, getMetadata, buildResolver } from "./plotData";
+import { initBlockState, refreshBlockTopics, processBlocks, BlockState } from "./blocks";
+import { PlotParams, BasePlotPath } from "./internalTypes";
+import { PlotData, getMetadata } from "./plotData";
+import { buildPlot } from "./processor/accumulate";
 
 type Service = Comlink.Remote<(typeof import("./useDatasets.worker"))["service"]>;
 
-type SubscriberState = { subscriptions: SubscribePayload[]; paths: string[] };
+type SubscriberState = {
+  subscriptions: SubscribePayload[];
+  paths: string[];
+};
 type Client = {
+  id: string;
   params: PlotParams | undefined;
+  state: BlockState;
   setter: (state: SubscriberState) => void;
-};
-
-type DataBuilder = {
-  path: string;
-  parsed: RosPath;
-  topic: string;
-  resolve: (messages: Messages) => Datapoints | undefined;
-};
-
-type BlockStatus = {
-  builder: DataBuilder;
-  // We need to keep track of the block data we've already sent to the worker and
-  // detect when it has changed, which can happen when the user changes a user
-  // script or they trigger a subscription to different fields.
-  // this is the first message on that topic in the block
-  messages: unknown[];
-  cursor: number;
 };
 
 let worker: Worker | undefined;
 let service: Service | undefined;
 let numClients: number = 0;
-let blockState = initBlockState();
 let clients: Record<string, Client> = {};
 
 const pending: ((service: Service) => void)[] = [];
@@ -152,19 +139,20 @@ function chooseClient() {
     R.uniqBy((path) => path.value),
     R.map((path: BasePlotPath) => path.value),
   )(clientList);
+
   const subscriptions = R.pipe(
     getPayloadsFromPaths,
     (v) => mergeSubscriptions(v) as SubscribePayload[],
     R.map((v: SubscribePayload): SubscribePayload => ({ ...v, preloadType: "full" })),
   )(paths);
-  blockState = refreshBlockTopics(subscriptions, blockState);
+
   clientList[0]?.setter({ subscriptions, paths });
 }
 
 // Subscribe to "current" messages (those near the seek head) and forward new
 // messages to the worker as they arrive.
 function useData(id: string, params: PlotParams) {
-  const [{ subscriptions, paths }, setState] = React.useState<SubscriberState>({
+  const [{ subscriptions }, setState] = React.useState<SubscriberState>({
     paths: [],
     subscriptions: [],
   });
@@ -173,7 +161,9 @@ function useData(id: string, params: PlotParams) {
     clients = {
       ...clients,
       [id]: {
+        id,
         params: undefined,
+        state: initBlockState(),
         setter: setState,
       },
     };
@@ -192,9 +182,21 @@ function useData(id: string, params: PlotParams) {
       return;
     }
 
+    const { state } = client;
+
+    const clientSubscriptions = R.pipe(
+      (params: PlotParams): BasePlotPath[] => {
+        const { xAxisPath, paths: yAxisPaths } = params;
+        return [...(xAxisPath != undefined ? [xAxisPath] : []), ...yAxisPaths];
+      },
+      R.uniqBy((path) => path.value),
+      R.map((path: BasePlotPath) => path.value),
+      getPayloadsFromPaths,
+    )(params);
+
     clients = {
       ...clients,
-      [id]: { ...client, params },
+      [id]: { ...client, params, state: refreshBlockTopics(clientSubscriptions, state) },
     };
     chooseClient();
   }, [id, params]);
@@ -205,44 +207,6 @@ function useData(id: string, params: PlotParams) {
   const { topics, datatypes } = useDataSourceInfo();
   const metadata = React.useMemo(() => getMetadata(topics, datatypes), [topics, datatypes]);
   const { globalVariables } = useGlobalVariables();
-
-  const dataBuilders = React.useMemo(() => {
-    return R.chain((path: string): DataBuilder[] => {
-      const parsed = parseRosPath(path);
-      if (parsed == undefined) {
-        return [];
-      }
-
-      const filled = fillInGlobalVariablesInPath(parsed, globalVariables);
-      return [
-        {
-          path,
-          topic: filled.topicName,
-          parsed: filled,
-          resolve: buildResolver(metadata, filled),
-        },
-      ];
-    }, paths);
-  }, [paths, globalVariables, metadata]);
-
-  // contains what lastBlockSent and blockStatus used to
-  const sendStatus = React.useRef<Record<string, BlockStatus>>({});
-  React.useEffect(() => {
-    const { current } = sendStatus;
-    for (const builder of dataBuilders) {
-      const { path } = builder;
-      const existing = current[path];
-      if (existing != undefined && R.equals(builder.parsed, existing.builder.parsed)) {
-        continue;
-      }
-
-      current[path] = {
-        cursor: 0,
-        messages: [],
-        builder,
-      };
-    }
-  }, [dataBuilders]);
 
   // make worker responsible for clearing out paths that use globalVariables in
   // response to changes
@@ -274,26 +238,34 @@ function useData(id: string, params: PlotParams) {
 
   const blocks = useBlocks(subscriptions);
   useEffect(() => {
-    const {
-      state: newState,
-      resetTopics,
-      newData,
-    } = processBlocks(blocks, subscriptions, blockState);
+    clients = R.map((client) => {
+      const { state } = client;
+      const { state: newState, resetTopics, newData } = processBlocks(blocks, subscriptions, state);
 
-    blockState = newState;
+      for (const bundle of newData) {
+        if (!R.isEmpty(bundle)) {
+          console.log(client.id, buildPlot(metadata, globalVariables, params, bundle));
+        }
+      }
 
-    void service?.addBlock(
-      R.pipe(
-        R.map((topic: string): [string, MessageEvent[]] => [topic, []]),
-        R.fromPairs,
-      )(resetTopics),
-      resetTopics,
-    );
+      return {
+        ...client,
+        state: newState,
+      };
 
-    for (const bundle of newData) {
-      void service?.addBlock(bundle, []);
-    }
-  }, [subscriptions, blocks, dataBuilders]);
+      //void service?.addBlock(
+      //R.pipe(
+      //R.map((topic: string): [string, MessageEvent[]] => [topic, []]),
+      //R.fromPairs,
+      //)(resetTopics),
+      //resetTopics,
+      //);
+
+      //for (const bundle of newData) {
+      //void service?.addBlock(bundle, []);
+      //}
+    }, clients);
+  }, [subscriptions, blocks, metadata, globalVariables]);
 }
 
 /**
@@ -327,7 +299,6 @@ export default function useDatasets(params: PlotParams): {
       if (numClients === 0) {
         worker?.terminate();
         worker = service = undefined;
-        blockState = initBlockState();
       }
     };
   }, []);

@@ -5,7 +5,6 @@
 import * as _ from "lodash-es";
 import * as R from "ramda";
 
-import { Immutable } from "@foxglove/studio";
 import { Time } from "@foxglove/rostime";
 import { Immutable as Im } from "@foxglove/studio";
 import { iterateTyped, getTypedLength } from "@foxglove/studio-base/components/Chart/datasets";
@@ -22,9 +21,9 @@ import { Topic, MessageEvent } from "@foxglove/studio-base/players/types";
 import { Bounds, makeInvertedBounds, unionBounds } from "@foxglove/studio-base/types/Bounds";
 import { Range } from "@foxglove/studio-base/util/ranges";
 import { getTimestampForMessage } from "@foxglove/studio-base/util/time";
+import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 import { enumValuesByDatatypeAndField } from "@foxglove/studio-base/util/enums";
 import { messagePathStructures } from "@foxglove/studio-base/components/MessagePathSyntax/messagePathsForDatatype";
-import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 
 import { resolveTypedIndices, derivative } from "./datasets";
 import {
@@ -37,9 +36,6 @@ import {
   MetadataEnums,
   TypedData,
   TypedDataSet,
-  Messages,
-  createTimeArray,
-  Datapoints,
 } from "./internalTypes";
 import * as maps from "./maps";
 
@@ -114,6 +110,19 @@ export function mapDatasets(
 
   return result;
 }
+
+export function getMetadata(
+  topics: readonly Topic[],
+  datatypes: Im<RosDatatypes>,
+): MetadataEnums {
+  return {
+    topics,
+    datatypes,
+    enumValues: enumValuesByDatatypeAndField(datatypes),
+    structures: messagePathStructures(datatypes),
+  };
+}
+
 
 /**
  * Appends new PlotData to existing PlotData. Assumes there are no time overlaps between
@@ -192,15 +201,17 @@ export function reducePlotData(data: PlotData[]): PlotData {
   return reduced;
 }
 
-type PathData = [PlotPath, Datapoints[] | undefined];
-export function buildPlotData(args: {
-  invertedTheme?: boolean;
-  paths: PathData[];
-  startTime: Time;
-  xAxisPath?: BasePlotPath;
-  xAxisData: Datapoints[] | undefined;
-  xAxisVal: PlotXAxisVal;
-}): PlotData {
+type PathData = [PlotPath, PlotDataItem[] | undefined];
+export function buildPlotData(
+  args: Im<{
+    invertedTheme?: boolean;
+    paths: PathData[];
+    startTime: Time;
+    xAxisPath?: BasePlotPath;
+    xAxisData: PlotDataItem[] | undefined;
+    xAxisVal: PlotXAxisVal;
+  }>,
+): PlotData {
   const { paths, startTime, xAxisVal, xAxisPath, xAxisData, invertedTheme } = args;
   const bounds: Bounds = makeInvertedBounds();
   const pathsWithMismatchedDataLengths: string[] = [];
@@ -247,27 +258,15 @@ export function buildPlotData(args: {
   };
 }
 
-export function getMetadata(
-  topics: readonly Topic[],
-  datatypes: Immutable<RosDatatypes>,
-): MetadataEnums {
-  return {
-    topics,
-    datatypes,
-    enumValues: enumValuesByDatatypeAndField(datatypes),
-    structures: messagePathStructures(datatypes),
-  };
-}
-
 export function resolvePath(
   metadata: MetadataEnums,
   messages: readonly MessageEvent[],
   path: RosPath,
-): Datapoints | undefined {
+): PlotDataItem[] {
   const { structures, enumValues } = metadata;
-  // TODO(cfoust): 10/02/23 this should not be here
   const topics = R.indexBy((topic) => topic.name, metadata.topics);
-  const plotDataItems = R.chain((message: MessageEvent): PlotDataItem[] => {
+
+  return R.chain((message: MessageEvent): PlotDataItem[] => {
     const items = getMessagePathDataItems(message, path, topics, structures, enumValues);
     if (items == undefined) {
       return [];
@@ -281,64 +280,7 @@ export function resolvePath(
       },
     ];
   }, messages);
-
-  if (plotDataItems.length === 0) {
-    return undefined;
-  }
-
-  const haveHeaderStamp = plotDataItems[0]?.headerStamp != undefined;
-  const { length: numItems } = plotDataItems;
-  const numPoints = R.pipe(
-    R.map((v: PlotDataItem) => v.queriedData.length),
-    R.sum,
-  )(plotDataItems);
-  const result: Datapoints = {
-    index: new Int16Array(numItems),
-    receiveTime: createTimeArray(numItems),
-    ...(haveHeaderStamp ? { headerStamp: createTimeArray(numItems) } : {}),
-
-    value: new Float32Array(numPoints),
-  };
-
-  let pointIndex = 0;
-  for (let i = 0; i < numItems; i++) {
-    const item = plotDataItems[i];
-    if (item == undefined) {
-      continue;
-    }
-
-    result.index[i] = pointIndex;
-    result.receiveTime.sec[i] = item.receiveTime.sec;
-    result.receiveTime.nsec[i] = item.receiveTime.nsec;
-
-    const headerStamp = result.headerStamp;
-    if (headerStamp != undefined) {
-      headerStamp.sec[i] = item.headerStamp?.sec ?? 0;
-      headerStamp.nsec[i] = item.headerStamp?.nsec ?? 0;
-    }
-
-    for (const point of item.queriedData) {
-      // TODO(cfoust): 10/03/23 handle Time
-      result.value[pointIndex] = Number(point.value);
-      pointIndex++;
-    }
-  }
-
-  return result;
 }
-
-/**
- * buildResolver is a partially curried version of resolvePath.
- */
-export const buildResolver =
-  (metadata: MetadataEnums, path: RosPath) =>
-  (messages: Messages): Datapoints | undefined => {
-    const topicMessages = messages[path.topicName];
-    if (topicMessages == undefined) {
-      return undefined;
-    }
-    return resolvePath(metadata, topicMessages, path);
-  };
 
 const createPlotMapping =
   (map: (dataset: TypedDataSet, path: PlotPath) => TypedDataSet) =>

@@ -2,8 +2,12 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { PlotParams, PointData, Datapoints, BasePlotPath } from "../internalTypes";
-import { PlotData, EmptyPlotData, appendPlotData, buildPlotData } from "../plotData";
+import parseRosPath from "@foxglove/studio-base/components/MessagePathSyntax/parseRosPath";
+import { fillInGlobalVariablesInPath } from "@foxglove/studio-base/components/MessagePathSyntax/useCachedGetMessagePathDataItems";
+import { GlobalVariables } from "@foxglove/studio-base/hooks/useGlobalVariables";
+
+import { PlotParams, Messages, MetadataEnums, PlotDataItem, BasePlotPath } from "../internalTypes";
+import { PlotData, EmptyPlotData, appendPlotData, buildPlotData, resolvePath } from "../plotData";
 
 type Cursors = Record<string, number>;
 export type Accumulated = {
@@ -11,18 +15,40 @@ export type Accumulated = {
   data: PlotData;
 };
 
-function getPathData(data: PointData, path: BasePlotPath): Datapoints[] | undefined {
-  return data[path.value];
+export function getPathData(
+  metadata: MetadataEnums,
+  globalVariables: GlobalVariables,
+  messages: Messages,
+  path: BasePlotPath,
+): PlotDataItem[] | undefined {
+  const parsed = parseRosPath(path.value);
+  if (parsed == undefined) {
+    return [];
+  }
+
+  return resolvePath(
+    metadata,
+    messages[parsed.topicName] ?? [],
+    fillInGlobalVariablesInPath(parsed, globalVariables),
+  );
 }
 
-export function buildPlot(params: PlotParams, data: PointData): PlotData {
+export function buildPlot(
+  metadata: MetadataEnums,
+  globalVariables: GlobalVariables,
+  params: PlotParams,
+  messages: Messages,
+): PlotData {
   const { paths, invertedTheme, startTime, xAxisPath, xAxisVal } = params;
   return buildPlotData({
     invertedTheme,
-    paths: paths.map((path) => [path, getPathData(data, path)]),
+    paths: paths.map((path) => [path, getPathData(metadata, globalVariables, messages, path)]),
     startTime,
     xAxisPath,
-    xAxisData: xAxisPath != undefined ? getPathData(data, xAxisPath) : undefined,
+    xAxisData:
+      xAxisPath != undefined
+        ? getPathData(metadata, globalVariables, messages, xAxisPath)
+        : undefined,
     xAxisVal,
   });
 }
@@ -39,31 +65,33 @@ export function initAccumulated(topics: readonly string[]): Accumulated {
   };
 }
 
-export function getNewData(
+export function getNewMessages(
   cursors: Cursors,
-  data: PointData,
-): [newCursors: Cursors, newData: PointData] {
+  messages: Messages,
+): [newCursors: Cursors, newMessages: Messages] {
   const newCursors: Cursors = {};
-  const newData: PointData = {};
+  const newMessages: Messages = {};
 
-  for (const [path, cursor] of Object.entries(cursors)) {
-    newCursors[path] = data[path]?.length ?? cursor;
-    newData[path] = data[path]?.slice(cursor) ?? [];
+  for (const [topic, cursor] of Object.entries(cursors)) {
+    newCursors[topic] = messages[topic]?.length ?? cursor;
+    newMessages[topic] = messages[topic]?.slice(cursor) ?? [];
   }
 
-  return [newCursors, newData];
+  return [newCursors, newMessages];
 }
 
 export function accumulate(
+  metadata: MetadataEnums,
+  globalVariables: GlobalVariables,
   previous: Accumulated,
   params: PlotParams,
-  data: PointData,
+  messages: Messages,
 ): Accumulated {
   const { cursors: oldCursors, data: oldData } = previous;
-  const [newCursors, newData] = getNewData(oldCursors, data);
+  const [newCursors, newMessages] = getNewMessages(oldCursors, messages);
 
   return {
     cursors: newCursors,
-    data: appendPlotData(oldData, buildPlot(params, newData)),
+    data: appendPlotData(oldData, buildPlot(metadata, globalVariables, params, newMessages)),
   };
 }
