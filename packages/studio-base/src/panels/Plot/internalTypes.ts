@@ -55,19 +55,12 @@ export type PlotXAxisVal =
   | "custom" // Message path data. Preloaded.
   | "currentCustom"; // Message path data. One "current" message at playback time.
 
-// In addition to the base datum, we also add receiveTime and optionally header stamp to our datums
-// These are used in the csv export.
-export type Datum = ChartDatum & {
-  receiveTime: Time;
-  headerStamp?: Time;
-};
+// without `& {}`, this is ChartDatum | null, which is undesirable
+export type Datum = ChartDatum & {};
 
 export type DataSet = ChartDataset<"scatter", Datum[]>;
 
-export type TypedData = OriginalTypedData & {
-  receiveTime: Time[];
-  headerStamp?: Time[];
-};
+export type TypedData = OriginalTypedData;
 export type TypedDataSet = ChartDataset<"scatter", TypedData[]>;
 
 export type DatasetsByPath = [PlotPath, TypedDataSet][];

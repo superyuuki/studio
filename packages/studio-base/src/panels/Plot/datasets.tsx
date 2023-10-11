@@ -56,8 +56,6 @@ function getXForPoint(
 }
 
 export function datumToTyped(data: Datum[]): TypedData {
-  const receiveTime: Time[] = [];
-  const headerStamp: Time[] = [];
   const constantName: string[] = [];
   const value: (string | number | bigint | boolean | undefined)[] = [];
   const x = new Float32Array(data.length);
@@ -73,10 +71,6 @@ export function datumToTyped(data: Datum[]): TypedData {
     if (datum == undefined) {
       continue;
     }
-    receiveTime.push(datum.receiveTime);
-    if (datum.headerStamp != undefined) {
-      headerStamp.push(datum.headerStamp);
-    }
     if (datum.constantName != undefined) {
       constantName.push(datum.constantName);
     }
@@ -88,9 +82,7 @@ export function datumToTyped(data: Datum[]): TypedData {
   }
 
   return {
-    receiveTime,
     ...(constantName.length > 0 ? { constantName } : {}),
-    ...(headerStamp.length > 0 ? { headerStamp } : {}),
     ...(value.length > 0 ? { value } : {}),
     x,
     y,
@@ -134,8 +126,6 @@ function getDatumsForMessagePathItem(
           y: Number(y),
           value,
           constantName,
-          receiveTime: yItem.receiveTime,
-          headerStamp: yItem.headerStamp,
         });
       }
     } else if (isTime(value)) {
@@ -145,8 +135,6 @@ function getDatumsForMessagePathItem(
       data.push({
         x: Number(x),
         y,
-        receiveTime: yItem.receiveTime,
-        headerStamp: yItem.headerStamp,
         value: `${format(value)} (${formatTimeRaw(value)})`,
         constantName,
       });
@@ -254,8 +242,6 @@ export function resolveTypedIndices(data: TypedData[], indices: number[]): Typed
     return undefined;
   }
 
-  const receiveTime: Time[] = [];
-  const headerStamp: Time[] = [];
   const constantName: string[] = [];
   const value: (string | number | bigint | boolean | undefined)[] = [];
   const x = new Float32Array(indices.length);
@@ -273,10 +259,6 @@ export function resolveTypedIndices(data: TypedData[], indices: number[]): Typed
       return undefined;
     }
 
-    receiveTime.push(slice.receiveTime[offset] ?? ZERO_TIME);
-    if (slice.headerStamp != undefined) {
-      headerStamp.push(slice.headerStamp[offset] ?? ZERO_TIME);
-    }
     if (slice.constantName != undefined) {
       constantName.push(slice.constantName[offset] ?? "");
     }
@@ -295,9 +277,7 @@ export function resolveTypedIndices(data: TypedData[], indices: number[]): Typed
 
   return [
     {
-      receiveTime,
       ...(constantName.length > 0 ? { constantName } : {}),
-      ...(headerStamp.length > 0 ? { headerStamp } : {}),
       ...(value.length > 0 ? { value } : {}),
       x,
       y,
@@ -327,18 +307,12 @@ function sliceSingle(slice: TypedData, start: number, end?: number): TypedData {
 
   const numElements = i1 - i0;
 
-  const receiveTime: Time[] = [];
-  const headerStamp: Time[] = [];
   const constantName: string[] = [];
   const value: (string | number | bigint | boolean | undefined)[] = [];
   const x = new Float32Array(numElements);
   const y = new Float32Array(numElements);
 
   for (let i = i0; i < i1; i++) {
-    receiveTime.push(slice.receiveTime[i] ?? ZERO_TIME);
-    if (slice.headerStamp != undefined) {
-      headerStamp.push(slice.headerStamp[i] ?? ZERO_TIME);
-    }
     if (slice.constantName != undefined) {
       constantName.push(slice.constantName[i] ?? "");
     }
@@ -356,8 +330,6 @@ function sliceSingle(slice: TypedData, start: number, end?: number): TypedData {
   }
 
   return {
-    receiveTime,
-    headerStamp: headerStamp.length > 0 ? headerStamp : undefined,
     constantName: constantName.length > 0 ? constantName : undefined,
     value,
     x,
