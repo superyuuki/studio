@@ -229,7 +229,7 @@ function Plot(props: Props) {
       // Label is needed so that TimeBasedChart doesn't discard the empty dataset and mess
       // up the ordering.
       datasets: yAxisPaths.map((path) => {
-        for (const [otherPath, dataset] of data.datasets.entries()) {
+        for (const [otherPath, dataset] of data.datasets) {
           if (
             otherPath.value === path.value &&
             otherPath.timestampMethod === path.timestampMethod
@@ -281,7 +281,7 @@ function Plot(props: Props) {
             return;
           }
           const csvDatasets = [];
-          for (const dataset of data.datasets.values()) {
+          for (const [, dataset] of data.datasets) {
             csvDatasets.push(dataset);
           }
           downloadCSV(csvDatasets, xAxisVal);

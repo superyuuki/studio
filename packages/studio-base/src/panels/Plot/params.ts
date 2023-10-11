@@ -5,6 +5,10 @@ import * as R from "ramda";
 
 import { PlotParams, BasePlotPath, PlotPath } from "./internalTypes";
 
+export function getPathID(path: PlotPath): string {
+  return `${path.value}:${path.timestampMethod}:${path.color}:${path.label}`;
+}
+
 export function getPaths(paths: readonly PlotPath[], xAxisPath?: BasePlotPath): string[] {
   return R.chain(
     (path: BasePlotPath | undefined): string[] => {

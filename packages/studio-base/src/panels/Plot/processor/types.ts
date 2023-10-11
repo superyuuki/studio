@@ -3,10 +3,9 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { PlotViewport } from "@foxglove/studio-base/components/TimeBasedChart/types";
-import { GlobalVariables } from "@foxglove/studio-base/hooks/useGlobalVariables";
 
 import { Accumulated } from "./accumulate";
-import { PlotParams, PointData, MetadataEnums } from "../internalTypes";
+import { PlotParams } from "../internalTypes";
 import { PlotData } from "../plotData";
 
 export type Client = {
@@ -21,10 +20,6 @@ export type Client = {
 export type State = {
   isLive: boolean;
   clients: Client[];
-  globalVariables: GlobalVariables;
-  blocks: PointData;
-  current: PointData;
-  metadata: MetadataEnums;
 };
 
 export enum SideEffectType {

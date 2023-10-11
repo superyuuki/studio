@@ -14,4 +14,4 @@ export {
   getClientData,
   compressClients,
 } from "./clients";
-export { addBlock, addCurrent, clearCurrent, receiveMetadata } from "./messages";
+export { addBlock, clearBlock, addCurrent, clearCurrent } from "./messages";

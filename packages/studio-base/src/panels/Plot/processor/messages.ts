@@ -2,116 +2,42 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import * as R from "ramda";
+import { initAccumulated, accumulate } from "./accumulate";
+import { rebuildClient, mapClients, noEffects, findClient, mutateClient } from "./state";
+import { State, StateAndEffects } from "./types";
+import { PlotData } from "../plotData";
 
-import { Immutable } from "@foxglove/studio";
-import { Topic, MessageEvent } from "@foxglove/studio-base/players/types";
-import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
+export function addBlock(id: string, data: PlotData, state: State): StateAndEffects {
+  const client = findClient(state, id);
+  if (client == undefined) {
+    return noEffects(state);
+  }
 
-import { initAccumulated, accumulate, buildPlot } from "./accumulate";
-import { rebuildClient, sendData, mapClients, noEffects, keepEffects } from "./state";
-import { State, StateAndEffects, Client, SideEffects } from "./types";
-import { PointData } from "../internalTypes";
-import { isSingleMessage } from "../params";
-import { getMetadata } from "../plotData";
-
-export function receiveMetadata(
-  topics: readonly Topic[],
-  datatypes: Immutable<RosDatatypes>,
-  state: State,
-): State {
-  return {
-    ...state,
-    metadata: getMetadata(topics, datatypes),
-  };
+  return [
+    mutateClient(state, id, { ...client, blocks: accumulate(client.blocks, data) }),
+    [rebuildClient(id)],
+  ];
 }
 
-export function evictCache(state: State): State {
-  const { clients, blocks, current } = state;
-  const paths = R.pipe(
-    R.chain(({ paths: clientPaths }: Client) => clientPaths),
-    R.uniq,
-  )(clients);
+export function clearBlock(id: string, state: State): StateAndEffects {
+  const client = findClient(state, id);
+  if (client == undefined) {
+    return noEffects(state);
+  }
 
-  return {
-    ...state,
-    blocks: R.pick(paths, blocks),
-    current: R.pick(paths, current),
-  };
+  return [mutateClient(state, id, { ...client, blocks: initAccumulated() }), [rebuildClient(id)]];
 }
 
-export function addBlock(data: PointData, resetPaths: string[], state: State): StateAndEffects {
-  const { blocks } = state;
-  const paths = R.keys(data);
+export function addCurrent(id: string, data: PlotData, state: State): StateAndEffects {
+  const client = findClient(state, id);
+  if (client == undefined) {
+    return noEffects(state);
+  }
 
-  const newState: State = {
-    ...state,
-    blocks: R.pipe(
-      // Remove data for any topics that have been reset
-      R.omit(resetPaths),
-      // Merge the new block into the existing blocks
-      (newBlocks) => R.mergeWith(R.concat, newBlocks, data),
-    )(blocks),
-  };
-
-  return mapClients((client, { blocks: newBlocks }): [Client, SideEffects] => {
-    const { id, params } = client;
-    const relevantPaths = R.intersection(paths, client.paths);
-    const shouldReset = R.intersection(relevantPaths, resetPaths).length > 0;
-    if (params == undefined || isSingleMessage(params) || relevantPaths.length === 0) {
-      return [client, []];
-    }
-
-    return [
-      {
-        ...client,
-        blocks: accumulate(
-          shouldReset ? initAccumulated(client.paths) : client.blocks,
-          params,
-          newBlocks,
-        ),
-      },
-      [rebuildClient(id)],
-    ];
-  })(newState);
-}
-
-export function addCurrent(events: readonly MessageEvent[], state: State): StateAndEffects {
-  const { current: oldCurrent } = state;
-  const newState: State = {
-    ...state,
-    current: R.pipe(
-      R.groupBy((v: MessageEvent) => v.topic),
-      R.mergeWith(R.concat, oldCurrent),
-    )(events),
-  };
-
-  return R.pipe(
-    mapClients((client): [Client, SideEffects] => {
-      const { current } = newState;
-      const { id, params } = client;
-      if (params == undefined) {
-        return noEffects(client);
-      }
-
-      if (isSingleMessage(params)) {
-        const plotData = buildPlot(
-          params,
-          R.map((messages) => messages.slice(-1), current),
-        );
-        return [client, [sendData(id, plotData)]];
-      }
-
-      return [
-        {
-          ...client,
-          current: accumulate(client.current, params, current),
-        },
-        [rebuildClient(id)],
-      ];
-    }),
-    keepEffects(evictCache),
-  )(newState);
+  return [
+    mutateClient(state, id, { ...client, current: accumulate(client.current, data) }),
+    [rebuildClient(id)],
+  ];
 }
 
 export function clearCurrent(state: State): StateAndEffects {
@@ -124,7 +50,7 @@ export function clearCurrent(state: State): StateAndEffects {
     return [
       {
         ...client,
-        current: initAccumulated(client.paths),
+        current: initAccumulated(),
       },
       [rebuildClient(client.id)],
     ];

@@ -9,18 +9,15 @@ import { fillInGlobalVariablesInPath } from "@foxglove/studio-base/components/Me
 import { PlotViewport } from "@foxglove/studio-base/components/TimeBasedChart/types";
 import { GlobalVariables } from "@foxglove/studio-base/hooks/useGlobalVariables";
 
-import { initAccumulated, accumulate } from "./accumulate";
-import { evictCache } from "./messages";
 import {
   findClient,
   noEffects,
   mutateClient,
   mapClients,
   rebuildClient,
-  keepEffects,
   initClient,
 } from "./state";
-import { StateAndEffects, SideEffects, State, Client } from "./types";
+import { StateAndEffects, State, Client } from "./types";
 import { PlotParams } from "../internalTypes";
 import { getParamPaths } from "../params";
 import {
@@ -29,24 +26,6 @@ import {
   applyDerivativeToPlotData,
   sortPlotDataByHeaderStamp,
 } from "../plotData";
-
-export function refreshClient(client: Client, state: State): [Client, SideEffects] {
-  const { blocks, current } = state;
-  const { id, params } = client;
-  return noEffects(client);
-
-  //const paths = getParamPaths(params);
-  //const initialState = initAccumulated(client.paths);
-  //return [
-    //{
-      //...client,
-      //paths,
-      //blocks: accumulate(initialState, params, blocks),
-      //current: accumulate(initialState, params, current),
-    //},
-    //[rebuildClient(id)],
-  //];
-}
 
 export function updateVariables(variables: GlobalVariables, state: State): StateAndEffects {
   const newState = {
@@ -78,29 +57,23 @@ export function updateVariables(variables: GlobalVariables, state: State): State
       return noEffects(client);
     }
 
-    return refreshClient(client, newState);
+    return noEffects(client);
   })(newState);
 }
 
 export function updateParams(id: string, params: PlotParams, state: State): StateAndEffects {
-  return R.pipe(
-    mapClients((client) => {
-      const { id: clientId } = client;
-      if (clientId !== id) {
-        return noEffects(client);
-      }
+  return mapClients((client) => {
+    const { id: clientId } = client;
+    if (clientId !== id) {
+      return noEffects(client);
+    }
 
-      return refreshClient(
-        {
-          ...client,
-          params,
-          paths: getParamPaths(params),
-        },
-        state,
-      );
-    }),
-    keepEffects(evictCache),
-  )(state);
+    return noEffects({
+      ...client,
+      params,
+      paths: getParamPaths(params),
+    });
+  })(state);
 }
 
 export function updateView(id: string, view: PlotViewport, state: State): StateAndEffects {
@@ -130,39 +103,36 @@ export function register(
 }
 
 export function unregister(id: string, state: State): State {
-  return evictCache({
+  return {
     ...state,
     clients: R.filter(({ id: clientId }: Client) => clientId !== id, state.clients),
-  });
+  };
 }
 
 export const MESSAGE_CULL_THRESHOLD = 15_000;
 
 export function compressClients(state: State): StateAndEffects {
-  const { isLive, current } = state;
-  if (!isLive) {
-    return noEffects(state);
-  }
+  // TODO(cfoust): 10/10/23
+  return noEffects(state);
+  //const { isLive, current } = state;
+  //if (!isLive) {
+  //return noEffects(state);
+  //}
 
-  return mapClients(refreshClient)({
-    ...state,
-    current: R.map(
-      (messages) =>
-        messages.length > MESSAGE_CULL_THRESHOLD
-          ? messages.slice(messages.length - MESSAGE_CULL_THRESHOLD)
-          : messages,
-      current,
-    ),
-  });
+  //return mapClients(refreshClient)({
+  //...state,
+  //current: R.map(
+  //(messages) =>
+  //messages.length > MESSAGE_CULL_THRESHOLD
+  //? messages.slice(messages.length - MESSAGE_CULL_THRESHOLD)
+  //: messages,
+  //current,
+  //),
+  //});
 }
 
 export function getClientData(client: Client): PlotData | undefined {
-  const {
-    params,
-    view,
-    blocks: { data: blockData },
-    current: { data: currentData },
-  } = client;
+  const { params, view, blocks: blockData, current: currentData } = client;
 
   if (params == undefined || view == undefined) {
     return undefined;

@@ -37,7 +37,6 @@ import {
   TypedData,
   TypedDataSet,
 } from "./internalTypes";
-import * as maps from "./maps";
 
 /**
  * Plot data bundles datasets with precomputed bounds and paths with mismatched data
@@ -61,7 +60,7 @@ export const EmptyData: TypedData = Object.freeze({
 
 export const EmptyPlotData: PlotData = Object.freeze({
   bounds: makeInvertedBounds(),
-  datasets: new Map(),
+  datasets: [],
   pathsWithMismatchedDataLengths: [],
 });
 
@@ -69,19 +68,15 @@ export const EmptyPlotData: PlotData = Object.freeze({
  * Find the earliest and latest times of messages in data, for all messages and per-path.
  * Assumes invidual ranges of messages are already sorted by receiveTime.
  */
-function findXRanges(data: Im<PlotData>): {
-  all: Range;
-  byPath: Record<string, Range>;
-} {
-  const byPath: Record<string, Range> = {};
+function findXRanges(data: Im<PlotData>): Range {
   let start = Number.MAX_SAFE_INTEGER;
   let end = Number.MIN_SAFE_INTEGER;
-  for (const [path, dataset] of data.datasets) {
-    const thisPath = (byPath[path.value] = {
+  for (const [, dataset] of data.datasets) {
+    const { data: subData } = dataset;
+    const thisPath = {
       start: Number.MAX_SAFE_INTEGER,
       end: Number.MIN_SAFE_INTEGER,
-    });
-    const { data: subData } = dataset;
+    };
     const resolved = resolveTypedIndices(subData as TypedData[], [
       0,
       getTypedLength(subData as TypedData[]) - 1,
@@ -96,25 +91,17 @@ function findXRanges(data: Im<PlotData>): {
     end = Math.max(end, thisPath.end);
   }
 
-  return { all: { start, end }, byPath };
+  return { start, end };
 }
 
 export function mapDatasets(
   map: (dataset: TypedDataSet, path: PlotPath) => TypedDataSet,
   datasets: DatasetsByPath,
 ): DatasetsByPath {
-  const result: DatasetsByPath = new Map();
-  for (const [path, dataset] of datasets.entries()) {
-    result.set(path, map(dataset, path));
-  }
-
-  return result;
+  return datasets.map(([path, dataset]) => [path, map(dataset, path)]);
 }
 
-export function getMetadata(
-  topics: readonly Topic[],
-  datatypes: Im<RosDatatypes>,
-): MetadataEnums {
+export function getMetadata(topics: readonly Topic[], datatypes: Im<RosDatatypes>): MetadataEnums {
   return {
     topics,
     datatypes,
@@ -123,6 +110,33 @@ export function getMetadata(
   };
 }
 
+function mergeDatasets(
+  a: DatasetsByPath,
+  b: DatasetsByPath,
+  map: (aData: TypedDataSet, bData: TypedDataSet) => TypedDataSet,
+): DatasetsByPath {
+  const toMerge = R.pipe(
+    R.chain((pathData: [PlotPath, TypedDataSet]): [PlotPath, TypedDataSet, TypedDataSet][] => {
+      const [path, data] = pathData;
+      const other = R.find(([v]) => R.equals(path, v), b);
+      if (other == undefined) {
+        return [];
+      }
+
+      const [, otherData] = other;
+      return [[path, data, otherData]];
+    }),
+  )(a);
+
+  const mergedPaths = toMerge.map(([path]) => path);
+  return [
+    ...toMerge.map(([path, aData, bData]): [PlotPath, TypedDataSet] => [path, map(aData, bData)]),
+    ...a.filter(([path]) => R.find(R.equals(path), mergedPaths) == undefined),
+    ...b.filter(([path]) => R.find(R.equals(path), mergedPaths) == undefined),
+  ];
+
+  return a;
+}
 
 /**
  * Appends new PlotData to existing PlotData. Assumes there are no time overlaps between
@@ -140,7 +154,7 @@ export function appendPlotData(a: PlotData, b: PlotData): PlotData {
   return {
     ...a,
     bounds: unionBounds(a.bounds, b.bounds),
-    datasets: maps.merge(a.datasets, b.datasets, (aVal, bVal) => {
+    datasets: mergeDatasets(a.datasets, b.datasets, (aVal, bVal) => {
       return {
         ...aVal,
         data: concatTyped(aVal.data, bVal.data),
@@ -166,7 +180,7 @@ function mergePlotData(a: PlotData, b: PlotData): PlotData {
   return {
     ...a,
     bounds: unionBounds(a.bounds, b.bounds),
-    datasets: maps.merge(a.datasets, b.datasets, (aSet, bSet) => ({
+    datasets: mergeDatasets(a.datasets, b.datasets, (aSet, bSet) => ({
       ...aSet,
       data: mergeTyped(aSet.data, bSet.data),
     })),
@@ -178,8 +192,8 @@ function mergePlotData(a: PlotData, b: PlotData): PlotData {
  * the right consolidated interval.
  */
 function compare(a: Im<PlotData>, b: Im<PlotData>): number {
-  const rangeA = findXRanges(a).all;
-  const rangeB = findXRanges(b).all;
+  const rangeA = findXRanges(a);
+  const rangeB = findXRanges(b);
   const startCompare = rangeA.start - rangeB.start;
   return startCompare !== 0 ? startCompare : rangeA.end - rangeB.end;
 }
@@ -215,7 +229,7 @@ export function buildPlotData(
   const { paths, startTime, xAxisVal, xAxisPath, xAxisData, invertedTheme } = args;
   const bounds: Bounds = makeInvertedBounds();
   const pathsWithMismatchedDataLengths: string[] = [];
-  const datasets: DatasetsByPath = new Map();
+  const datasets: DatasetsByPath = [];
   for (const [index, [path, data]] of paths.entries()) {
     const xRanges = xAxisData;
     const yRanges = data ?? [];
@@ -247,7 +261,7 @@ export function buildPlotData(
       bounds.y.min = Math.min(bounds.y.min, pathBounds.y.min);
       bounds.y.max = Math.max(bounds.y.max, pathBounds.y.max);
 
-      datasets.set(path, res.dataset);
+      datasets.push([path, res.dataset]);
     }
   }
 
@@ -346,7 +360,7 @@ export const sortPlotDataByHeaderStamp = createPlotMapping((dataset: TypedDataSe
 export function getProvidedData(data: PlotData): ProviderState<TypedData[]> {
   const { bounds } = data;
   const datasets = [];
-  for (const dataset of data.datasets.values()) {
+  for (const [, dataset] of data.datasets) {
     datasets.push(dataset);
   }
 

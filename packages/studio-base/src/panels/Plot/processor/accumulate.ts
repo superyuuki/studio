@@ -9,11 +9,7 @@ import { GlobalVariables } from "@foxglove/studio-base/hooks/useGlobalVariables"
 import { PlotParams, Messages, MetadataEnums, PlotDataItem, BasePlotPath } from "../internalTypes";
 import { PlotData, EmptyPlotData, appendPlotData, buildPlotData, resolvePath } from "../plotData";
 
-type Cursors = Record<string, number>;
-export type Accumulated = {
-  cursors: Cursors;
-  data: PlotData;
-};
+export type Accumulated = PlotData;
 
 export function getPathData(
   metadata: MetadataEnums,
@@ -53,45 +49,10 @@ export function buildPlot(
   });
 }
 
-export function initAccumulated(topics: readonly string[]): Accumulated {
-  const cursors: Cursors = {};
-  for (const topic of topics) {
-    cursors[topic] = 0;
-  }
-
-  return {
-    cursors,
-    data: EmptyPlotData,
-  };
+export function initAccumulated(): Accumulated {
+  return EmptyPlotData;
 }
 
-export function getNewMessages(
-  cursors: Cursors,
-  messages: Messages,
-): [newCursors: Cursors, newMessages: Messages] {
-  const newCursors: Cursors = {};
-  const newMessages: Messages = {};
-
-  for (const [topic, cursor] of Object.entries(cursors)) {
-    newCursors[topic] = messages[topic]?.length ?? cursor;
-    newMessages[topic] = messages[topic]?.slice(cursor) ?? [];
-  }
-
-  return [newCursors, newMessages];
-}
-
-export function accumulate(
-  metadata: MetadataEnums,
-  globalVariables: GlobalVariables,
-  previous: Accumulated,
-  params: PlotParams,
-  messages: Messages,
-): Accumulated {
-  const { cursors: oldCursors, data: oldData } = previous;
-  const [newCursors, newMessages] = getNewMessages(oldCursors, messages);
-
-  return {
-    cursors: newCursors,
-    data: appendPlotData(oldData, buildPlot(metadata, globalVariables, params, newMessages)),
-  };
+export function accumulate(oldData: Accumulated, data: PlotData): Accumulated {
+  return appendPlotData(oldData, data);
 }

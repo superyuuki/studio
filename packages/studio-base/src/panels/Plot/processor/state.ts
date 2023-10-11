@@ -23,8 +23,8 @@ export function initClient(id: string, params: PlotParams | undefined): Client {
     params,
     paths: [],
     view: undefined,
-    blocks: initAccumulated([]),
-    current: initAccumulated([]),
+    blocks: initAccumulated(),
+    current: initAccumulated(),
   };
 }
 
@@ -43,15 +43,6 @@ export function initProcessor(): State {
   return {
     isLive: false,
     clients: [],
-    globalVariables: {},
-    blocks: {},
-    current: {},
-    metadata: {
-      topics: [],
-      datatypes: new Map(),
-      enumValues: {},
-      structures: {},
-    },
   };
 }
 

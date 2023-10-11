@@ -229,41 +229,40 @@ function useData(id: string, params: PlotParams) {
     }, []),
     addMessages: React.useCallback(
       (_: number | undefined, messages: readonly MessageEvent[]): number => {
-        void service?.addCurrent(messages);
+        const grouped = R.groupBy((event) => event.topic, messages);
+        for (const [, { id, params }] of Object.entries(clients)) {
+          if (params == undefined) {
+            continue;
+          }
+          void service?.addCurrent(id, buildPlot(metadata, globalVariables, params, grouped));
+        }
         return 1;
       },
-      [],
+      [metadata, globalVariables],
     ),
   });
 
   const blocks = useBlocks(subscriptions);
   useEffect(() => {
     clients = R.map((client) => {
-      const { state } = client;
+      const { id, state, params } = client;
+      if (params == undefined) {
+        return client;
+      }
+
       const { state: newState, resetTopics, newData } = processBlocks(blocks, subscriptions, state);
+      if (resetTopics.length !== 0) {
+        void service?.clearBlock(id);
+      }
 
       for (const bundle of newData) {
-        if (!R.isEmpty(bundle)) {
-          console.log(client.id, buildPlot(metadata, globalVariables, params, bundle));
-        }
+        void service?.addBlock(id, buildPlot(metadata, globalVariables, params, bundle));
       }
 
       return {
         ...client,
         state: newState,
       };
-
-      //void service?.addBlock(
-      //R.pipe(
-      //R.map((topic: string): [string, MessageEvent[]] => [topic, []]),
-      //R.fromPairs,
-      //)(resetTopics),
-      //resetTopics,
-      //);
-
-      //for (const bundle of newData) {
-      //void service?.addBlock(bundle, []);
-      //}
     }, clients);
   }, [subscriptions, blocks, metadata, globalVariables]);
 }

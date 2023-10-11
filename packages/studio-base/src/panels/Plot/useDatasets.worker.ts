@@ -4,7 +4,6 @@
 
 import * as Comlink from "comlink";
 
-import { Immutable } from "@foxglove/studio";
 import { iterateTyped } from "@foxglove/studio-base/components/Chart/datasets";
 import { downsample } from "@foxglove/studio-base/components/TimeBasedChart/downsample";
 import {
@@ -12,12 +11,9 @@ import {
   PlotViewport,
 } from "@foxglove/studio-base/components/TimeBasedChart/types";
 import { GlobalVariables } from "@foxglove/studio-base/hooks/useGlobalVariables";
-import { Topic, MessageEvent } from "@foxglove/studio-base/players/types";
-import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
-import strPack from "@foxglove/studio-base/util/strPack";
 
 import { resolveTypedIndices } from "./datasets";
-import { PlotParams, TypedData, PointData } from "./internalTypes";
+import { PlotParams, TypedData } from "./internalTypes";
 import { isSingleMessage } from "./params";
 import { PlotData, StateHandler, mapDatasets, getProvidedData } from "./plotData";
 import {
@@ -29,12 +25,12 @@ import {
   findClient,
   getClientData,
   initProcessor,
-  receiveMetadata,
   updateVariables,
   register,
   setLive,
   unregister,
   addBlock,
+  clearBlock,
   updateParams,
   updateView,
   compressClients,
@@ -157,14 +153,17 @@ setInterval(() => {
 }, 2000);
 
 export const service = {
-  addBlock(data: PointData, resetPaths: string[]): void {
-    //handleEffects(addBlock(data, resetPaths, state));
+  addBlock(id: string, data: PlotData): void {
+    handleEffects(addBlock(id, data, state));
   },
-  addCurrent(events: readonly MessageEvent[]): void {
-    //handleEffects(addCurrent(events, state));
+  clearBlock(id: string): void {
+    handleEffects(clearBlock(id, state));
+  },
+  addCurrent(id: string, data: PlotData): void {
+    handleEffects(addCurrent(id, data, state));
   },
   clearCurrent(): void {
-    //handleEffects(clearCurrent(state));
+    handleEffects(clearCurrent(state));
   },
   getFullData(id: string): PlotData | undefined {
     const client = findClient(state, id);
@@ -173,9 +172,6 @@ export const service = {
     }
 
     return getClientData(client);
-  },
-  receiveMetadata(topics: readonly Topic[], datatypes: Immutable<RosDatatypes>): void {
-    state = receiveMetadata(topics, strPack(datatypes), state);
   },
   receiveVariables(variables: GlobalVariables): void {
     handleEffects(updateVariables(variables, state));
@@ -206,7 +202,7 @@ export const service = {
     state = unregister(id, state);
   },
   updateParams(id: string, params: PlotParams): void {
-    //handleEffects(updateParams(id, params, state));
+    handleEffects(updateParams(id, params, state));
   },
   updateView(id: string, view: PlotViewport): void {
     handleEffects(updateView(id, view, state));
