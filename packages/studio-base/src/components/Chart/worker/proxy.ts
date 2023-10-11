@@ -70,6 +70,10 @@ function proxyDataset(dataset: TypedDataSet): NormalDataSet {
           point[key] = value[offset];
         }
 
+        if (slice.value == undefined) {
+          point.value = slice.y[offset];
+        }
+
         return point;
       },
     }),

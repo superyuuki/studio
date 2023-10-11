@@ -25,7 +25,7 @@ export type ChartData = ChartJsChartData<"scatter", ObjectData>;
 export type TypedData = {
   x: Float32Array;
   y: Float32Array;
-  value: (string | number | bigint | boolean | undefined)[];
+  value?: (string | number | bigint | boolean | undefined)[];
   constantName?: string[];
 };
 export type TypedChartData = ChartJsChartData<"scatter", TypedData[]>;

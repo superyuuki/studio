@@ -63,6 +63,11 @@ export function datumToTyped(data: Datum[]): TypedData {
   const x = new Float32Array(data.length);
   const y = new Float32Array(data.length);
 
+  const shouldPushValue = R.any(({ value }) => {
+    const _type = typeof value;
+    return _type != "bigint" && _type != "number";
+  }, data);
+
   for (let i = 0; i < data.length; i++) {
     const datum = data[i];
     if (datum == undefined) {
@@ -75,7 +80,9 @@ export function datumToTyped(data: Datum[]): TypedData {
     if (datum.constantName != undefined) {
       constantName.push(datum.constantName);
     }
-    value.push(datum.value);
+    if (shouldPushValue) {
+      value.push(datum.value);
+    }
     x[i] = datum.x;
     y[i] = datum.y;
   }
@@ -84,7 +91,7 @@ export function datumToTyped(data: Datum[]): TypedData {
     receiveTime,
     ...(constantName.length > 0 ? { constantName } : {}),
     ...(headerStamp.length > 0 ? { headerStamp } : {}),
-    value,
+    ...(value.length > 0 ? { value } : {}),
     x,
     y,
   };
@@ -273,7 +280,9 @@ export function resolveTypedIndices(data: TypedData[], indices: number[]): Typed
     if (slice.constantName != undefined) {
       constantName.push(slice.constantName[offset] ?? "");
     }
-    value.push(slice.value[offset]);
+    if (slice.value != undefined) {
+      value.push(slice.value[offset]);
+    }
 
     const xVal = slice.x[offset];
     const yVal = slice.y[offset];
@@ -289,7 +298,7 @@ export function resolveTypedIndices(data: TypedData[], indices: number[]): Typed
       receiveTime,
       ...(constantName.length > 0 ? { constantName } : {}),
       ...(headerStamp.length > 0 ? { headerStamp } : {}),
-      value,
+      ...(value.length > 0 ? { value } : {}),
       x,
       y,
     },
@@ -333,7 +342,9 @@ function sliceSingle(slice: TypedData, start: number, end?: number): TypedData {
     if (slice.constantName != undefined) {
       constantName.push(slice.constantName[i] ?? "");
     }
-    value.push(slice.value[i]);
+    if (slice.value != undefined) {
+      value.push(slice.value[i]);
+    }
 
     const xVal = slice.x[i];
     const yVal = slice.y[i];
