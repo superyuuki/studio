@@ -21,7 +21,6 @@ export function initClient(id: string, params: PlotParams | undefined): Client {
   return {
     id,
     params,
-    paths: [],
     view: undefined,
     blocks: initAccumulated(),
     current: initAccumulated(),

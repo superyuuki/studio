@@ -18,7 +18,7 @@ import {
   initClient,
 } from "./state";
 import { StateAndEffects, State, Client } from "./types";
-import { PlotParams } from "../internalTypes";
+import { PlotParams, DatasetByPath } from "../internalTypes";
 import { getParamPaths } from "../params";
 import {
   reducePlotData,
@@ -26,6 +26,10 @@ import {
   applyDerivativeToPlotData,
   sortPlotDataByHeaderStamp,
 } from "../plotData";
+import { sliceTyped } from "../datasets";
+import { getTypedLength } from "@foxglove/studio-base/components/Chart/datasets";
+import { getTypedBounds } from "@foxglove/studio-base/components/TimeBasedChart/useProvider";
+import { makeInvertedBounds } from "@foxglove/studio-base/types/Bounds";
 
 export function updateVariables(variables: GlobalVariables, state: State): StateAndEffects {
   const newState = {
@@ -68,11 +72,14 @@ export function updateParams(id: string, params: PlotParams, state: State): Stat
       return noEffects(client);
     }
 
-    return noEffects({
-      ...client,
-      params,
-      paths: getParamPaths(params),
-    });
+    return [
+      {
+        ...client,
+        params,
+        paths: getParamPaths(params),
+      },
+      [rebuildClient(clientId)],
+    ];
   })(state);
 }
 
@@ -109,26 +116,47 @@ export function unregister(id: string, state: State): State {
   };
 }
 
-export const MESSAGE_CULL_THRESHOLD = 15_000;
+export const MESSAGE_CULL_THRESHOLD = 100_000;
 
 export function compressClients(state: State): StateAndEffects {
-  // TODO(cfoust): 10/10/23
-  return noEffects(state);
-  //const { isLive, current } = state;
-  //if (!isLive) {
-  //return noEffects(state);
-  //}
+  const { isLive } = state;
+  if (!isLive) {
+    return noEffects(state);
+  }
 
-  //return mapClients(refreshClient)({
-  //...state,
-  //current: R.map(
-  //(messages) =>
-  //messages.length > MESSAGE_CULL_THRESHOLD
-  //? messages.slice(messages.length - MESSAGE_CULL_THRESHOLD)
-  //: messages,
-  //current,
-  //),
-  //});
+  return mapClients((client) => {
+    const {
+      current,
+      current: { datasets },
+    } = client;
+
+    const newDatasets = datasets.map(([path, data]): DatasetByPath => {
+      const length = getTypedLength(data.data);
+      if (length < MESSAGE_CULL_THRESHOLD) {
+        return [path, data];
+      }
+
+      return [
+        path,
+        {
+          ...data,
+          data: sliceTyped(data.data, length - MESSAGE_CULL_THRESHOLD),
+        },
+      ];
+    });
+
+    return [
+      {
+        ...client,
+        current: {
+          ...current,
+          bounds: getTypedBounds(newDatasets.map(([, data]) => data)) ?? makeInvertedBounds(),
+          datasets: newDatasets,
+        },
+      },
+      [rebuildClient(client.id)],
+    ];
+  })(state);
 }
 
 export function getClientData(client: Client): PlotData | undefined {

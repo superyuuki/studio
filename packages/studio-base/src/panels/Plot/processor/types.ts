@@ -11,7 +11,6 @@ import { PlotData } from "../plotData";
 export type Client = {
   id: string;
   params: PlotParams | undefined;
-  paths: readonly string[];
   view: PlotViewport | undefined;
   blocks: Accumulated;
   current: Accumulated;

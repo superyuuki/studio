@@ -52,7 +52,6 @@ export type PlotData = {
 export type StateHandler = (state: Im<PlotData> | undefined) => void;
 
 export const EmptyData: TypedData = Object.freeze({
-  receiveTime: [],
   value: [],
   x: new Float32Array(0),
   y: new Float32Array(0),

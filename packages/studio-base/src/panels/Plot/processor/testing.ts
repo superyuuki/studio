@@ -13,9 +13,8 @@ import { initAccumulated } from "./accumulate";
 import { initProcessor, initClient } from "./state";
 import { Client, State } from "./types";
 import { datumToTyped } from "../datasets";
-import { PlotParams, PlotPath, Messages, TypedDataSet } from "../internalTypes";
-import { getParamPaths } from "../params";
-import { PlotData } from "../plotData";
+import { PlotParams, PlotPath, Messages } from "../internalTypes";
+import { PlotData, getMetadata } from "../plotData";
 
 export const CLIENT_ID = "foobar";
 export const FAKE_TOPIC = "/foo";
@@ -33,6 +32,8 @@ export const FAKE_DATATYPES: Immutable<RosDatatypes> = new Map<
 >().set(FAKE_SCHEMA, {
   definitions: [{ name: "data", type: "float64", isArray: false }],
 });
+
+export const FAKE_METADATA = getMetadata(FAKE_TOPICS, FAKE_DATATYPES);
 
 export const createMessageEvents = (
   topic: string,
@@ -80,20 +81,23 @@ export const createParams = (...paths: string[]): PlotParams => ({
  * Initialize a PlotData with fake data for the given `path`.
  */
 export const createData = (path: PlotPath, count: number): PlotData => {
-  const datasets = new Map<PlotPath, TypedDataSet>();
-  datasets.set(path, {
-    data: [
-      datumToTyped(
-        R.range(0, count).map((v) => ({
-          x: v,
-          y: v,
-          receiveTime: fromSec(v),
-        })),
-      ),
-    ],
-  });
   return {
-    datasets,
+    datasets: [
+      [
+        path,
+        {
+          data: [
+            datumToTyped(
+              R.range(0, count).map((v) => ({
+                x: v,
+                y: v,
+                receiveTime: fromSec(v),
+              })),
+            ),
+          ],
+        },
+      ],
+    ],
     bounds: {
       x: { min: 0, max: 0 },
       y: { min: 0, max: 0 },
@@ -111,14 +115,11 @@ export const createClient = (...paths: string[]): Client => {
   }
 
   const params = createParams(...paths);
-  const topics = getParamPaths(params);
-
   return {
     ...initClient(CLIENT_ID, undefined),
     params,
-    topics,
-    blocks: initAccumulated(topics),
-    current: initAccumulated(topics),
+    blocks: initAccumulated(),
+    current: initAccumulated(),
   };
 };
 
@@ -129,4 +130,16 @@ export const createClient = (...paths: string[]): Client => {
 export const createState = (...paths: string[]): State => ({
   ...initProcessor(),
   clients: [createClient(...paths)],
+});
+
+/**
+ * Fill a client with plot data.
+ */
+export const populateData = (count: number, state: State): State => ({
+  ...state,
+  clients: state.clients.map((client) => ({
+    ...client,
+    blocks: createData(createPath(FAKE_PATH), count),
+    current: createData(createPath(FAKE_PATH), count),
+  })),
 });

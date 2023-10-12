@@ -85,7 +85,7 @@ export function* iterateTyped<T extends { [key: string]: Array<any> | Float32Arr
   let index = 0;
   for (const slice of dataset) {
     // Find a property for which we can check the length
-    const first = R.find((v) => v.length > 0, R.values(slice));
+    const first = R.find((v) => v != undefined && v.length > 0, R.values(slice));
     if (first == undefined) {
       continue;
     }

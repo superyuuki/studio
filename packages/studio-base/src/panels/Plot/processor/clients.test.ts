@@ -9,7 +9,6 @@ import {
   compressClients,
   MESSAGE_CULL_THRESHOLD,
   register,
-  refreshClient,
   updateVariables,
   updateParams,
   updateView,
@@ -23,36 +22,12 @@ import {
   createData,
   createPath,
   createState,
-  createMessages,
   createParams,
+  populateData,
 } from "./testing";
-import { State } from "./types";
-import { DatasetsByPath, PlotPath, TypedDataSet } from "../internalTypes";
-
-describe("refreshClient", () => {
-  it("ignores client without params", () => {
-    const client = initClient(CLIENT_ID, undefined);
-    const initial: State = { ...initProcessor(), clients: [client] };
-    const [newClient, effects] = refreshClient(client, initial);
-    expect(newClient).toEqual(client);
-    expect(effects).toEqual([]);
-  });
-
-  it("regenerates plots and triggers a rebuild", () => {
-    const initial = createState(FAKE_PATH);
-    const {
-      clients: [client],
-    } = initial;
-    if (client == undefined) {
-      throw new Error("client missing somehow");
-    }
-    const [newClient, effects] = refreshClient(client, initial);
-    expect(effects).toEqual([rebuildClient(client.id)]);
-    // we aren't testing accumulate(); just check whether the reference changed
-    expect(newClient.blocks).not.toBe(client.blocks);
-    expect(newClient.current).not.toBe(client.current);
-  });
-});
+import { State, Client } from "./types";
+import { DatasetsByPath, TypedDataSet } from "../internalTypes";
+import { getTypedLength } from "@foxglove/studio-base/components/Chart/datasets";
 
 describe("updateVariables", () => {
   const vars = {
@@ -93,7 +68,6 @@ describe("updateParams", () => {
     const params = createParams("/some.test");
     const [after, effects] = updateParams(CLIENT_ID, params, before);
     expect(after.clients[0]?.params).not.toEqual(before.clients[0]?.params);
-    expect(after.clients[0]?.topics).toEqual(["/some"]);
     expect(effects).toEqual([rebuildClient(CLIENT_ID)]);
   });
 });
@@ -147,24 +121,33 @@ describe("compressClients", () => {
     expect(effects.length).toEqual(0);
     expect(after).toEqual(before);
   });
+
+  const getCurrentLength = (state: State): number | undefined => {
+    const data = state.clients[0]?.current.datasets[0]?.[1];
+    if (data == undefined) {
+      return undefined;
+    }
+
+    return getTypedLength(data.data);
+  };
+
   it("removes excess current messages", () => {
-    const before = {
+    const before: State = populateData(MESSAGE_CULL_THRESHOLD + 1, {
       ...createState("/foo.data"),
       isLive: true,
-      current: createMessages("/foo", "foo", MESSAGE_CULL_THRESHOLD + 1),
-    };
+    });
     const [after, effects] = compressClients(before);
-    expect(after.current["/foo"]?.length).toEqual(MESSAGE_CULL_THRESHOLD);
+    expect(getCurrentLength(after)).toEqual(MESSAGE_CULL_THRESHOLD);
     expect(effects).toEqual([rebuildClient(CLIENT_ID)]);
   });
+
   it("does not remove messages < MESSAGE_CULL_THRESHOLD", () => {
-    const before = {
+    const before: State = populateData(MESSAGE_CULL_THRESHOLD - 1, {
       ...createState("/foo.data"),
       isLive: true,
-      current: createMessages("/foo", "foo", MESSAGE_CULL_THRESHOLD - 1),
-    };
+    });
     const [after, effects] = compressClients(before);
-    expect(after.current["/foo"]?.length).toEqual(MESSAGE_CULL_THRESHOLD - 1);
+    expect(getCurrentLength(after)).toEqual(MESSAGE_CULL_THRESHOLD - 1);
     expect(effects).toEqual([rebuildClient(CLIENT_ID)]);
   });
 });
@@ -179,16 +162,12 @@ describe("getClientData", () => {
       return undefined;
     }
 
-    const first: PlotPath | undefined = datasets.keys().next().value;
-    if (first == undefined) {
-      return undefined;
-    }
-    return datasets.get(first);
+    return datasets[0]?.[1];
   };
   it("returns only block data if block contains current", () => {
     const initialClient = createClient(FAKE_PATH);
     const path = createPath(FAKE_PATH);
-    const client = {
+    const client: Client = {
       ...initialClient,
       params: createParams(FAKE_PATH),
       view: {
@@ -200,23 +179,17 @@ describe("getClientData", () => {
         },
       },
       blocks: {
-        ...initialClient.blocks,
-        data: {
-          ...createData(path, 1),
-          bounds: {
-            x: { min: 0, max: 10 },
-            y: { min: 0, max: 0 },
-          },
+        ...createData(path, 1),
+        bounds: {
+          x: { min: 0, max: 10 },
+          y: { min: 0, max: 0 },
         },
       },
       current: {
-        ...initialClient.current,
-        data: {
-          ...createData(path, 2),
-          bounds: {
-            x: { min: 2, max: 8 },
-            y: { min: 0, max: 0 },
-          },
+        ...createData(path, 2),
+        bounds: {
+          x: { min: 2, max: 8 },
+          y: { min: 0, max: 0 },
         },
       },
     };
@@ -226,7 +199,7 @@ describe("getClientData", () => {
   it("returns both kinds of data if they do not overlap", () => {
     const initialClient = createClient(FAKE_PATH);
     const path = createPath(FAKE_PATH);
-    const client = {
+    const client: Client = {
       ...initialClient,
       params: createParams(FAKE_PATH),
       view: {
@@ -238,23 +211,17 @@ describe("getClientData", () => {
         },
       },
       blocks: {
-        ...initialClient.blocks,
-        data: {
-          ...createData(path, 1),
-          bounds: {
-            x: { min: 0, max: 2 },
-            y: { min: 0, max: 0 },
-          },
+        ...createData(path, 1),
+        bounds: {
+          x: { min: 0, max: 2 },
+          y: { min: 0, max: 0 },
         },
       },
       current: {
-        ...initialClient.current,
-        data: {
-          ...createData(path, 2),
-          bounds: {
-            x: { min: 4, max: 8 },
-            y: { min: 0, max: 0 },
-          },
+        ...createData(path, 2),
+        bounds: {
+          x: { min: 4, max: 8 },
+          y: { min: 0, max: 0 },
         },
       },
     };

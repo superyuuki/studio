@@ -63,7 +63,8 @@ export type DataSet = ChartDataset<"scatter", Datum[]>;
 export type TypedData = OriginalTypedData;
 export type TypedDataSet = ChartDataset<"scatter", TypedData[]>;
 
-export type DatasetsByPath = [PlotPath, TypedDataSet][];
+export type DatasetByPath = [PlotPath, TypedDataSet];
+export type DatasetsByPath = DatasetByPath[];
 
 export type PlotDataItem = {
   queriedData: MessagePathDataItem[];

@@ -2,7 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { addBlock, addCurrent, receiveMetadata, evictCache, clearCurrent } from "./messages";
+import { addBlock, addCurrent, clearCurrent } from "./messages";
 import { initProcessor, rebuildClient } from "./state";
 import {
   createParams,
@@ -19,26 +19,6 @@ import {
 } from "./testing";
 import { SideEffectType, State } from "./types";
 import { EmptyPlotData } from "../plotData";
-
-describe("receiveMetadata", () => {
-  it("updates metadata", () => {
-    const before = initProcessor();
-    const after = receiveMetadata(FAKE_TOPICS, FAKE_DATATYPES, before);
-    expect(after.metadata).not.toEqual(before);
-  });
-});
-
-describe("evictCache", () => {
-  it("removes unused topics", () => {
-    const after = evictCache({
-      ...createState("/foo.bar"),
-      blocks: {
-        "/bar.baz": [],
-      },
-    });
-    expect(Object.entries(after.blocks).length).toEqual(0);
-  });
-});
 
 describe("addBlock", () => {
   it("resets the requested topics", () => {
