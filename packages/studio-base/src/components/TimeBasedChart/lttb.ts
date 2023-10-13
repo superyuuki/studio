@@ -49,7 +49,7 @@ export function downsampleLTTB(
   let next: number = 0;
   let points: number[] = [];
   points.push(0);
-  for (const bucketIndex of R.range(0, bucketSize - 2)) {
+  for (const bucketIndex of R.range(0, numBuckets - 2)) {
     const [bucketStart, bucketEnd] = getBucket(bucketIndex);
     // First, get all of the points for this bucket so we can check for
     // nullity and/or NaN

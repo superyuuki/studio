@@ -5,8 +5,11 @@
 import * as Comlink from "comlink";
 
 import { Immutable } from "@foxglove/studio";
-import { iterateTyped } from "@foxglove/studio-base/components/Chart/datasets";
-import { downsample } from "@foxglove/studio-base/components/TimeBasedChart/downsample";
+import {
+  findIndices,
+  getTypedLength,
+} from "@foxglove/studio-base/components/Chart/datasets";
+import { downsampleLTTB } from "@foxglove/studio-base/components/TimeBasedChart/lttb";
 import {
   ProviderStateSetter,
   PlotViewport,
@@ -111,8 +114,36 @@ function rebuild(id: string) {
     return;
   }
 
+  const numBuckets = Math.floor(1000 / newData.datasets.size)
   const downsampled = mapDatasets((dataset) => {
-    const indices = downsample(dataset, iterateTyped(dataset.data), view);
+    const { data } = dataset;
+    const indices = downsampleLTTB(
+      (index) => {
+        const offsets = findIndices(data, index);
+        if (offsets == undefined) {
+          return undefined;
+        }
+
+        const slice = data[offsets[0]];
+        if (slice == undefined) {
+          return undefined;
+        }
+
+        const {
+          x: { [offsets[1]]: x },
+          y: { [offsets[1]]: y },
+        } = slice;
+        if (x == undefined || y == undefined) {
+          return undefined;
+        }
+        return [x, y];
+      },
+      getTypedLength(data),
+      numBuckets,
+    );
+    if (indices == undefined) {
+      return dataset;
+    }
     const resolved = resolveTypedIndices(dataset.data, indices);
     if (resolved == undefined) {
       return dataset;
