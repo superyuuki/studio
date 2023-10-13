@@ -60,15 +60,15 @@ export function downsampleLTTB(
 
     // Next, get the average of the following bucket
     const [nextStart, nextEnd] = getBucket(bucketIndex + 1);
-    const avgPoints = getPoints(nextStart, Math.min(nextEnd, numPoints));
-    if (avgPoints == undefined) {
+    const nextPoints = getPoints(nextStart, Math.min(nextEnd, numPoints));
+    if (nextPoints == undefined) {
       return undefined;
     }
 
     // Check all points under consideration for NaN. We use NaN to imply a
     // break in the plot; this has to be given special treatment so that we
     // downsample both parts of the plot separately.
-    const nanPoint = R.find(containsNaN, [...bucketPoints, ...avgPoints]);
+    const nanPoint = R.find(containsNaN, [...bucketPoints, ...nextPoints]);
     if (nanPoint != undefined) {
       const [nanIndex] = nanPoint;
 
@@ -95,6 +95,39 @@ export function downsampleLTTB(
 
       return points.concat(rest);
     }
+
+    const avgX = R.sum(nextPoints.map(([, [x]]) => x)) / nextPoints.length;
+    const avgY = R.sum(nextPoints.map(([, [, y]]) => y)) / nextPoints.length;
+    const a = get(next);
+    if (a == undefined) {
+      return undefined;
+    }
+    const [aX, aY] = a;
+
+    // Choose the triangle with the maximum area
+    type Area = [index: number, area: number];
+    const areas = R.pipe(
+      R.map(
+        ([index, [x, y]]: IndexedPoint): Area => [
+          index,
+          Math.abs((aX - avgX) * (y - aY) - (aX - x) * (avgY - aY)) * 0.5,
+        ],
+      ),
+      (areas: Area[]): Area[] =>
+        R.sort(
+          R.descend(([, area]) => area),
+          areas,
+        ),
+    )(bucketPoints);
+
+    const [maxArea] = areas;
+    if (maxArea == undefined) {
+      return undefined;
+    }
+
+    const [maxIndex] = maxArea;
+    points.push(maxIndex);
+    next = maxIndex;
   }
 
   points.push(numPoints - 1);
