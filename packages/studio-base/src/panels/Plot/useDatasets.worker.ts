@@ -5,10 +5,7 @@
 import * as Comlink from "comlink";
 
 import { Immutable } from "@foxglove/studio";
-import {
-  findIndices,
-  getTypedLength,
-} from "@foxglove/studio-base/components/Chart/datasets";
+import { lookupIndices, getTypedLength } from "@foxglove/studio-base/components/Chart/datasets";
 import { downsampleLTTB } from "@foxglove/studio-base/components/TimeBasedChart/lttb";
 import {
   ProviderStateSetter,
@@ -114,12 +111,13 @@ function rebuild(id: string) {
     return;
   }
 
-  const numBuckets = Math.floor(1000 / newData.datasets.size)
+  const numBuckets = Math.min(Math.floor(1000 / newData.datasets.size), 1000);
   const downsampled = mapDatasets((dataset) => {
     const { data } = dataset;
+    const lookup = lookupIndices(data);
     const indices = downsampleLTTB(
       (index) => {
-        const offsets = findIndices(data, index);
+        const offsets = lookup(index);
         if (offsets == undefined) {
           return undefined;
         }

@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import * as R from "ramda";
+import * as _ from "lodash-es";
 
 import { TypedData, ObjectData } from "./types";
 
@@ -102,14 +103,12 @@ export function* iterateTyped<T extends { [key: string]: Array<any> | Float32Arr
   }
 }
 
+type Indices = [slice: number, offset: number];
 /**
  * Given a dataset and an index inside of that dataset, return the index of the
  * slice and offset inside of that slice.
  */
-export function findIndices(
-  dataset: TypedData[],
-  index: number,
-): [slice: number, offset: number] | undefined {
+export function findIndices(dataset: TypedData[], index: number): Indices | undefined {
   let offset = index;
   for (let i = 0; i < dataset.length; i++) {
     const slice = dataset[i];
@@ -135,3 +134,53 @@ export function findIndices(
 
   return undefined;
 }
+
+export const lookupIndices = (dataset: TypedData[]) => {
+  const offsets: number[] = R.pipe(
+    R.map(({ x: { length } }: TypedData) => length),
+    R.reduce(
+      (lengths: number[], length: number): number[] => [
+        ...lengths,
+        (R.last(lengths) ?? 0) + length,
+      ],
+      [],
+    ),
+    // remove the last one (can't resolve to greater than end of dataset)
+    (v) => v.slice(0, -1),
+  )(dataset);
+
+  const getBinary = (index: number): Indices | undefined => {
+    const slice = _.sortedIndex(offsets, index);
+    if (slice === dataset.length) {
+      return undefined;
+    }
+
+    if (offsets[slice] === index) {
+      return [slice + 1, 0];
+    }
+
+    return [slice, index - (offsets[slice - 1] ?? 0)];
+  };
+
+  let last: [number, Indices] = [0, [0, 0]];
+  return (offset: number): Indices | undefined => {
+    const [lastOffset, lastIndices] = last;
+    if (offset - 1 === lastOffset) {
+      const [slice, sliceOffset] = lastIndices;
+      const sliceLength = offsets[slice];
+      if (sliceLength != undefined && offset + 1 < sliceLength) {
+        const result: Indices = [slice, sliceOffset + 1];
+        last = [offset, result];
+        return result;
+      }
+    }
+
+    const result = getBinary(offset);
+    if (result == undefined) {
+      return undefined;
+    }
+
+    last = [offset, result];
+    return result;
+  };
+};
