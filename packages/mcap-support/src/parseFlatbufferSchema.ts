@@ -7,7 +7,7 @@ import { BaseType, Schema, SchemaT, FieldT, Parser, Table } from "flatbuffers_re
 
 import { MessageDefinitionField } from "@foxglove/message-definition";
 
-import { MessageDefinitionMap } from "./types";
+import { MessageDefinitionMap, ParsedChannel } from "./types";
 
 function typeForSimpleField(type: BaseType): string {
   switch (type) {
@@ -152,13 +152,7 @@ function typeForField(schema: SchemaT, field: FieldT): MessageDefinitionField[] 
 /**
  * Parse a flatbuffer binary schema and produce datatypes and a deserializer function.
  */
-export function parseFlatbufferSchema(
-  schemaName: string,
-  schemaArray: Uint8Array,
-): {
-  datatypes: MessageDefinitionMap;
-  deserialize: (buffer: ArrayBufferView) => unknown;
-} {
+export function parseFlatbufferSchema(schemaName: string, schemaArray: Uint8Array): ParsedChannel {
   const datatypes: MessageDefinitionMap = new Map();
   const schemaBuffer = new ByteBuffer(schemaArray);
   const rawSchema = Schema.getRootAsSchema(schemaBuffer);

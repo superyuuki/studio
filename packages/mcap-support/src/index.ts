@@ -7,3 +7,5 @@ export * from "./protobufDefinitionsToDatatypes";
 export * from "./parseChannel";
 export * from "./decompressHandlers";
 export * from "./TempBuffer";
+
+export type { ParsedChannel } from "./types";

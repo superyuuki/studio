@@ -22,6 +22,7 @@
   },
   "devDependencies": {
     "@foxglove/tsconfig": "2.0.0",
+    "@types/avro-js": "workspace:*",
     "@types/protobufjs": "workspace:*",
     "typescript": "5.2.2"
   },
@@ -39,6 +40,7 @@
     "@foxglove/wasm-zstd": "1.0.1",
     "@mcap/core": "1.3.0",
     "@protobufjs/base64": "1.1.2",
+    "avro-js": "1.11.3",
     "flatbuffers": "23.5.26",
     "flatbuffers_reflection": "0.0.7",
     "protobufjs": "patch:protobufjs@7.2.4#../../patches/protobufjs.patch"

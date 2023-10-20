@@ -10,19 +10,15 @@ import { parse as parseMessageDefinition } from "@foxglove/rosmsg";
 import { MessageReader } from "@foxglove/rosmsg-serialization";
 import { MessageReader as ROS2MessageReader } from "@foxglove/rosmsg2-serialization";
 
+import { parseAvroSchema } from "./parseAvroSchema";
 import { parseFlatbufferSchema } from "./parseFlatbufferSchema";
 import { parseJsonSchema } from "./parseJsonSchema";
 import { parseProtobufSchema } from "./parseProtobufSchema";
-import { MessageDefinitionMap } from "./types";
+import { MessageDefinitionMap, ParsedChannel } from "./types";
 
 type Channel = {
   messageEncoding: string;
   schema: { name: string; encoding: string; data: Uint8Array } | undefined;
-};
-
-export type ParsedChannel = {
-  deserialize: (data: ArrayBufferView) => unknown;
-  datatypes: MessageDefinitionMap;
 };
 
 function parseIDLDefinitionsToDatatypes(
@@ -189,6 +185,19 @@ export function parseChannel(channel: Channel): ParsedChannel {
         deserialize: (data) => reader.readMessage(data),
       };
     }
+  }
+
+  if (channel.messageEncoding === "avro") {
+    if (channel.schema?.encoding !== "avro") {
+      throw new Error(
+        `Message encoding ${channel.messageEncoding} with ${
+          channel.schema == undefined
+            ? "no encoding"
+            : `schema encoding '${channel.schema.encoding}'`
+        } is not supported (expected avro)`,
+      );
+    }
+    return parseAvroSchema(channel.schema.name, channel.schema.data);
   }
 
   throw new Error(`Unsupported encoding ${channel.messageEncoding}`);
