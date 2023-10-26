@@ -94,6 +94,7 @@ export type ImageModeConfig = Partial<ColorModeSettings> & {
   minValue?: number;
   /** Maximum (white) value for single-channel images */
   maxValue?: number;
+  frameLocked?: boolean;
 };
 
 export type RendererConfig = {

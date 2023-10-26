@@ -2,6 +2,8 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+import { t } from "i18next";
+
 import { toNanoSec, toSec } from "@foxglove/rostime";
 import { NumericType, PointCloud as FoxglovePointCloud } from "@foxglove/schemas";
 import { MessageEvent, SettingsTreeAction } from "@foxglove/studio";
@@ -162,6 +164,11 @@ export class VelodyneScans extends SceneExtension<PointCloudHistoryRenderable> {
         label: "Stixel view",
         input: "boolean",
         value: config.stixelsEnabled ?? DEFAULT_SETTINGS.stixelsEnabled,
+      };
+      node.fields!.frameLocked = {
+        label: t("threeDee:frameLock"),
+        input: "boolean",
+        value: config.frameLocked ?? DEFAULT_SETTINGS.frameLocked,
       };
       node.handler = handler;
       node.icon = "Points";

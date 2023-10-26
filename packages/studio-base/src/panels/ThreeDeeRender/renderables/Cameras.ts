@@ -143,6 +143,11 @@ export class Cameras extends SceneExtension<CameraInfoRenderable> {
           input: "rgba",
           value: config.color ?? DEFAULT_COLOR_STR,
         },
+        frameLocked: {
+          label: t("threeDee:frameLock"),
+          input: "boolean",
+          value: config.frameLocked ?? DEFAULT_SETTINGS.frameLocked,
+        },
       };
 
       entries.push({

@@ -2,6 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+import { t } from "i18next";
 import * as THREE from "three";
 
 import { Time, toNanoSec } from "@foxglove/rostime";
@@ -351,6 +352,11 @@ export class LaserScans extends SceneExtension<LaserScanHistoryRenderable> {
         messageFields,
         config,
       );
+      node.fields!.frameLocked = {
+        label: t("threeDee:frameLock"),
+        input: "boolean",
+        value: config.frameLocked ?? DEFAULT_SETTINGS.frameLocked,
+      };
       node.handler = handler;
       node.icon = "Radar";
       entries.push({ path: ["topics", topic.name], node });

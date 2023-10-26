@@ -2,6 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+import { t } from "i18next";
 import * as _ from "lodash-es";
 import * as THREE from "three";
 import { Writable } from "ts-essentials";
@@ -99,6 +100,7 @@ const ALL_SUPPORTED_CALIBRATION_SCHEMAS = new Set([
 ]);
 
 const DEFAULT_CONFIG = {
+  frameLocked: true,
   synchronize: false,
   flipHorizontal: false,
   flipVertical: false,
@@ -444,6 +446,11 @@ export class ImageMode
         { label: "270°", value: 270 },
       ],
     };
+    fields.frameLocked = {
+      label: t("threeDee:frameLock"),
+      input: "boolean",
+      value: settings.frameLocked,
+    };
 
     const colorModeFields = colorModeSettingsFields({
       config: settings as ImageModeConfig,
@@ -665,6 +672,7 @@ export class ImageMode
 
     const userSettings: ImageRenderableSettings = {
       ...IMAGE_RENDERABLE_DEFAULT_SETTINGS,
+      frameLocked: config.frameLocked,
       colorMode: config.colorMode,
       gradient: config.gradient as [string, string],
       colorMap: config.colorMap,

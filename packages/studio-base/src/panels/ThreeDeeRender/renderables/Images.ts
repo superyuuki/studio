@@ -167,6 +167,11 @@ export class Images extends SceneExtension<ImageRenderable> {
           options: cameraInfoOptions,
           value: config.cameraInfoTopic,
         },
+        frameLocked: {
+          label: t("threeDee:frameLock"),
+          input: "boolean",
+          value: config.frameLocked ?? IMAGE_RENDERABLE_DEFAULT_SETTINGS.frameLocked,
+        },
         distance: {
           label: t("threeDee:distance"),
           input: "number",
