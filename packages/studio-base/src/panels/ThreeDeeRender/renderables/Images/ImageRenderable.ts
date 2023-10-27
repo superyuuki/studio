@@ -124,10 +124,10 @@ export class ImageRenderable extends Renderable<ImageUserData> {
   }
 
   // Renderable should only need to care about the model
-  public setCameraModel = (cameraModel: PinholeCameraModel): void => {
+  public setCameraModel(cameraModel: PinholeCameraModel): void {
     this.#geometryNeedsUpdate ||= this.userData.cameraModel !== cameraModel;
     this.userData.cameraModel = cameraModel;
-  };
+  }
 
   public setSettings(newSettings: ImageRenderableSettings): void {
     const prevSettings = this.userData.settings;
