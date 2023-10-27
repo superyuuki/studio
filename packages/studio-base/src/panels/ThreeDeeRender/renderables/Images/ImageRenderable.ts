@@ -88,11 +88,6 @@ export class ImageRenderable extends Renderable<ImageUserData> {
     return this.#decodedImage;
   }
 
-  public setTopic(topicName: string): void {
-    this.name = topicName;
-    this.userData.topic = topicName;
-  }
-
   public override dispose(): void {
     this.#disposed = true;
     this.userData.texture?.dispose();

@@ -328,6 +328,8 @@ export class ImageMode
    **/
   protected setImageTopic(imageTopic: Topic): void {
     const matchingCalibrationTopic = this.#getMatchingCalibrationTopic(imageTopic.name);
+    // clear renderables so that they can be reinstantiated
+    this.removeAllRenderables();
 
     this.renderer.updateConfig((draft) => {
       draft.imageMode.imageTopic = imageTopic.name;
@@ -624,7 +626,6 @@ export class ImageMode
       renderable.setCameraModel(this.#cameraModel.model);
     }
 
-    renderable.setTopic(topic);
     renderable.userData.receiveTime = receiveTime;
     renderable.setImage(image, /*resizeWidth=*/ undefined, (size) => {
       if (this.#fallbackCameraModelActive()) {
