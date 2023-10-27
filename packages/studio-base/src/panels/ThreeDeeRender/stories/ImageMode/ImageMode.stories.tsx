@@ -697,7 +697,7 @@ export const UnsupportedEncodingError: StoryObj = {
     const errorIcon = await waitFor(async () => {
       const icons = await screen.findAllByTestId("ErrorIcon");
       if (icons.length !== 1) {
-        throw new Error("Expected l error icon. (unsupported encoding)");
+        throw new Error("Expected 1 error icon. (unsupported encoding)");
       }
       return icons[0];
     });
