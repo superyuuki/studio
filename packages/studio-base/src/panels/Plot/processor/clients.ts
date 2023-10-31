@@ -26,10 +26,10 @@ import { StateAndEffects, SideEffects, State, Client } from "./types";
 import { PlotParams } from "../internalTypes";
 import { getParamTopics, getParamPaths } from "../params";
 import {
-  reducePlotData,
   PlotData,
   applyDerivativeToPlotData,
   sortPlotDataByHeaderStamp,
+  mergeAllData,
 } from "../plotData";
 
 export function refreshClient(client: Client, state: State): [Client, SideEffects] {
@@ -201,17 +201,8 @@ export function getClientData(client: Client): PlotData | undefined {
     return undefined;
   }
 
-  const { bounds: blockBounds } = blockData;
-  const { bounds: currentBounds } = currentData;
-
-  let datasets: PlotData[] = [];
-  if (blockBounds.x.min <= currentBounds.x.min && blockBounds.x.max > currentBounds.x.max) {
-    // ignore current data if block data covers it already
-    datasets = [blockData];
-  } else {
-    // unbounded plots should also use current data
-    datasets = [blockData, currentData];
-  }
-
-  return R.pipe(reducePlotData, applyDerivativeToPlotData, sortPlotDataByHeaderStamp)(datasets);
+  return R.pipe(
+    applyDerivativeToPlotData,
+    sortPlotDataByHeaderStamp,
+  )(mergeAllData(blockData, currentData));
 }

@@ -11,6 +11,7 @@ import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 import { enumValuesByDatatypeAndField } from "@foxglove/studio-base/util/enums";
 
 import { initAccumulated, accumulate, buildPlot } from "./accumulate";
+import { partialDownsample } from "./downsample";
 import { rebuildClient, sendData, mapClients, noEffects, keepEffects, getAllTopics } from "./state";
 import { State, StateAndEffects, Client, SideEffects } from "./types";
 import { Messages } from "../internalTypes";
@@ -73,16 +74,19 @@ export function addBlock(block: Messages, resetTopics: string[], state: State): 
       return [client, []];
     }
 
+    const newBlockData = accumulate(
+      metadata,
+      globalVariables,
+      shouldReset ? initAccumulated(client.topics) : client.blocks,
+      params,
+      newBlocks,
+    );
+
     return [
       {
         ...client,
-        blocks: accumulate(
-          metadata,
-          globalVariables,
-          shouldReset ? initAccumulated(client.topics) : client.blocks,
-          params,
-          newBlocks,
-        ),
+        blocks: newBlockData,
+        downsampled: partialDownsample(newBlockData.data, client.current.data, client.downsampled),
       },
       [rebuildClient(id)],
     ];
