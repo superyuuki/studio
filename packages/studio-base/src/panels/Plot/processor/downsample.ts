@@ -2,8 +2,9 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+import * as R from "ramda";
 import { PlotViewport } from "@foxglove/studio-base/components/TimeBasedChart/types";
-import { PlotPath, DatasetsByPath } from "../internalTypes";
+import { PlotPath, DatasetsByPath, TypedDataSet } from "../internalTypes";
 import { mapDatasets, EmptyPlotData, appendPlotData, PlotData } from "../plotData";
 import { lookupIndices, getTypedLength } from "@foxglove/studio-base/components/Chart/datasets";
 import { sliceTyped, resolveTypedIndices } from "../datasets";
@@ -70,6 +71,8 @@ function getNewData(
 
 const getBoundsRange = ({ max, min }: Bounds1D): number => Math.abs(max - min);
 
+const MAX_POINTS = 3_000
+
 export function partialDownsample(
   view: PlotViewport,
   blocks: PlotData,
@@ -112,8 +115,17 @@ export function partialDownsample(
   }
 
   // The "maximum" number of buckets each dataset can have
-  const pointsPerDataset = 7_500 / numDatasets;
+  const pointsPerDataset = MAX_POINTS / numDatasets;
   const viewportRange = getBoundsRange(viewBounds);
+
+  const numPreviousPoints = R.pipe(
+    R.map((dataset: TypedDataSet) => getTypedLength(dataset.data)),
+    R.sum,
+  )([...previous.datasets.values()]);
+  if (previous.datasets.size > 0 && numPreviousPoints > MAX_POINTS * 1.2) {
+    return partialDownsample(view, blocks, current, initDownsampled());
+  }
+
   const newDatasets = mapDatasets((dataset) => {
     const newBounds = getTypedBounds([dataset]);
     if (newBounds == undefined) {
