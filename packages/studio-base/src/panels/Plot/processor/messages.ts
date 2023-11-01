@@ -67,10 +67,15 @@ export function addBlock(block: Messages, resetTopics: string[], state: State): 
   };
 
   return mapClients((client, { blocks: newBlocks }): [Client, SideEffects] => {
-    const { id, params } = client;
-    const relevantTopics = R.intersection(blockTopics, client.topics);
+    const { id, params, downsampled, view } = client;
+    const relevantTopics = R.intersection(topics, client.topics);
     const shouldReset = R.intersection(relevantTopics, resetTopics).length > 0;
-    if (params == undefined || isSingleMessage(params) || relevantTopics.length === 0) {
+    if (
+      view == undefined ||
+      params == undefined ||
+      isSingleMessage(params) ||
+      relevantTopics.length === 0
+    ) {
       return [client, []];
     }
 
@@ -86,7 +91,12 @@ export function addBlock(block: Messages, resetTopics: string[], state: State): 
       {
         ...client,
         blocks: newBlockData,
-        downsampled: partialDownsample(newBlockData.data, client.current.data, client.downsampled),
+        downsampled: partialDownsample(
+          view,
+          newBlockData.data,
+          client.current.data,
+          client.downsampled,
+        ),
       },
       [rebuildClient(id)],
     ];

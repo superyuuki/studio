@@ -26,7 +26,7 @@ export function initClient(id: string, params: PlotParams | undefined): Client {
     view: undefined,
     blocks: initAccumulated([]),
     current: initAccumulated([]),
-    downsampled: initDownsampled([]),
+    downsampled: initDownsampled(),
   };
 }
 

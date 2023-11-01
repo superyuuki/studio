@@ -5,8 +5,6 @@
 import * as Comlink from "comlink";
 
 import { Immutable } from "@foxglove/studio";
-import { lookupIndices, getTypedLength } from "@foxglove/studio-base/components/Chart/datasets";
-import { downsampleLTTB } from "@foxglove/studio-base/components/TimeBasedChart/lttb";
 import {
   ProviderStateSetter,
   PlotViewport,
@@ -16,10 +14,9 @@ import { Topic, MessageEvent } from "@foxglove/studio-base/players/types";
 import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 import strPack from "@foxglove/studio-base/util/strPack";
 
-import { resolveTypedIndices } from "./datasets";
 import { PlotParams, TypedData, Messages } from "./internalTypes";
 import { isSingleMessage } from "./params";
-import { PlotData, StateHandler, mapDatasets, getProvidedData } from "./plotData";
+import { PlotData, StateHandler, getProvidedData } from "./plotData";
 import {
   SideEffectType,
   State,
@@ -38,7 +35,10 @@ import {
   updateParams,
   updateView,
   compressClients,
+  mutateClient,
 } from "./processor";
+
+import { partialDownsample } from './processor/downsample'
 
 type Setter = ProviderStateSetter<TypedData[]>;
 
@@ -101,7 +101,7 @@ function rebuild(id: string) {
     return;
   }
 
-  const { params, view } = client;
+  const { params, blocks, current, view, downsampled } = client;
   if (params == undefined || view == undefined) {
     return;
   }
@@ -111,51 +111,25 @@ function rebuild(id: string) {
     return;
   }
 
-  const numBuckets = Math.min(Math.floor(1000 / newData.datasets.size), 1000);
-  const downsampled = mapDatasets((dataset) => {
-    const { data } = dataset;
-    const lookup = lookupIndices(data);
-    const indices = downsampleLTTB(
-      (index) => {
-        const offsets = lookup(index);
-        if (offsets == undefined) {
-          return undefined;
-        }
+  const newDownsampled = partialDownsample(
+    view,
+    blocks.data,
+    current.data,
+    downsampled,
+  )
 
-        const slice = data[offsets[0]];
-        if (slice == undefined) {
-          return undefined;
-        }
+  state = mutateClient(state, id, {
+    ...client,
+    downsampled: newDownsampled,
+  })
 
-        const {
-          x: { [offsets[1]]: x },
-          y: { [offsets[1]]: y },
-        } = slice;
-        if (x == undefined || y == undefined) {
-          return undefined;
-        }
-        return [x, y];
-      },
-      getTypedLength(data),
-      numBuckets,
-    );
-    if (indices == undefined) {
-      return dataset;
-    }
-    const resolved = resolveTypedIndices(dataset.data, indices);
-    if (resolved == undefined) {
-      return dataset;
-    }
-
-    return {
-      ...dataset,
-      data: resolved,
-    };
-  }, newData.datasets);
+  if (!newDownsampled.isValid) {
+    return;
+  }
 
   sendPlotData(clientCallbacks, {
     ...newData,
-    datasets: downsampled,
+    ...newDownsampled.data,
   });
 }
 
@@ -187,7 +161,7 @@ setInterval(() => {
 
 export const service = {
   addBlock(block: Messages, resetTopics: string[]): void {
-    handleEffects(addBlock(strPack(block), resetTopics, state));
+    handleEffects(addBlock(strPack(block), resetTopics, state))
   },
   addCurrent(events: readonly MessageEvent[]): void {
     handleEffects(addCurrent(events, state));
