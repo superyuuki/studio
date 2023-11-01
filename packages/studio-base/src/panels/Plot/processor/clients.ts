@@ -10,6 +10,7 @@ import { PlotViewport } from "@foxglove/studio-base/components/TimeBasedChart/ty
 import { GlobalVariables } from "@foxglove/studio-base/hooks/useGlobalVariables";
 
 import { initAccumulated, accumulate } from "./accumulate";
+import { initDownsampled } from "./downsample";
 import { evictCache } from "./messages";
 import {
   findClient,
@@ -99,6 +100,7 @@ export function updateParams(id: string, params: PlotParams, state: State): Stat
           ...client,
           params,
           topics: getParamTopics(params),
+          downsampled: initDownsampled(),
         },
         state,
       );

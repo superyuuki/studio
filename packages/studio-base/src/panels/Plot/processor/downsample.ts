@@ -16,6 +16,8 @@ type DatasetCursors = Map<PlotPath, number>;
 
 export type Downsampled = {
   isValid: boolean;
+  // the viewport when we started accumulating downsampled data
+  view: PlotViewport | undefined;
   blocks: DatasetCursors;
   current: DatasetCursors;
   data: PlotData;
@@ -26,6 +28,7 @@ export function initDownsampled(): Downsampled {
 
   return {
     isValid: false,
+    view: undefined,
     blocks: new Map(cursors),
     current: new Map(cursors),
     data: EmptyPlotData,
@@ -71,7 +74,24 @@ function getNewData(
 
 const getBoundsRange = ({ max, min }: Bounds1D): number => Math.abs(max - min);
 
-const MAX_POINTS = 3_000
+const MAX_POINTS = 3_000;
+
+const getScale = ({ width, height, bounds: { x, y } }: PlotViewport): { x: number; y: number } => ({
+  x: (x.max - x.min) / width,
+  y: (y.max - y.min) / height,
+});
+
+const ZOOM_THRESHOLD_PERCENT = 0.2;
+
+function getResetViewport(oldViewport: PlotViewport, newViewport: PlotViewport): boolean {
+  const { x: oldX, y: oldY } = getScale(oldViewport);
+  const { x: newX, y: newY } = getScale(newViewport);
+
+  return (
+    Math.abs(newX / oldX - 1) > ZOOM_THRESHOLD_PERCENT ||
+    Math.abs(newY / oldY - 1) > ZOOM_THRESHOLD_PERCENT
+  );
+}
 
 export function partialDownsample(
   view: PlotViewport,
@@ -84,7 +104,7 @@ export function partialDownsample(
 
   const {
     bounds: { x: viewBounds },
-  } = view;
+  } = downsampled.view ?? view;
   const {
     bounds: { x: blockBounds },
   } = blocks;
@@ -103,11 +123,22 @@ export function partialDownsample(
     return initDownsampled();
   }
 
-  const { data: previous, blocks: oldBlocks, current: oldCurrent } = downsampled;
+  const {
+    view: downsampledView,
+    data: previous,
+    blocks: oldBlocks,
+    current: oldCurrent,
+  } = downsampled;
   const [newBlocks, blockData] = getNewData(oldBlocks, blocks);
   const [newCurrent, currentData] = getNewData(oldCurrent, current);
   const data = haveBlockData ? blockData : currentData;
   const numDatasets = data.datasets.size;
+
+  const didViewportChange =
+    downsampledView != undefined ? getResetViewport(downsampledView, view) : false;
+  if (didViewportChange) {
+    return partialDownsample(view, blocks, current, initDownsampled());
+  }
 
   // We don't have any new data
   if (numDatasets === 0) {
@@ -116,16 +147,18 @@ export function partialDownsample(
 
   // The "maximum" number of buckets each dataset can have
   const pointsPerDataset = MAX_POINTS / numDatasets;
-  const viewportRange = getBoundsRange(viewBounds);
 
+  // Check whether this dataset has gotten too big
   const numPreviousPoints = R.pipe(
     R.map((dataset: TypedDataSet) => getTypedLength(dataset.data)),
     R.sum,
   )([...previous.datasets.values()]);
-  if (previous.datasets.size > 0 && numPreviousPoints > MAX_POINTS * 1.2) {
+  const didExceedMax = previous.datasets.size > 0 && numPreviousPoints > MAX_POINTS * 1.2;
+  if (didExceedMax) {
     return partialDownsample(view, blocks, current, initDownsampled());
   }
 
+  const viewportRange = getBoundsRange(viewBounds);
   const newDatasets = mapDatasets((dataset) => {
     const newBounds = getTypedBounds([dataset]);
     if (newBounds == undefined) {
@@ -184,6 +217,7 @@ export function partialDownsample(
 
   return {
     ...downsampled,
+    view: downsampled.view ?? view,
     isValid: true,
     blocks: newBlocks,
     current: newCurrent,
