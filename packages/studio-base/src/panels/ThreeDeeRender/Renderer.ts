@@ -1109,7 +1109,6 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
         const { queue, processQueue } = subscription;
         const processedQueue = processQueue ? processQueue(queue) : queue;
         subscription.queue = undefined;
-        console.log("processedQueueLength", processedQueue.length);
         for (const messageEvent of processedQueue) {
           subscription.handler(messageEvent);
         }
@@ -1123,7 +1122,6 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
         const { queue, processQueue } = subscription;
         const processedQueue = processQueue ? processQueue(queue) : queue;
         subscription.queue = undefined;
-        console.log("processedQueueLength", processedQueue.length);
         for (const messageEvent of processedQueue) {
           subscription.handler(messageEvent);
         }

@@ -241,3 +241,13 @@ export class SceneExtension<
     }
   }
 }
+
+export function onlyLastByTopicMessage<T>(msgs: MessageEvent<T>[]): MessageEvent<T>[] {
+  if (msgs.length === 0) {
+    return [];
+  }
+  const msgsByTopic = _.groupBy(msgs, (msg) => msg.topic);
+  const list = Object.values(msgsByTopic).map((topicMsgs) => topicMsgs[topicMsgs.length - 1]!);
+
+  return list;
+}
