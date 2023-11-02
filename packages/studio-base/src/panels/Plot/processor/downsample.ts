@@ -4,72 +4,197 @@
 
 import * as R from "ramda";
 import { PlotViewport } from "@foxglove/studio-base/components/TimeBasedChart/types";
-import { PlotPath, DatasetsByPath, TypedDataSet } from "../internalTypes";
-import { mapDatasets, EmptyPlotData, appendPlotData, PlotData } from "../plotData";
+import { PlotPath, TypedDataSet, TypedData } from "../internalTypes";
+import { EmptyPlotData, PlotData } from "../plotData";
 import { lookupIndices, getTypedLength } from "@foxglove/studio-base/components/Chart/datasets";
-import { sliceTyped, resolveTypedIndices } from "../datasets";
+import { concatTyped, sliceTyped, resolveTypedIndices } from "../datasets";
 import { getTypedBounds } from "@foxglove/studio-base/components/TimeBasedChart/useProvider";
 import { Bounds1D } from "@foxglove/studio-base/components/TimeBasedChart/types";
 import { downsampleLTTB } from "@foxglove/studio-base/components/TimeBasedChart/lttb";
 
-type DatasetCursors = Map<PlotPath, number>;
+type PathMap<T> = Map<PlotPath, T>;
+
+type SourceState = {
+  cursor: number;
+  chunkSize: number;
+  numPoints: number;
+  dataset: TypedDataSet | undefined;
+};
+type PathState = {
+  blocks: SourceState;
+  current: SourceState;
+  dataset: TypedDataSet | undefined;
+};
+
+const initSource = (): SourceState => ({
+  cursor: 0,
+  chunkSize: 0,
+  numPoints: 0,
+  dataset: undefined,
+});
+
+const initPath = (): PathState => ({
+  blocks: initSource(),
+  current: initSource(),
+  dataset: undefined,
+});
 
 export type Downsampled = {
   isValid: boolean;
   // the viewport when we started accumulating downsampled data
   view: PlotViewport | undefined;
-  blocks: DatasetCursors;
-  current: DatasetCursors;
+  paths: PathMap<PathState>;
   data: PlotData;
 };
 
 export function initDownsampled(): Downsampled {
-  const cursors = new Map();
-
   return {
     isValid: false,
     view: undefined,
-    blocks: new Map(cursors),
-    current: new Map(cursors),
+    paths: new Map(),
     data: EmptyPlotData,
   };
 }
 
-// Get only the new data that has been added since `oldCursors`.
-function getNewData(
-  oldCursors: DatasetCursors,
-  data: PlotData,
-): [newCursors: DatasetCursors, newData: PlotData] {
-  const newCursors = new Map(oldCursors);
-  const newDatasets: DatasetsByPath = new Map();
-  for (const [path, dataset] of data.datasets.entries()) {
-    const { data: typed } = dataset;
-    const length = getTypedLength(typed);
-    const old = oldCursors.get(path);
-    if (old === length) {
-      continue;
-    }
+const downsampleDataset = (data: TypedData[], numPoints: number): TypedData[] | undefined => {
+  const lookup = lookupIndices(data);
+  const indices = downsampleLTTB(
+    (index) => {
+      const offsets = lookup(index);
+      if (offsets == undefined) {
+        return undefined;
+      }
 
-    newCursors.set(path, length);
-    newDatasets.set(
-      path,
-      old != undefined
-        ? {
-            ...dataset,
-            data: sliceTyped(typed, old),
-          }
-        : dataset,
-    );
+      const slice = data[offsets[0]];
+      if (slice == undefined) {
+        return undefined;
+      }
+
+      const {
+        x: { [offsets[1]]: x },
+        y: { [offsets[1]]: y },
+      } = slice;
+      if (x == undefined || y == undefined) {
+        return undefined;
+      }
+      return [x, y];
+    },
+    getTypedLength(data),
+    numPoints,
+  );
+  if (indices == undefined) {
+    return undefined;
+  }
+  const resolved = resolveTypedIndices(data, indices);
+  if (resolved == undefined) {
+    return undefined;
   }
 
-  return [
-    newCursors,
-    {
-      ...data,
-      bounds: getTypedBounds([...newDatasets.values()]) ?? data.bounds,
-      datasets: newDatasets,
-    },
-  ];
+  return resolved;
+};
+
+const concatDataset = (a: TypedDataSet, b: TypedDataSet): TypedDataSet => ({
+  ...a,
+  data: concatTyped(a.data, b.data),
+});
+
+function updateSource(
+  path: PlotPath,
+  raw: TypedDataSet | undefined,
+  viewportRange: number,
+  maxPoints: number,
+  state: SourceState,
+): SourceState {
+  const { cursor: oldCursor, dataset: previous, chunkSize, numPoints } = state;
+  if (raw == undefined) {
+    return initSource();
+  }
+
+  const newCursor = getTypedLength(raw.data);
+  if (newCursor === oldCursor) {
+    return state;
+  }
+
+  const newData = sliceTyped(raw.data, oldCursor);
+  const newBounds = getTypedBounds([{ data: newData }]);
+  if (newBounds == undefined) {
+    return state;
+  }
+
+  const newRange = getBoundsRange(newBounds.x);
+
+  // We haven't generated data yet, cannot use chunkSize
+  // Only proceed if we have enough data
+  if (previous == undefined || chunkSize === 0) {
+    const proportion = newRange / viewportRange;
+
+    // We don't have enough data to guess what our bucket size should be; just
+    // send the full dataset since it's not much right now
+    if (proportion < 0.05) {
+      return {
+        ...state,
+        // cursor and bucketSize remain at 0
+        dataset: raw,
+      };
+    }
+
+    const numPoints = Math.min(Math.floor((newRange / viewportRange) * maxPoints), maxPoints);
+
+    const downsampled = downsampleDataset(newData, numPoints);
+    if (downsampled == undefined) {
+      return state;
+    }
+
+    return {
+      ...state,
+      cursor: newCursor,
+      chunkSize: newCursor,
+      numPoints: numPoints,
+      dataset: {
+        ...raw,
+        data: downsampled,
+      },
+    };
+  }
+
+  const numNewPoints = newCursor - oldCursor;
+  if (numNewPoints < chunkSize) {
+    // revisit this?
+    return state;
+  }
+
+  const downsampled = downsampleDataset(sliceTyped(newData, 0, chunkSize), numPoints);
+  if (downsampled == undefined) {
+    return state;
+  }
+
+  // We go around again and consume all the data we can
+  return updateSource(path, raw, viewportRange, maxPoints, {
+    ...state,
+    cursor: oldCursor + chunkSize,
+    dataset: concatDataset(previous, { data: downsampled }),
+  });
+}
+
+function updatePath(
+  path: PlotPath,
+  blockData: TypedDataSet | undefined,
+  currentData: TypedDataSet | undefined,
+  viewportRange: number,
+  maxPoints: number,
+  state: PathState,
+): PathState {
+  const { blocks, current } = state;
+  const newState: PathState = {
+    ...state,
+    blocks: updateSource(path, blockData, viewportRange, maxPoints, blocks),
+    current: updateSource(path, currentData, viewportRange, maxPoints, current),
+  };
+
+  return {
+    ...newState,
+    dataset: newState.blocks.dataset ?? newState.current.dataset,
+  };
 }
 
 const getBoundsRange = ({ max, min }: Bounds1D): number => Math.abs(max - min);
@@ -93,32 +218,15 @@ function getResetViewport(oldViewport: PlotViewport, newViewport: PlotViewport):
   );
 }
 
-function getNumBuckets(
-  oldRaw: TypedDataSet | undefined,
-  oldDownsampled: TypedDataSet | undefined,
-  newRaw: TypedDataSet,
-  newRange: number,
-  viewportRange: number,
-  maxPoints: number,
-): number {
-  if (oldRaw == undefined || oldDownsampled == undefined) {
-    return Math.min(Math.floor((newRange / viewportRange) * maxPoints), maxPoints);
-  }
-
-  const oldPoints = getTypedLength(oldRaw.data);
-  const oldBuckets = getTypedLength(oldDownsampled.data);
-  const newPoints = getTypedLength(newRaw.data);
-  const newBuckets = Math.ceil(newPoints / (oldPoints / oldBuckets));
-  console.log('matching', newBuckets, oldBuckets, newPoints, newPoints / (oldPoints / oldBuckets), newBuckets);
-  return newBuckets;
-}
-
 export function partialDownsample(
   view: PlotViewport,
   blocks: PlotData,
   current: PlotData,
   downsampled: Downsampled,
 ): Downsampled {
+  const blockPaths = [...blocks.datasets.keys()];
+  const currentPaths = [...current.datasets.keys()];
+  const paths = blockPaths.length > currentPaths.length ? blockPaths : currentPaths;
   // if derivative or sort by header, we can't
   // downsample on the fly
 
@@ -143,16 +251,7 @@ export function partialDownsample(
     return initDownsampled();
   }
 
-  const {
-    view: downsampledView,
-    data: previous,
-    blocks: oldBlocks,
-    current: oldCurrent,
-  } = downsampled;
-  const [newBlocks, blockData] = getNewData(oldBlocks, blocks);
-  const [newCurrent, currentData] = getNewData(oldCurrent, current);
-  const data = haveBlockData ? blockData : currentData;
-  const numDatasets = data.datasets.size;
+  const { view: downsampledView, data: previous, paths: oldPaths } = downsampled;
 
   const didViewportChange =
     downsampledView != undefined ? getResetViewport(downsampledView, view) : false;
@@ -161,7 +260,8 @@ export function partialDownsample(
     return partialDownsample(view, blocks, current, initDownsampled());
   }
 
-  // We don't have any new data
+  const numDatasets = Math.max(blocks.datasets.size, current.datasets.size);
+  // We don't have any data
   if (numDatasets === 0) {
     return downsampled;
   }
@@ -179,80 +279,31 @@ export function partialDownsample(
     return partialDownsample(view, blocks, current, initDownsampled());
   }
 
-  const viewportRange = getBoundsRange(viewBounds);
-  const newDatasets = mapDatasets((dataset, path) => {
-    const newBounds = getTypedBounds([dataset]);
-    if (newBounds == undefined) {
-      return dataset;
-    }
-
-    const numBuckets = getNumBuckets(
-      blocks.datasets.get(path),
-      previous.datasets.get(path),
-      dataset,
-      getBoundsRange(newBounds.x),
-      viewportRange,
-      pointsPerDataset,
-    );
-    console.log(
-      "numBuckets",
-      numBuckets,
-    );
-    const { data } = dataset;
-    const lookup = lookupIndices(data);
-    const indices = downsampleLTTB(
-      (index) => {
-        const offsets = lookup(index);
-        if (offsets == undefined) {
-          return undefined;
-        }
-
-        const slice = data[offsets[0]];
-        if (slice == undefined) {
-          return undefined;
-        }
-
-        const {
-          x: { [offsets[1]]: x },
-          y: { [offsets[1]]: y },
-        } = slice;
-        if (x == undefined || y == undefined) {
-          return undefined;
-        }
-        return [x, y];
-      },
-      getTypedLength(data),
-      numBuckets,
-    );
-    if (indices == undefined) {
-      return dataset;
-    }
-    const resolved = resolveTypedIndices(dataset.data, indices);
-    if (resolved == undefined) {
-      return dataset;
-    }
-
-    return {
-      ...dataset,
-      data: resolved,
-    };
-  }, data.datasets);
-
-  const newData = {
-    ...data,
-    datasets: newDatasets,
-  };
-
   // can only add to partial result if data:
   // a. contiguous
   // b. still in viewport
 
+  const viewportRange = getBoundsRange(viewBounds);
+  const newPaths: PathMap<PathState> = new Map();
+  for (const path of paths) {
+    const state = oldPaths.get(path) ?? initPath();
+    newPaths.set(
+      path,
+      updatePath(
+        path,
+        blocks.datasets.get(path),
+        current.datasets.get(path),
+        viewportRange,
+        pointsPerDataset,
+        state,
+      ),
+    );
+  }
+
   return {
     ...downsampled,
+    paths: newPaths,
     view: downsampled.view ?? view,
     isValid: true,
-    blocks: newBlocks,
-    current: newCurrent,
-    data: appendPlotData(previous, newData),
   };
 }
