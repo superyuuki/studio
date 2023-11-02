@@ -8,7 +8,6 @@ import { PlotPath, DatasetsByPath, TypedDataSet, TypedData } from "../internalTy
 import { EmptyPlotData, PlotData } from "../plotData";
 import { lookupIndices, getTypedLength } from "@foxglove/studio-base/components/Chart/datasets";
 import { concatTyped, sliceTyped, resolveTypedIndices } from "../datasets";
-import { getTypedBounds } from "@foxglove/studio-base/components/TimeBasedChart/useProvider";
 import { Bounds1D } from "@foxglove/studio-base/components/TimeBasedChart/types";
 import { downsampleLTTB } from "@foxglove/studio-base/components/TimeBasedChart/lttb";
 
@@ -98,6 +97,21 @@ const concatDataset = (a: TypedDataSet, b: TypedDataSet): TypedDataSet => ({
   data: concatTyped(a.data, b.data),
 });
 
+const getXBounds = (data: TypedData[]): Bounds1D | undefined => {
+  const first = data[0];
+  const last = data[data.length - 1];
+  if (first == undefined || last == undefined) {
+    return undefined;
+  }
+
+  const firstX = first.x[0];
+  const lastX = last.x[last.x.length - 1];
+  if (firstX == undefined || lastX == undefined) {
+    return undefined;
+  }
+  return { min: firstX, max: lastX };
+};
+
 function updateSource(
   path: PlotPath,
   raw: TypedDataSet | undefined,
@@ -116,12 +130,12 @@ function updateSource(
   }
 
   const newData = sliceTyped(raw.data, oldCursor);
-  const newBounds = getTypedBounds([{ data: newData }]);
+  const newBounds = getXBounds(newData);
   if (newBounds == undefined) {
     return state;
   }
 
-  const newRange = getBoundsRange(newBounds.x);
+  const newRange = getBoundsRange(newBounds);
 
   // We haven't generated data yet, cannot use chunkSize
   // Only proceed if we have enough data
