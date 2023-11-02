@@ -5,9 +5,15 @@
 import * as R from "ramda";
 
 type Point = [x: number, y: number];
-type IndexedPoint = [index: number, point: Point];
 
-const containsNaN = ([, [x, y]]: IndexedPoint): boolean => isNaN(x) || isNaN(y);
+const getAverage = (data: Float64Array): number => {
+  let total = 0;
+  for (let i = 0; i < data.length; i++) {
+    total += data[i] ?? 0;
+  }
+
+  return total / data.length;
+};
 
 /**
  * Choose a subset of points from the provided dataset that retain its visual properties. The output of this algorithm is only well-defined for datasets where the x-axis is sorted and is plotted as a contiguous line.
@@ -33,17 +39,19 @@ export function downsampleLTTB(
     Math.floor((index + 1) * bucketSize),
   ];
 
-  const getPoints = (start: number, end: number): IndexedPoint[] | undefined => {
-    const points: IndexedPoint[] = [];
-    for (const index of R.range(start, end)) {
-      const point = get(index);
-      if (point == undefined) {
-        return undefined;
-      }
-      points.push([index, point]);
+  const xValues = new Float64Array(numPoints);
+  const yValues = new Float64Array(numPoints);
+  for (let i = 0; i < numPoints; i++) {
+    const point = get(i);
+    if (point == undefined) {
+      return undefined;
     }
+    xValues[i] = point[0];
+    yValues[i] = point[1];
+  }
 
-    return points;
+  const getPoints = (start: number, end: number): [x: Float64Array, y: Float64Array] => {
+    return [xValues.subarray(start, end), yValues.subarray(start, end)];
   };
 
   let next: number = 0;
@@ -52,25 +60,26 @@ export function downsampleLTTB(
     const [bucketStart, bucketEnd] = getBucket(bucketIndex);
     // First, get all of the points for this bucket so we can check for
     // nullity and/or NaN
-    const bucketPoints = getPoints(bucketStart, bucketEnd);
-    if (bucketPoints == undefined) {
-      return undefined;
-    }
+    const [bucketX, bucketY] = getPoints(bucketStart, bucketEnd);
 
     // Next, get the average of the following bucket
     const [nextStart, nextEnd] = getBucket(bucketIndex + 1);
-    const nextPoints = getPoints(nextStart, Math.min(nextEnd, numPoints));
-    if (nextPoints == undefined) {
-      return undefined;
-    }
+    const end = Math.min(nextEnd, numPoints);
+    const [nextX, nextY] = getPoints(nextStart, end);
+
+    const [combinedX, combinedY] = getPoints(bucketStart, end);
 
     // Check all points under consideration for NaN. We use NaN to imply a
     // break in the plot; this has to be given special treatment so that we
     // downsample both parts of the plot separately.
-    const nanPoint = R.find(containsNaN, [...bucketPoints, ...nextPoints]);
-    if (nanPoint != undefined) {
-      const [nanIndex] = nanPoint;
-
+    let nanIndex = -1;
+    for (let i = 0; i < combinedX.length; i++) {
+      if (isNaN(combinedX[i] ?? 0) || isNaN(combinedY[i] ?? 0)) {
+        nanIndex = i;
+        break;
+      }
+    }
+    if (nanIndex !== -1) {
       // Attempt to add the last point before the NaN
       if (nanIndex - 1 >= bucketStart) {
         points.push(nanIndex - 1);
@@ -95,8 +104,8 @@ export function downsampleLTTB(
       return points.concat(rest);
     }
 
-    const avgX = R.sum(nextPoints.map(([, [x]]) => x)) / nextPoints.length;
-    const avgY = R.sum(nextPoints.map(([, [, y]]) => y)) / nextPoints.length;
+    const avgX = getAverage(nextX);
+    const avgY = getAverage(nextY);
     const a = get(next);
     if (a == undefined) {
       return undefined;
@@ -106,13 +115,19 @@ export function downsampleLTTB(
     // Choose the triangle with the maximum area
     let maxIndex = -1;
     let maxArea = 0;
-    for (const [index, [x, y]] of bucketPoints) {
+    for (let index = 0; index < bucketX.length; index++) {
+      const realIndex = bucketStart + index;
+      const x = bucketX[index];
+      const y = bucketY[index];
+      if (x == undefined || y == undefined) {
+        continue;
+      }
       const area = Math.abs((aX - avgX) * (y - aY) - (aX - x) * (avgY - aY)) * 0.5;
       if (area < maxArea) {
         continue;
       }
       maxArea = area;
-      maxIndex = index;
+      maxIndex = realIndex;
     }
 
     if (maxIndex === -1) {
