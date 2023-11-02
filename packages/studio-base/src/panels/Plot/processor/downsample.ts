@@ -4,7 +4,7 @@
 
 import * as R from "ramda";
 import { PlotViewport } from "@foxglove/studio-base/components/TimeBasedChart/types";
-import { PlotPath, TypedDataSet, TypedData } from "../internalTypes";
+import { PlotPath, DatasetsByPath, TypedDataSet, TypedData } from "../internalTypes";
 import { EmptyPlotData, PlotData } from "../plotData";
 import { lookupIndices, getTypedLength } from "@foxglove/studio-base/components/Chart/datasets";
 import { concatTyped, sliceTyped, resolveTypedIndices } from "../datasets";
@@ -131,11 +131,7 @@ function updateSource(
     // We don't have enough data to guess what our bucket size should be; just
     // send the full dataset since it's not much right now
     if (proportion < 0.05) {
-      return {
-        ...state,
-        // cursor and bucketSize remain at 0
-        dataset: raw,
-      };
+      return state;
     }
 
     const numPoints = Math.min(Math.floor((newRange / viewportRange) * maxPoints), maxPoints);
@@ -285,23 +281,31 @@ export function partialDownsample(
 
   const viewportRange = getBoundsRange(viewBounds);
   const newPaths: PathMap<PathState> = new Map();
+  const newDatasets: DatasetsByPath = new Map();
   for (const path of paths) {
-    const state = oldPaths.get(path) ?? initPath();
-    newPaths.set(
+    const oldState = oldPaths.get(path) ?? initPath();
+    const newState = updatePath(
       path,
-      updatePath(
-        path,
-        blocks.datasets.get(path),
-        current.datasets.get(path),
-        viewportRange,
-        pointsPerDataset,
-        state,
-      ),
+      blocks.datasets.get(path),
+      current.datasets.get(path),
+      viewportRange,
+      pointsPerDataset,
+      oldState,
     );
+    newPaths.set(path, newState);
+
+    const { dataset } = newState;
+    if (dataset != undefined) {
+      newDatasets.set(path, dataset);
+    }
   }
 
   return {
     ...downsampled,
+    data: {
+      ...blocks,
+      datasets: newDatasets,
+    },
     paths: newPaths,
     view: downsampled.view ?? view,
     isValid: true,
