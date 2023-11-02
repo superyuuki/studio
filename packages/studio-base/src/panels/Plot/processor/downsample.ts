@@ -93,6 +93,26 @@ function getResetViewport(oldViewport: PlotViewport, newViewport: PlotViewport):
   );
 }
 
+function getNumBuckets(
+  oldRaw: TypedDataSet | undefined,
+  oldDownsampled: TypedDataSet | undefined,
+  newRaw: TypedDataSet,
+  newRange: number,
+  viewportRange: number,
+  maxPoints: number,
+): number {
+  if (oldRaw == undefined || oldDownsampled == undefined) {
+    return Math.min(Math.floor((newRange / viewportRange) * maxPoints), maxPoints);
+  }
+
+  const oldPoints = getTypedLength(oldRaw.data);
+  const oldBuckets = getTypedLength(oldDownsampled.data);
+  const newPoints = getTypedLength(newRaw.data);
+  const newBuckets = Math.ceil(newPoints / (oldPoints / oldBuckets));
+  console.log('matching', newBuckets, oldBuckets, newPoints, newPoints / (oldPoints / oldBuckets), newBuckets);
+  return newBuckets;
+}
+
 export function partialDownsample(
   view: PlotViewport,
   blocks: PlotData,
@@ -137,6 +157,7 @@ export function partialDownsample(
   const didViewportChange =
     downsampledView != undefined ? getResetViewport(downsampledView, view) : false;
   if (didViewportChange) {
+    console.log("viewport broke");
     return partialDownsample(view, blocks, current, initDownsampled());
   }
 
@@ -159,13 +180,24 @@ export function partialDownsample(
   }
 
   const viewportRange = getBoundsRange(viewBounds);
-  const newDatasets = mapDatasets((dataset) => {
+  const newDatasets = mapDatasets((dataset, path) => {
     const newBounds = getTypedBounds([dataset]);
     if (newBounds == undefined) {
       return dataset;
     }
 
-    const numBuckets = Math.floor((getBoundsRange(newBounds.x) / viewportRange) * pointsPerDataset);
+    const numBuckets = getNumBuckets(
+      blocks.datasets.get(path),
+      previous.datasets.get(path),
+      dataset,
+      getBoundsRange(newBounds.x),
+      viewportRange,
+      pointsPerDataset,
+    );
+    console.log(
+      "numBuckets",
+      numBuckets,
+    );
     const { data } = dataset;
     const lookup = lookupIndices(data);
     const indices = downsampleLTTB(
