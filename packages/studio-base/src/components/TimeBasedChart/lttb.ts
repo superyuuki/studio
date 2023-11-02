@@ -34,21 +34,20 @@ export function downsampleLTTB(
   ];
 
   const getPoints = (start: number, end: number): IndexedPoint[] | undefined => {
-    const range = R.range(start, end);
-    const points = R.chain((i: number): IndexedPoint[] => {
-      const point = get(i);
-      return point != undefined ? [[i, point]] : [];
-    }, range);
-
-    if (points.length < range.length) {
-      return undefined;
+    const points: IndexedPoint[] = [];
+    for (const index of R.range(start, end)) {
+      const point = get(index);
+      if (point == undefined) {
+        return undefined;
+      }
+      points.push([index, point]);
     }
+
     return points;
   };
 
   let next: number = 0;
-  let points: number[] = [];
-  points.push(0);
+  let points: number[] = [0];
   for (const bucketIndex of R.range(0, numBuckets - 2)) {
     const [bucketStart, bucketEnd] = getBucket(bucketIndex);
     // First, get all of the points for this bucket so we can check for
@@ -105,27 +104,21 @@ export function downsampleLTTB(
     const [aX, aY] = a;
 
     // Choose the triangle with the maximum area
-    type Area = [index: number, area: number];
-    const areas = R.pipe(
-      R.map(
-        ([index, [x, y]]: IndexedPoint): Area => [
-          index,
-          Math.abs((aX - avgX) * (y - aY) - (aX - x) * (avgY - aY)) * 0.5,
-        ],
-      ),
-      (areas: Area[]): Area[] =>
-        R.sort(
-          R.descend(([, area]) => area),
-          areas,
-        ),
-    )(bucketPoints);
+    let maxIndex = -1;
+    let maxArea = 0;
+    for (const [index, [x, y]] of bucketPoints) {
+      const area = Math.abs((aX - avgX) * (y - aY) - (aX - x) * (avgY - aY)) * 0.5;
+      if (area < maxArea) {
+        continue;
+      }
+      maxArea = area;
+      maxIndex = index;
+    }
 
-    const [maxArea] = areas;
-    if (maxArea == undefined) {
+    if (maxIndex === -1) {
       return undefined;
     }
 
-    const [maxIndex] = maxArea;
     points.push(maxIndex);
     next = maxIndex;
   }
