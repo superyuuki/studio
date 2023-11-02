@@ -37,7 +37,7 @@ describe("ExtensionCatalogProvider", () => {
     const loadExtension = jest.fn().mockResolvedValue(source);
     const mockPrivateLoader: ExtensionLoader = {
       namespace: "org",
-      getExtensions: jest
+      listExtensions: jest
         .fn()
         .mockResolvedValue([fakeExtension({ namespace: "org", name: "sample", version: "1" })]),
       loadExtension,
@@ -86,7 +86,7 @@ describe("ExtensionCatalogProvider", () => {
     const loadExtension2 = jest.fn().mockResolvedValue(source2);
     const mockPrivateLoader1: ExtensionLoader = {
       namespace: "org",
-      getExtensions: jest
+      listExtensions: jest
         .fn()
         .mockResolvedValue([fakeExtension({ namespace: "org", name: "sample", version: "1" })]),
       loadExtension: loadExtension1,
@@ -95,7 +95,7 @@ describe("ExtensionCatalogProvider", () => {
     };
     const mockPrivateLoader2: ExtensionLoader = {
       namespace: "org",
-      getExtensions: jest
+      listExtensions: jest
         .fn()
         .mockResolvedValue([fakeExtension({ namespace: "local", name: "sample", version: "2" })]),
       loadExtension: loadExtension2,
@@ -164,7 +164,7 @@ describe("ExtensionCatalogProvider", () => {
     const loadExtension = jest.fn().mockResolvedValue(source);
     const mockPrivateLoader: ExtensionLoader = {
       namespace: "org",
-      getExtensions: jest
+      listExtensions: jest
         .fn()
         .mockResolvedValue([fakeExtension({ namespace: "org", name: "sample", version: "1" })]),
       loadExtension,
@@ -208,7 +208,7 @@ describe("ExtensionCatalogProvider", () => {
     const loadExtension = jest.fn().mockResolvedValue(source);
     const mockPrivateLoader: ExtensionLoader = {
       namespace: "org",
-      getExtensions: jest
+      listExtensions: jest
         .fn()
         .mockResolvedValue([fakeExtension({ namespace: "org", name: "sample", version: "1" })]),
       loadExtension,

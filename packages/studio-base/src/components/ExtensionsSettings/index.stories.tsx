@@ -74,7 +74,7 @@ const marketplaceExtensions: ExtensionInfo[] = [
 
 const MockExtensionLoader: ExtensionLoader = {
   namespace: "local",
-  getExtensions: async () => installedExtensions,
+  listExtensions: async () => installedExtensions,
   loadExtension: async (_id: string) => "",
   installExtension: async (_foxeFileData: Uint8Array) => {
     throw new Error("MockExtensionLoader cannot install extensions");

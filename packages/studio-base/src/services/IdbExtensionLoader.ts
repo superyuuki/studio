@@ -59,7 +59,7 @@ export class IdbExtensionLoader implements ExtensionLoader {
     this.#storage = new IdbExtensionStorage(namespace);
   }
 
-  public async getExtensions(): Promise<ExtensionInfo[]> {
+  public async listExtensions(): Promise<ExtensionInfo[]> {
     log.debug("Listing extensions");
 
     return await this.#storage.list();

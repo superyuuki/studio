@@ -12,7 +12,7 @@ export interface ExtensionLoader {
   readonly namespace: ExtensionNamespace;
 
   // get a list of installed extensions
-  getExtensions(): Promise<ExtensionInfo[]>;
+  listExtensions(): Promise<ExtensionInfo[]>;
 
   // load the source code for a specific extension
   loadExtension(id: string): Promise<string>;

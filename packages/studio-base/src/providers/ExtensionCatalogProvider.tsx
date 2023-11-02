@@ -148,7 +148,7 @@ function createExtensionRegistryStore(
       };
       for (const loader of loaders) {
         try {
-          for (const extension of await loader.getExtensions()) {
+          for (const extension of await loader.listExtensions()) {
             try {
               extensionList.push(extension);
               const unwrappedExtensionSource = await loader.loadExtension(extension.id);

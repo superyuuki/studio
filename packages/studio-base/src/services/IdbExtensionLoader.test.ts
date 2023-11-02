@@ -71,7 +71,7 @@ describe("IdbExtensionLoader", () => {
 
       expect(mockDBPut).toHaveBeenCalledWith("extensions", { content: foxe, info: expectedInfo });
 
-      expect((await loader.getExtensions())[0]).toBe(expectedInfo);
+      expect((await loader.listExtensions())[0]).toBe(expectedInfo);
     });
 
     it("Installs private extensions", async () => {
@@ -97,7 +97,7 @@ describe("IdbExtensionLoader", () => {
         info: expectedInfo,
       });
 
-      expect((await loader.getExtensions())[0]).toBe(expectedInfo);
+      expect((await loader.listExtensions())[0]).toBe(expectedInfo);
     });
 
     it("Parses package prefixes", async () => {
@@ -122,7 +122,7 @@ describe("IdbExtensionLoader", () => {
         info: expectedInfo,
       });
 
-      expect((await loader.getExtensions())[0]).toBe(expectedInfo);
+      expect((await loader.listExtensions())[0]).toBe(expectedInfo);
     });
   });
 });
