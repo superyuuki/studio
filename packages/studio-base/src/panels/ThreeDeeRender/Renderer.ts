@@ -1063,7 +1063,7 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
   #frameHandler = (currentTime: bigint): void => {
     this.#rendering = true;
     this.currentTime = currentTime;
-    this.#updateSceneExtensions();
+    this.#handleSubscriptionQueues();
     this.#updateFrameErrors();
     this.#updateFixedFrameId();
     this.#updateResolution();
@@ -1100,7 +1100,7 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
   };
 
   /** iterates through all subscription message queues, processes them, and calls their handler for each message in the frame */
-  #updateSceneExtensions(): void {
+  #handleSubscriptionQueues(): void {
     for (const subscriptions of this.topicSubscriptions.values()) {
       for (const subscription of subscriptions) {
         if (!subscription.queue) {
