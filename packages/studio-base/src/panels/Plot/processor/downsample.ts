@@ -152,8 +152,26 @@ function updateSource(
 
   const numNewPoints = newCursor - oldCursor;
   if (numNewPoints < chunkSize) {
-    // revisit this?
-    return state;
+    const numOldPoints = chunkSize - numNewPoints;
+    const rawStart = newCursor - numOldPoints;
+    const downsampled = downsampleDataset(
+      concatTyped(sliceTyped(raw.data, rawStart), newData),
+      numPoints,
+    );
+    if (downsampled == undefined) {
+      return state;
+    }
+
+    const pivot = Math.floor((numOldPoints / chunkSize) * getTypedLength(downsampled));
+
+    return {
+      ...state,
+      cursor: newCursor,
+      dataset: {
+        ...previous,
+        data: concatTyped(previous.data, sliceTyped(downsampled, pivot)),
+      },
+    };
   }
 
   const downsampled = downsampleDataset(sliceTyped(newData, 0, chunkSize), numPoints);
