@@ -11,7 +11,6 @@ import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 import { enumValuesByDatatypeAndField } from "@foxglove/studio-base/util/enums";
 
 import { initAccumulated, accumulate, buildPlot } from "./accumulate";
-import { partialDownsample } from "./downsample";
 import { rebuildClient, sendData, mapClients, noEffects, keepEffects, getAllTopics } from "./state";
 import { State, StateAndEffects, Client, SideEffects } from "./types";
 import { Messages } from "../internalTypes";
@@ -67,7 +66,7 @@ export function addBlock(block: Messages, resetTopics: string[], state: State): 
   };
 
   return mapClients((client, { blocks: newBlocks }): [Client, SideEffects] => {
-    const { id, params, downsampled, view } = client;
+    const { id, params } = client;
     const relevantTopics = R.intersection(topics, client.topics);
     const shouldReset = R.intersection(relevantTopics, resetTopics).length > 0;
     if (
@@ -91,12 +90,6 @@ export function addBlock(block: Messages, resetTopics: string[], state: State): 
       {
         ...client,
         blocks: newBlockData,
-        downsampled: partialDownsample(
-          view,
-          newBlockData.data,
-          client.current.data,
-          client.downsampled,
-        ),
       },
       [rebuildClient(id)],
     ];

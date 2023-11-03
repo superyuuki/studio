@@ -7,7 +7,7 @@ import { PlotViewport } from "@foxglove/studio-base/components/TimeBasedChart/ty
 import { PlotPath, DatasetsByPath, TypedDataSet, TypedData } from "../internalTypes";
 import { EmptyPlotData, PlotData } from "../plotData";
 import { lookupIndices, getTypedLength } from "@foxglove/studio-base/components/Chart/datasets";
-import { concatTyped, sliceTyped, resolveTypedIndices } from "../datasets";
+import { concatTyped, mergeTyped, getXBounds, sliceTyped, resolveTypedIndices } from "../datasets";
 import { Bounds1D } from "@foxglove/studio-base/components/TimeBasedChart/types";
 import { downsampleLTTB } from "@foxglove/studio-base/components/TimeBasedChart/lttb";
 
@@ -97,26 +97,12 @@ const concatDataset = (a: TypedDataSet, b: TypedDataSet): TypedDataSet => ({
   data: concatTyped(a.data, b.data),
 });
 
-const getXBounds = (data: TypedData[]): Bounds1D | undefined => {
-  const first = data[0];
-  const last = data[data.length - 1];
-  if (first == undefined || last == undefined) {
-    return undefined;
-  }
-
-  const firstX = first.x[0];
-  const lastX = last.x[last.x.length - 1];
-  if (firstX == undefined || lastX == undefined) {
-    return undefined;
-  }
-  return { min: firstX, max: lastX };
-};
-
 function updateSource(
   path: PlotPath,
   raw: TypedDataSet | undefined,
   viewportRange: number,
   maxPoints: number,
+  minSize: number,
   state: SourceState,
 ): SourceState {
   const { cursor: oldCursor, dataset: previous, chunkSize, numPoints } = state;
@@ -141,10 +127,7 @@ function updateSource(
   // Only proceed if we have enough data
   if (previous == undefined || chunkSize === 0) {
     const proportion = newRange / viewportRange;
-
-    // We don't have enough data to guess what our bucket size should be; just
-    // send the full dataset since it's not much right now
-    if (proportion < 0.05) {
+    if (proportion < minSize) {
       return state;
     }
 
@@ -179,11 +162,37 @@ function updateSource(
   }
 
   // We go around again and consume all the data we can
-  return updateSource(path, raw, viewportRange, maxPoints, {
+  return updateSource(path, raw, viewportRange, maxPoints, minSize, {
     ...state,
     cursor: oldCursor + chunkSize,
     dataset: concatDataset(previous, { data: downsampled }),
   });
+}
+
+function resolveDataset(
+  blocks: TypedDataSet | undefined,
+  current: TypedDataSet | undefined,
+): TypedDataSet | undefined {
+  if (blocks == undefined && current == undefined) {
+    return undefined;
+  }
+
+  if (blocks != undefined && current != undefined) {
+    return {
+      ...blocks,
+      data: mergeTyped(blocks.data, current.data),
+    };
+  }
+
+  if (blocks != undefined) {
+    return blocks;
+  }
+
+  if (current != undefined) {
+    return current;
+  }
+
+  return undefined;
 }
 
 function updatePath(
@@ -195,15 +204,38 @@ function updatePath(
   state: PathState,
 ): PathState {
   const { blocks, current } = state;
+  const newBlocks = updateSource(path, blockData, viewportRange, maxPoints, 0.05, blocks);
+
+  // Skip computing current entirely if block data is bigger than it
+  if (blockData != undefined && currentData != undefined) {
+    const blockBounds = getXBounds(blockData.data);
+    const currentBounds = getXBounds(currentData.data);
+
+    const canSkip =
+      blockBounds != undefined &&
+      currentBounds != undefined &&
+      blockBounds.max >= currentBounds.max;
+
+    if (canSkip) {
+      return {
+        ...state,
+        current: initSource(),
+        blocks: newBlocks,
+        dataset: newBlocks.dataset,
+      };
+    }
+  }
+
+  const newCurrent = updateSource(path, currentData, viewportRange, maxPoints, 0, current);
   const newState: PathState = {
     ...state,
-    blocks: updateSource(path, blockData, viewportRange, maxPoints, blocks),
-    current: updateSource(path, currentData, viewportRange, maxPoints, current),
+    blocks: newBlocks,
+    current: newCurrent,
   };
 
   return {
     ...newState,
-    dataset: newState.blocks.dataset ?? newState.current.dataset,
+    dataset: resolveDataset(newBlocks.dataset, newCurrent.dataset),
   };
 }
 
@@ -243,24 +275,6 @@ export function partialDownsample(
   const {
     bounds: { x: viewBounds },
   } = downsampled.view ?? view;
-  const {
-    bounds: { x: blockBounds },
-  } = blocks;
-  const {
-    bounds: { x: currentBounds },
-  } = current;
-
-  const haveBlockData = blockBounds.max != Number.MIN_SAFE_INTEGER;
-
-  // We cannot do a partial downsample if current data is discontinuous with block data
-  if (
-    haveBlockData &&
-    currentBounds.min != Number.MAX_SAFE_INTEGER &&
-    currentBounds.min > blockBounds.max
-  ) {
-    return initDownsampled();
-  }
-
   const { view: downsampledView, data: previous, paths: oldPaths } = downsampled;
 
   const didViewportChange =
