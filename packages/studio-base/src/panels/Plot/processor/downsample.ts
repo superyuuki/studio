@@ -6,7 +6,11 @@ import * as R from "ramda";
 import { PlotViewport } from "@foxglove/studio-base/components/TimeBasedChart/types";
 import { PlotPath, DatasetsByPath, TypedDataSet, TypedData } from "../internalTypes";
 import { EmptyPlotData, PlotData } from "../plotData";
-import { lookupIndices, getTypedLength } from "@foxglove/studio-base/components/Chart/datasets";
+import {
+  iterateTyped,
+  lookupIndices,
+  getTypedLength,
+} from "@foxglove/studio-base/components/Chart/datasets";
 import { concatTyped, mergeTyped, getXBounds, sliceTyped, resolveTypedIndices } from "../datasets";
 import { Bounds1D } from "@foxglove/studio-base/components/TimeBasedChart/types";
 import { downsampleLTTB } from "@foxglove/studio-base/components/TimeBasedChart/lttb";
@@ -16,7 +20,7 @@ type PathMap<T> = Map<PlotPath, T>;
 type SourceState = {
   cursor: number;
   chunkSize: number;
-  numPoints: number;
+  numBuckets: number;
   dataset: TypedDataSet | undefined;
 };
 type PathState = {
@@ -28,7 +32,7 @@ type PathState = {
 const initSource = (): SourceState => ({
   cursor: 0,
   chunkSize: 0,
-  numPoints: 0,
+  numBuckets: 0,
   dataset: undefined,
 });
 
@@ -55,7 +59,11 @@ export function initDownsampled(): Downsampled {
   };
 }
 
-const downsampleDataset = (data: TypedData[], numPoints: number): TypedData[] | undefined => {
+const downsampleDataset = (
+  data: TypedData[],
+  numPoints: number,
+  startBucket?: number,
+): TypedData[] | undefined => {
   const lookup = lookupIndices(data);
   const indices = downsampleLTTB(
     (index) => {
@@ -80,6 +88,7 @@ const downsampleDataset = (data: TypedData[], numPoints: number): TypedData[] | 
     },
     getTypedLength(data),
     numPoints,
+    startBucket,
   );
   if (indices == undefined) {
     return undefined;
@@ -97,6 +106,20 @@ const concatDataset = (a: TypedDataSet, b: TypedDataSet): TypedDataSet => ({
   data: concatTyped(a.data, b.data),
 });
 
+const getLastPoint = (data: TypedData[]): [x: number, y: number] | undefined => {
+  const lastSlice = data[data.length - 1];
+  if (lastSlice == undefined) {
+    return undefined;
+  }
+
+  const x = lastSlice.x[lastSlice.x.length - 1];
+  const y = lastSlice.y[lastSlice.y.length - 1];
+  if (x == undefined || y == undefined) {
+    return undefined;
+  }
+  return [x, y];
+};
+
 function updateSource(
   path: PlotPath,
   raw: TypedDataSet | undefined,
@@ -105,7 +128,7 @@ function updateSource(
   minSize: number,
   state: SourceState,
 ): SourceState {
-  const { cursor: oldCursor, dataset: previous, chunkSize, numPoints } = state;
+  const { cursor: oldCursor, dataset: previous, chunkSize, numBuckets } = state;
   if (raw == undefined) {
     return initSource();
   }
@@ -131,9 +154,9 @@ function updateSource(
       return state;
     }
 
-    const numPoints = Math.min(Math.floor((newRange / viewportRange) * maxPoints), maxPoints);
+    const numBuckets = Math.min(Math.floor((newRange / viewportRange) * maxPoints), maxPoints);
 
-    const downsampled = downsampleDataset(newData, numPoints);
+    const downsampled = downsampleDataset(newData, numBuckets);
     if (downsampled == undefined) {
       return state;
     }
@@ -142,7 +165,7 @@ function updateSource(
       ...state,
       cursor: newCursor,
       chunkSize: newCursor,
-      numPoints: numPoints,
+      numBuckets,
       dataset: {
         ...raw,
         data: downsampled,
@@ -154,27 +177,44 @@ function updateSource(
   if (numNewPoints < chunkSize) {
     const numOldPoints = chunkSize - numNewPoints;
     const rawStart = newCursor - numOldPoints;
+    const pointsPerBucket = Math.trunc(chunkSize / numBuckets);
+    const lastRawBucket = Math.max(
+      (numOldPoints - (numOldPoints % pointsPerBucket)) / pointsPerBucket - 2,
+      0,
+    );
     const downsampled = downsampleDataset(
       concatTyped(sliceTyped(raw.data, rawStart), newData),
-      numPoints,
+      numBuckets,
+      lastRawBucket,
     );
-    if (downsampled == undefined) {
+    const lastPoint = getLastPoint(previous.data);
+    if (downsampled == undefined || lastPoint == undefined) {
       return state;
     }
 
-    const pivot = Math.floor((numOldPoints / chunkSize) * getTypedLength(downsampled));
+    const [lastX] = lastPoint;
+    let firstNew = -1;
+    for (const { index, x } of iterateTyped(downsampled)) {
+      if (x > lastX) {
+        firstNew = index;
+        break;
+      }
+    }
+    if (firstNew === -1) {
+      return state;
+    }
 
     return {
       ...state,
       cursor: newCursor,
       dataset: {
         ...previous,
-        data: concatTyped(previous.data, sliceTyped(downsampled, pivot)),
+        data: concatTyped(previous.data, sliceTyped(downsampled, firstNew)),
       },
     };
   }
 
-  const downsampled = downsampleDataset(sliceTyped(newData, 0, chunkSize), numPoints);
+  const downsampled = downsampleDataset(sliceTyped(newData, 0, chunkSize), numBuckets);
   if (downsampled == undefined) {
     return state;
   }
