@@ -120,6 +120,28 @@ const getLastPoint = (data: TypedData[]): [x: number, y: number] | undefined => 
   return [x, y];
 };
 
+const getPlotBounds = (data: PlotData): Bounds1D | undefined => {
+  const { datasets } = data;
+
+  if (datasets.size === 0) {
+    return undefined;
+  }
+
+  let min = Number.MAX_SAFE_INTEGER;
+  let max = Number.MIN_SAFE_INTEGER;
+  for (const dataset of datasets.values()) {
+    const bounds = getXBounds(dataset.data);
+    if (bounds == undefined) {
+      continue;
+    }
+    const { min: dataMin, max: dataMax } = bounds;
+    min = Math.min(dataMin, min);
+    max = Math.max(dataMax, max);
+  }
+
+  return { min, max };
+};
+
 function updateSource(
   path: PlotPath,
   raw: TypedDataSet | undefined,
@@ -308,14 +330,33 @@ const getScale = ({ width, height, bounds: { x, y } }: PlotViewport): { x: numbe
 
 const ZOOM_THRESHOLD_PERCENT = 0.2;
 
-function getResetViewport(oldViewport: PlotViewport, newViewport: PlotViewport): boolean {
-  const { x: oldX, y: oldY } = getScale(oldViewport);
-  const { x: newX, y: newY } = getScale(newViewport);
+function shouldResetViewport(
+  oldViewport: PlotViewport | undefined,
+  newViewport: PlotViewport,
+  dataBounds: Bounds1D | undefined,
+): boolean {
+  if (oldViewport == undefined) {
+    return false;
+  }
 
-  return (
-    Math.abs(newX / oldX - 1) > ZOOM_THRESHOLD_PERCENT ||
-    Math.abs(newY / oldY - 1) > ZOOM_THRESHOLD_PERCENT
-  );
+  const {
+    bounds: { x: newBounds },
+  } = newViewport;
+
+  const { x: oldX } = getScale(oldViewport);
+  const { x: newX } = getScale(newViewport);
+  const didZoom = Math.abs(newX / oldX - 1) > ZOOM_THRESHOLD_PERCENT;
+
+  if (
+    didZoom &&
+    dataBounds != undefined &&
+    newBounds.min <= dataBounds.min &&
+    newBounds.max >= dataBounds.max
+  ) {
+    return false;
+  }
+
+  return didZoom;
 }
 
 export function partialDownsample(
@@ -335,9 +376,8 @@ export function partialDownsample(
   } = downsampled.view ?? view;
   const { view: downsampledView, data: previous, paths: oldPaths } = downsampled;
 
-  const didViewportChange =
-    downsampledView != undefined ? getResetViewport(downsampledView, view) : false;
-  if (didViewportChange) {
+  const previousBounds = getPlotBounds(previous);
+  if (shouldResetViewport(downsampledView, view, previousBounds)) {
     console.log("viewport broke");
     return partialDownsample(view, blocks, current, initDownsampled());
   }
