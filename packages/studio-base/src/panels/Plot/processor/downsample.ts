@@ -27,6 +27,7 @@ type PathState = {
   blocks: SourceState;
   current: SourceState;
   dataset: TypedDataSet | undefined;
+  isPartial: boolean;
 };
 
 const initSource = (): SourceState => ({
@@ -40,6 +41,7 @@ const initPath = (): PathState => ({
   blocks: initSource(),
   current: initSource(),
   dataset: undefined,
+  isPartial: false,
 });
 
 export type Downsampled = {
@@ -120,21 +122,15 @@ const getLastPoint = (data: TypedData[]): [x: number, y: number] | undefined => 
   return [x, y];
 };
 
-const getPlotBounds = (data: PlotData): Bounds1D | undefined => {
-  const { datasets } = data;
-
-  if (datasets.size === 0) {
+const combineBounds = (bounds: Bounds1D[]): Bounds1D | undefined => {
+  if (bounds.length === 0) {
     return undefined;
   }
 
   let min = Number.MAX_SAFE_INTEGER;
   let max = Number.MIN_SAFE_INTEGER;
-  for (const dataset of datasets.values()) {
-    const bounds = getXBounds(dataset.data);
-    if (bounds == undefined) {
-      continue;
-    }
-    const { min: dataMin, max: dataMax } = bounds;
+  for (const bound of bounds) {
+    const { min: dataMin, max: dataMax } = bound;
     min = Math.min(dataMin, min);
     max = Math.max(dataMax, max);
   }
@@ -142,14 +138,34 @@ const getPlotBounds = (data: PlotData): Bounds1D | undefined => {
   return { min, max };
 };
 
+const getPlotBounds = (data: PlotData): Bounds1D | undefined => {
+  const { datasets } = data;
+
+  if (datasets.size === 0) {
+    return undefined;
+  }
+
+  return R.pipe(
+    R.chain((dataset: TypedDataSet) => {
+      const bounds = getXBounds(dataset.data);
+      if (bounds == undefined) {
+        return [];
+      }
+      return [bounds];
+    }),
+    combineBounds,
+  )([...datasets.values()]);
+};
+
 function updateSource(
   path: PlotPath,
   raw: TypedDataSet | undefined,
-  viewportRange: number,
+  viewBounds: Bounds1D,
   maxPoints: number,
   minSize: number,
   state: SourceState,
 ): SourceState {
+  const viewportRange = getBoundsRange(viewBounds);
   const { cursor: oldCursor, dataset: previous, chunkSize, numBuckets } = state;
   if (raw == undefined) {
     return initSource();
@@ -242,7 +258,7 @@ function updateSource(
   }
 
   // We go around again and consume all the data we can
-  return updateSource(path, raw, viewportRange, maxPoints, minSize, {
+  return updateSource(path, raw, viewBounds, maxPoints, minSize, {
     ...state,
     cursor: oldCursor + chunkSize,
     dataset: concatDataset(previous, { data: downsampled }),
@@ -275,38 +291,122 @@ function resolveDataset(
   return undefined;
 }
 
+function sliceBounds(data: TypedData[], bounds: Bounds1D): TypedData[] {
+  let start = -1;
+  let end = -1;
+  for (const { index, x } of iterateTyped(data)) {
+    if (x > bounds.min && start === -1) {
+      start = index;
+    }
+    if (x >= bounds.max && end === -1) {
+      end = index;
+      break;
+    }
+  }
+
+  return sliceTyped(data, start, end === -1 ? undefined : end);
+}
+
+function calculatePartial(
+  blockData: TypedDataSet | undefined,
+  currentData: TypedDataSet | undefined,
+  viewBounds: Bounds1D,
+  maxPoints: number,
+  state: PathState,
+): PathState {
+  const data = sliceBounds(mergeTyped(blockData?.data ?? [], currentData?.data ?? []), viewBounds);
+  const downsampled = downsampleDataset(data, maxPoints);
+  if (downsampled == undefined) {
+    return state;
+  }
+
+  return {
+    ...state,
+    isPartial: true,
+    dataset: {
+      ...blockData,
+      data: downsampled,
+    },
+  };
+}
+
+function updatePartialView(
+  blockData: TypedDataSet | undefined,
+  currentData: TypedDataSet | undefined,
+  viewBounds: Bounds1D,
+  maxPoints: number,
+  state: PathState,
+): PathState {
+  return calculatePartial(blockData, currentData, viewBounds, maxPoints, state);
+}
+
+function getVisibleBounds(
+  blockData: TypedDataSet | undefined,
+  currentData: TypedDataSet | undefined,
+): Bounds1D | undefined {
+  if (blockData == undefined || currentData == undefined) {
+    if (blockData != undefined) {
+      return getXBounds(blockData.data);
+    }
+
+    if (currentData != undefined) {
+      return getXBounds(currentData.data);
+    }
+
+    return undefined;
+  }
+
+  const blockBounds = getXBounds(blockData.data);
+  const currentBounds = getXBounds(currentData.data);
+  if (blockBounds == undefined || currentBounds == undefined) {
+    return undefined;
+  }
+
+  return combineBounds([blockBounds, currentBounds]);
+}
+
 function updatePath(
   path: PlotPath,
   blockData: TypedDataSet | undefined,
   currentData: TypedDataSet | undefined,
-  viewportRange: number,
+  viewBounds: Bounds1D,
   maxPoints: number,
   state: PathState,
 ): PathState {
-  const { blocks, current } = state;
-  const newBlocks = updateSource(path, blockData, viewportRange, maxPoints, 0.05, blocks);
+  const { blocks, current, isPartial } = state;
+  const newBlocks = updateSource(path, blockData, viewBounds, maxPoints, 0.05, blocks);
+
+  const combinedBounds = getVisibleBounds(blockData, currentData);
+  if (combinedBounds != undefined) {
+    if (viewBounds.max < combinedBounds.max) {
+      return updatePartialView(blockData, currentData, viewBounds, maxPoints, state);
+    }
+
+    // If we're not partial anymore, we need to start over
+    if (isPartial) {
+      return updatePath(path, blockData, currentData, viewBounds, maxPoints, initPath());
+    }
+  }
 
   // Skip computing current entirely if block data is bigger than it
   if (blockData != undefined && currentData != undefined) {
     const blockBounds = getXBounds(blockData.data);
     const currentBounds = getXBounds(currentData.data);
 
-    const canSkip =
-      blockBounds != undefined &&
-      currentBounds != undefined &&
-      blockBounds.max >= currentBounds.max;
-
-    if (canSkip) {
-      return {
-        ...state,
-        current: initSource(),
-        blocks: newBlocks,
-        dataset: newBlocks.dataset,
-      };
+    if (blockBounds != undefined && currentBounds != undefined) {
+      const canSkipCurrent = blockBounds.max >= currentBounds.max;
+      if (canSkipCurrent) {
+        return {
+          ...state,
+          current: initSource(),
+          blocks: newBlocks,
+          dataset: newBlocks.dataset,
+        };
+      }
     }
   }
 
-  const newCurrent = updateSource(path, currentData, viewportRange, maxPoints, 0, current);
+  const newCurrent = updateSource(path, currentData, viewBounds, maxPoints, 0, current);
   const newState: PathState = {
     ...state,
     blocks: newBlocks,
@@ -339,14 +439,13 @@ function shouldResetViewport(
     return false;
   }
 
-  const {
-    bounds: { x: newBounds },
-  } = newViewport;
-
   const { x: oldX } = getScale(oldViewport);
   const { x: newX } = getScale(newViewport);
   const didZoom = Math.abs(newX / oldX - 1) > ZOOM_THRESHOLD_PERCENT;
 
+  const {
+    bounds: { x: newBounds },
+  } = newViewport;
   if (
     didZoom &&
     dataBounds != undefined &&
@@ -359,7 +458,7 @@ function shouldResetViewport(
   return didZoom;
 }
 
-export function partialDownsample(
+export function updateDownsample(
   view: PlotViewport,
   blocks: PlotData,
   current: PlotData,
@@ -379,7 +478,7 @@ export function partialDownsample(
   const previousBounds = getPlotBounds(previous);
   if (shouldResetViewport(downsampledView, view, previousBounds)) {
     console.log("viewport broke");
-    return partialDownsample(view, blocks, current, initDownsampled());
+    return updateDownsample(view, blocks, current, initDownsampled());
   }
 
   const numDatasets = Math.max(blocks.datasets.size, current.datasets.size);
@@ -398,14 +497,13 @@ export function partialDownsample(
   )([...previous.datasets.values()]);
   const didExceedMax = previous.datasets.size > 0 && numPreviousPoints > MAX_POINTS * 1.2;
   if (didExceedMax) {
-    return partialDownsample(view, blocks, current, initDownsampled());
+    return updateDownsample(view, blocks, current, initDownsampled());
   }
 
   // can only add to partial result if data:
   // a. contiguous
   // b. still in viewport
 
-  const viewportRange = getBoundsRange(viewBounds);
   const newPaths: PathMap<PathState> = new Map();
   const newDatasets: DatasetsByPath = new Map();
   for (const path of paths) {
@@ -414,7 +512,7 @@ export function partialDownsample(
       path,
       blocks.datasets.get(path),
       current.datasets.get(path),
-      viewportRange,
+      viewBounds,
       pointsPerDataset,
       oldState,
     );

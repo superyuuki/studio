@@ -38,7 +38,7 @@ import {
   mutateClient,
 } from "./processor";
 
-import { partialDownsample } from './processor/downsample'
+import { updateDownsample } from './processor/downsample'
 
 type Setter = ProviderStateSetter<TypedData[]>;
 
@@ -111,7 +111,7 @@ function rebuild(id: string) {
     return;
   }
 
-  const newDownsampled = partialDownsample(
+  const newDownsampled = updateDownsample(
     view,
     blocks.data,
     current.data,
