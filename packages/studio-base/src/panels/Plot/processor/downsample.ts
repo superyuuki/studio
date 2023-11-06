@@ -430,13 +430,47 @@ const getScale = ({ width, height, bounds: { x, y } }: PlotViewport): { x: numbe
 
 const ZOOM_THRESHOLD_PERCENT = 0.2;
 
+const isPartialState = (state: PathState) => state.isPartial;
+
 function shouldResetViewport(
+  pathStates: PathState[],
   oldViewport: PlotViewport | undefined,
   newViewport: PlotViewport,
   dataBounds: Bounds1D | undefined,
 ): boolean {
   if (oldViewport == undefined) {
     return false;
+  }
+
+  const havePartial = R.any(isPartialState, pathStates);
+  if (havePartial) {
+    const {
+      bounds: { x: viewBounds },
+    } = newViewport;
+    return R.pipe(
+      R.filter(isPartialState),
+      R.any(({ dataset }: PathState) => {
+        if (dataset == undefined) {
+          return false;
+        }
+
+        const pathBounds = getXBounds(dataset.data);
+        if (pathBounds == undefined) {
+          return false;
+        }
+
+        const maxRange = pathBounds.max - pathBounds.min;
+        const innerStart = pathBounds.min + maxRange * ZOOM_THRESHOLD_PERCENT;
+        const innerEnd = pathBounds.min + maxRange * (1 - ZOOM_THRESHOLD_PERCENT);
+
+        return (
+          viewBounds.min < pathBounds.min ||
+          viewBounds.min > innerStart ||
+          viewBounds.max > pathBounds.max ||
+          viewBounds.max < innerEnd
+        );
+      }),
+    )(pathStates);
   }
 
   const { x: oldX } = getScale(oldViewport);
@@ -476,8 +510,14 @@ export function updateDownsample(
   const { view: downsampledView, data: previous, paths: oldPaths } = downsampled;
 
   const previousBounds = getPlotBounds(previous);
-  if (shouldResetViewport(downsampledView, view, previousBounds)) {
-    console.log("viewport broke");
+  const pathStates = R.chain((path) => {
+    const state = oldPaths.get(path);
+    if (state == undefined) {
+      return [];
+    }
+    return [state];
+  }, paths);
+  if (shouldResetViewport(pathStates, downsampledView, view, previousBounds)) {
     return updateDownsample(view, blocks, current, initDownsampled());
   }
 
