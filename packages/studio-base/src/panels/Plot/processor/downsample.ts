@@ -3,17 +3,19 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import * as R from "ramda";
-import { PlotViewport } from "@foxglove/studio-base/components/TimeBasedChart/types";
-import { PlotPath, DatasetsByPath, TypedDataSet, TypedData } from "../internalTypes";
-import { EmptyPlotData, PlotData } from "../plotData";
+
 import {
   iterateTyped,
   lookupIndices,
   getTypedLength,
 } from "@foxglove/studio-base/components/Chart/datasets";
-import { concatTyped, mergeTyped, getXBounds, sliceTyped, resolveTypedIndices } from "../datasets";
-import { Bounds1D } from "@foxglove/studio-base/components/TimeBasedChart/types";
 import { downsampleLTTB } from "@foxglove/studio-base/components/TimeBasedChart/lttb";
+import { PlotViewport } from "@foxglove/studio-base/components/TimeBasedChart/types";
+import { Bounds1D } from "@foxglove/studio-base/components/TimeBasedChart/types";
+
+import { concatTyped, mergeTyped, getXBounds, sliceTyped, resolveTypedIndices } from "../datasets";
+import { PlotPath, DatasetsByPath, TypedDataSet, TypedData } from "../internalTypes";
+import { EmptyPlotData, PlotData } from "../plotData";
 
 type PathMap<T> = Map<PlotPath, T>;
 
@@ -192,9 +194,11 @@ function updateSource(
       return state;
     }
 
-    const numBuckets = Math.min(Math.floor((newRange / viewportRange) * maxPoints), maxPoints);
-
-    const downsampled = downsampleDataset(newData, numBuckets);
+    const bestGuessBuckets = Math.min(
+      Math.floor((newRange / viewportRange) * maxPoints),
+      maxPoints,
+    );
+    const downsampled = downsampleDataset(newData, bestGuessBuckets);
     if (downsampled == undefined) {
       return state;
     }
@@ -203,7 +207,7 @@ function updateSource(
       ...state,
       cursor: newCursor,
       chunkSize: newCursor,
-      numBuckets,
+      numBuckets: bestGuessBuckets,
       dataset: {
         ...raw,
         data: downsampled,

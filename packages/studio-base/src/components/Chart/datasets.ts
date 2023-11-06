@@ -2,8 +2,8 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import * as R from "ramda";
 import * as _ from "lodash-es";
+import * as R from "ramda";
 
 import { TypedData, ObjectData } from "./types";
 
@@ -135,7 +135,7 @@ export function findIndices(dataset: TypedData[], index: number): Indices | unde
   return undefined;
 }
 
-export const lookupIndices = (dataset: TypedData[]) => {
+export const lookupIndices = (dataset: TypedData[]): ((offset: number) => Indices | undefined) => {
   const offsets: number[] = R.pipe(
     R.map(({ x: { length } }: TypedData) => length),
     R.reduce(

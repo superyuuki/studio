@@ -37,7 +37,6 @@ import {
   compressClients,
   mutateClient,
 } from "./processor";
-
 import { updateDownsample } from './processor/downsample'
 
 type Setter = ProviderStateSetter<TypedData[]>;

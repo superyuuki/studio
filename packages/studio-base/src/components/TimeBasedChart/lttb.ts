@@ -8,8 +8,8 @@ type Point = [x: number, y: number];
 
 const getAverage = (data: Float64Array): number => {
   let total = 0;
-  for (let i = 0; i < data.length; i++) {
-    total += data[i] ?? 0;
+  for (const value of data) {
+    total += value;
   }
 
   return total / data.length;

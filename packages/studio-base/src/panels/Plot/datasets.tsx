@@ -11,10 +11,10 @@ import {
   findIndices,
   getTypedLength,
 } from "@foxglove/studio-base/components/Chart/datasets";
+import { Bounds1D } from "@foxglove/studio-base/components/TimeBasedChart/types";
 import { format } from "@foxglove/studio-base/util/formatTime";
 import { darkColor, getLineColor, lightColor } from "@foxglove/studio-base/util/plotColors";
 import { formatTimeRaw, TimestampMethod } from "@foxglove/studio-base/util/time";
-import { Bounds1D } from "@foxglove/studio-base/components/TimeBasedChart/types";
 
 import {
   BasePlotPath,
