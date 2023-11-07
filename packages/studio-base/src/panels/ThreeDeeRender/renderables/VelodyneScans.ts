@@ -141,34 +141,31 @@ export class VelodyneScans extends SceneExtension<PointCloudHistoryRenderable> {
         schemaNames: VELODYNE_SCAN_DATATYPES,
         subscription: {
           handler: this.#handleVelodyneScan,
-          processQueue: this.#processMessageQueue.bind(this),
+          queueHandler: this.#getMessageQueueHandler(this.#handleVelodyneScan),
         },
       },
     ];
   }
 
-  #processMessageQueue<T>(msgs: MessageEvent<T>[]): MessageEvent<T>[] {
-    if (msgs.length === 0) {
-      return msgs;
-    }
-    const msgsByTopic = _.groupBy(msgs, (msg) => msg.topic);
-    const finalQueue: MessageEvent<T>[] = [];
-    for (const topic in msgsByTopic) {
-      const topicMsgs = msgsByTopic[topic]!;
-      const userSettings = this.renderer.config.topics[topic] as
-        | Partial<LayerSettingsVelodyneScans>
-        | undefined;
-      // if the topic has a decaytime add all messages to queue for topic
-      if ((userSettings?.decayTime ?? DEFAULT_SETTINGS.decayTime) > 0) {
-        finalQueue.push(...topicMsgs);
-        continue;
+  #getMessageQueueHandler<T>(handler: (msg: MessageEvent<T>) => void) {
+    return (msgs: MessageEvent<T>[]): void => {
+      const queueByTopic = _.groupBy(msgs, (msg) => msg.topic);
+      for (const topic in queueByTopic) {
+        const topicMsgs = queueByTopic[topic]!;
+        const userSettings = this.renderer.config.topics[topic] as
+          | Partial<LayerSettingsVelodyneScans>
+          | undefined;
+        if ((userSettings?.decayTime ?? DEFAULT_SETTINGS.decayTime) <= 0) {
+          const latestMsg = topicMsgs[topicMsgs.length - 1];
+          handler(latestMsg!);
+          continue;
+        }
+        // if the topic has a decaytime add all messages to queue for topic
+        for (const msg of topicMsgs) {
+          handler(msg);
+        }
       }
-      const latestMsg = topicMsgs[topicMsgs.length - 1];
-      if (latestMsg) {
-        finalQueue.push(latestMsg);
-      }
-    }
-    return finalQueue;
+    };
   }
 
   public override settingsNodes(): SettingsTreeEntry[] {

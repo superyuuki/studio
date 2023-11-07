@@ -174,10 +174,12 @@ export type RendererSubscription<T = unknown> = {
   shouldSubscribe?: (topic: string) => boolean;
   /** Callback that will be fired for each matching incoming message */
   handler: (messageEvent: MessageEvent<T>) => void;
+
+  /** Callback that will be fired handling the entire queue of messages since the last animation frame*/
+  queueHandler?: (messageEvent: MessageEvent<T>[]) => void;
+
   /** Queue of messages to be handled since last frame. Will be reassigned to new empty array each frame. */
   queue?: MessageEvent<T>[] | undefined;
-  /** Callback to be called on the message queue to filter. Returns new queue. */
-  processQueue?: (queue: MessageEvent<T>[]) => MessageEvent<T>[];
 };
 
 export type AnyRendererSubscription = Immutable<

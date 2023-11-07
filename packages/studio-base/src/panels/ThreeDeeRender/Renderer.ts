@@ -1106,11 +1106,14 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
         if (!subscription.queue) {
           continue;
         }
-        const { queue, processQueue } = subscription;
-        const processedQueue = processQueue ? processQueue(queue) : queue;
+        const { queue, handler, queueHandler } = subscription;
         subscription.queue = undefined;
-        for (const messageEvent of processedQueue) {
-          subscription.handler(messageEvent);
+        if (queueHandler) {
+          queueHandler(queue);
+          continue;
+        }
+        for (const messageEvent of queue) {
+          handler(messageEvent);
         }
       }
     }
@@ -1119,11 +1122,14 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
         if (!subscription.queue) {
           continue;
         }
-        const { queue, processQueue } = subscription;
-        const processedQueue = processQueue ? processQueue(queue) : queue;
+        const { queue, handler, queueHandler } = subscription;
         subscription.queue = undefined;
-        for (const messageEvent of processedQueue) {
-          subscription.handler(messageEvent);
+        if (queueHandler) {
+          queueHandler(queue);
+          continue;
+        }
+        for (const messageEvent of queue) {
+          handler(messageEvent);
         }
       }
     }

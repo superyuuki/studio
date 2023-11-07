@@ -2,6 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+import * as _ from "lodash-es";
 import * as THREE from "three";
 
 import { toNanoSec } from "@foxglove/rostime";
@@ -22,12 +23,7 @@ import {
 import { FieldReader, getReader } from "./pointClouds/fieldReaders";
 import type { AnyRendererSubscription, IRenderer } from "../IRenderer";
 import { BaseUserData, Renderable } from "../Renderable";
-import {
-  PartialMessage,
-  PartialMessageEvent,
-  SceneExtension,
-  onlyLastByTopicMessage,
-} from "../SceneExtension";
+import { PartialMessage, PartialMessageEvent, SceneExtension } from "../SceneExtension";
 import { SettingsTreeEntry, SettingsTreeNodeWithActionHandler } from "../SettingsManager";
 import { rgbaToCssString, rgbaToLinear, stringToRgba } from "../color";
 import { normalizePose, normalizeTime, normalizeByteArray } from "../normalizeMessages";
@@ -402,7 +398,10 @@ export class FoxgloveGrid extends SceneExtension<FoxgloveGridRenderable> {
       {
         type: "schema",
         schemaNames: GRID_DATATYPES,
-        subscription: { handler: this.#handleFoxgloveGrid, processQueue: onlyLastByTopicMessage },
+        subscription: {
+          handler: this.#handleFoxgloveGrid,
+          queueHandler: this.#handleFoxgloveGridQueue,
+        },
       },
     ];
   }
@@ -476,6 +475,18 @@ export class FoxgloveGrid extends SceneExtension<FoxgloveGridRenderable> {
         renderable.updateTexture(renderable.userData.foxgloveGrid, renderable.userData.settings);
       }
       renderable.syncPickingMaterial();
+    }
+  };
+
+  #handleFoxgloveGridQueue = (messageEvents: PartialMessageEvent<Grid>[]): void => {
+    // renderables keyed by topic
+    const queueByKey = _.groupBy(messageEvents, (messageEvent) => messageEvent.topic);
+    for (const queue of Object.values(queueByKey)) {
+      if (queue.length === 0) {
+        continue;
+      }
+      const latestMessage = queue[queue.length - 1];
+      this.#handleFoxgloveGrid(latestMessage!);
     }
   };
 

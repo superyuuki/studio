@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { t } from "i18next";
+import * as _ from "lodash-es";
 import { assert } from "ts-essentials";
 
 import { MultiMap, filterMap } from "@foxglove/den/collection";
@@ -28,7 +29,7 @@ import {
 import { getTopicMatchPrefix, sortPrefixMatchesToFront } from "./Images/topicPrefixMatching";
 import { cameraInfosEqual, normalizeCameraInfo } from "./projections";
 import type { AnyRendererSubscription, IRenderer } from "../IRenderer";
-import { PartialMessageEvent, SceneExtension, onlyLastByTopicMessage } from "../SceneExtension";
+import { PartialMessage, PartialMessageEvent, SceneExtension } from "../SceneExtension";
 import { SettingsTreeEntry } from "../SettingsManager";
 import {
   CAMERA_CALIBRATION_DATATYPES,
@@ -106,14 +107,17 @@ export class Images extends SceneExtension<ImageRenderable> {
       {
         type: "schema",
         schemaNames: ROS_IMAGE_DATATYPES,
-        subscription: { handler: this.#handleRosRawImage, processQueue: onlyLastByTopicMessage },
+        subscription: {
+          handler: this.#handleRosRawImage,
+          queueHandler: this.#getImageQueueHandler<RosImage>(normalizeRosImage),
+        },
       },
       {
         type: "schema",
         schemaNames: ROS_COMPRESSED_IMAGE_DATATYPES,
         subscription: {
           handler: this.#handleRosCompressedImage,
-          processQueue: onlyLastByTopicMessage,
+          queueHandler: this.#getImageQueueHandler<RosCompressedImage>(normalizeRosCompressedImage),
         },
       },
       {
@@ -121,7 +125,7 @@ export class Images extends SceneExtension<ImageRenderable> {
         schemaNames: RAW_IMAGE_DATATYPES,
         subscription: {
           handler: this.#handleRawImage,
-          processQueue: onlyLastByTopicMessage,
+          queueHandler: this.#getImageQueueHandler<RawImage>(normalizeRawImage),
         },
       },
       {
@@ -129,7 +133,7 @@ export class Images extends SceneExtension<ImageRenderable> {
         schemaNames: COMPRESSED_IMAGE_DATATYPES,
         subscription: {
           handler: this.#handleCompressedImage,
-          processQueue: onlyLastByTopicMessage,
+          queueHandler: this.#getImageQueueHandler<CompressedImage>(normalizeCompressedImage),
         },
       },
     ];
@@ -300,6 +304,22 @@ export class Images extends SceneExtension<ImageRenderable> {
     this.handleImage(messageEvent, normalizeCompressedImage(messageEvent.message));
   };
 
+  #getImageQueueHandler<T extends AnyImage>(
+    normalizeImageFn: (msg: PartialMessage<T>) => AnyImage,
+  ) {
+    return (messageEvents: PartialMessageEvent<T>[]) => {
+      const queueByKey = _.groupBy(messageEvents, getRenderableKeyFromMsg);
+      for (const [_key, messages] of Object.entries(queueByKey)) {
+        if (messages.length === 0) {
+          return;
+        }
+        const latestMessage = messages[messages.length - 1]!;
+        const image = normalizeImageFn(latestMessage.message);
+        this.handleImage(latestMessage, image);
+      }
+    };
+  }
+
   protected handleImage = (messageEvent: PartialMessageEvent<AnyImage>, image: AnyImage): void => {
     const imageTopic = messageEvent.topic;
     const receiveTime = toNanoSec(messageEvent.receiveTime);
@@ -459,4 +479,8 @@ export class Images extends SceneExtension<ImageRenderable> {
   protected initRenderable(topicName: string, userData: ImageUserData): ImageRenderable {
     return new ImageRenderable(topicName, this.renderer, userData);
   }
+}
+
+function getRenderableKeyFromMsg(msg: PartialMessageEvent<AnyImage>) {
+  return msg.topic;
 }

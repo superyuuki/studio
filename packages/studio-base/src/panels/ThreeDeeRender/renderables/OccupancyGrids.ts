@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { t } from "i18next";
+import * as _ from "lodash-es";
 import * as THREE from "three";
 
 import { toNanoSec } from "@foxglove/rostime";
@@ -11,12 +12,7 @@ import type { RosValue } from "@foxglove/studio-base/players/types";
 
 import type { AnyRendererSubscription, IRenderer } from "../IRenderer";
 import { BaseUserData, Renderable } from "../Renderable";
-import {
-  PartialMessage,
-  PartialMessageEvent,
-  SceneExtension,
-  onlyLastByTopicMessage,
-} from "../SceneExtension";
+import { PartialMessage, PartialMessageEvent, SceneExtension } from "../SceneExtension";
 import { SettingsTreeEntry } from "../SettingsManager";
 import { rgbaToCssString, SRGBToLinear, stringToRgba } from "../color";
 import {
@@ -98,11 +94,25 @@ export class OccupancyGrids extends SceneExtension<OccupancyGridRenderable> {
       {
         type: "schema",
         schemaNames: OCCUPANCY_GRID_DATATYPES,
-        subscription: { handler: this.#handleOccupancyGrid, processQueue: onlyLastByTopicMessage },
+        subscription: {
+          handler: this.#handleOccupancyGrid,
+          queueHandler: this.#handleMessageQueue,
+        },
       },
     ];
   }
 
+  #handleMessageQueue = (messageEvents: PartialMessageEvent<OccupancyGrid>[]): void => {
+    // renderables keyed by topic
+    const queueByKey = _.groupBy(messageEvents, (messageEvent) => messageEvent.topic);
+    for (const queue of Object.values(queueByKey)) {
+      if (queue.length === 0) {
+        continue;
+      }
+      const latestMessage = queue[queue.length - 1];
+      this.#handleOccupancyGrid(latestMessage!);
+    }
+  };
   public override settingsNodes(): SettingsTreeEntry[] {
     const configTopics = this.renderer.config.topics;
     const handler = this.handleSettingsAction;
