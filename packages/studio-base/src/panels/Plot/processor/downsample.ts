@@ -461,7 +461,11 @@ export function updatePath(
   };
 }
 
-function shouldResetViewport(
+/**
+ * shouldResetViewport determines whether the viewport needs to be updated (and
+ * thus whether downsampling should rerun.)
+ */
+export function shouldResetViewport(
   pathStates: PathState[],
   oldViewport: PlotViewport | undefined,
   newViewport: PlotViewport,

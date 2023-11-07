@@ -2,13 +2,24 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { updateSource, initSource, updatePath, initPath } from "./downsample";
-import { createPath, createDataset, FAKE_PATH } from "./testing";
 import { Bounds1D } from "@foxglove/studio-base/components/TimeBasedChart/types";
+import { PlotViewport } from "@foxglove/studio-base/components/TimeBasedChart/types";
+
+import { shouldResetViewport, updateSource, initSource, updatePath, initPath } from "./downsample";
+import { createPath, createDataset, FAKE_PATH } from "./testing";
 
 const createBounds = (min: number, max: number): Bounds1D => ({
   min,
   max,
+});
+
+const createViewport = (width: number, height: number, min: number, max: number): PlotViewport => ({
+  width,
+  height,
+  bounds: {
+    x: { min, max },
+    y: { min, max },
+  },
 });
 
 const FAKE_BOUNDS = createBounds(0, 100);
@@ -212,5 +223,57 @@ describe("updatePath", () => {
     );
     expect(after.current.cursor).toEqual(15);
     expect(after.blocks.cursor).toEqual(10);
+  });
+});
+
+describe("shouldResetViewport", () => {
+  it("do nothing if missing old viewport", () => {
+    expect(
+      shouldResetViewport([], undefined, createViewport(800, 600, 0, 120), createBounds(0, 100)),
+    ).toEqual(false);
+  });
+
+  it("ignore partial paths that have no data", () => {
+    expect(
+      shouldResetViewport(
+        [
+          {
+            ...initPath(),
+            isPartial: true,
+          },
+        ],
+        createViewport(800, 600, 0, 120),
+        createViewport(800, 600, 0, 120),
+        createBounds(0, 100),
+      ),
+    ).toEqual(false);
+  });
+
+  it("should reset if partial viewport changed", () => {
+    expect(
+      shouldResetViewport(
+        [
+          {
+            ...initPath(),
+            dataset: createDataset(20),
+            isPartial: true,
+          },
+        ],
+        createViewport(800, 600, 0, 20),
+        createViewport(800, 600, 20, 40),
+        createBounds(0, 100),
+      ),
+    ).toEqual(true);
+  });
+
+  it("should reset if zoomed", () => {
+    expect(
+      shouldResetViewport(
+        [],
+        createViewport(800, 600, 0, 20),
+        createViewport(800, 600, 0, 40),
+        createBounds(0, 100),
+      ),
+    ).toEqual(true);
   });
 });
