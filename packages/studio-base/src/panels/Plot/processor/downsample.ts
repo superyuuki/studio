@@ -159,6 +159,67 @@ const getPlotBounds = (data: PlotData): Bounds1D | undefined => {
   )([...datasets.values()]);
 };
 
+const getBoundsRange = ({ max, min }: Bounds1D): number => Math.abs(max - min);
+
+const MAX_POINTS = 3_000;
+
+/**
+ * Get the visual scale of the `PlotViewport`, or the ratio of a point in
+ * viewport space to pixels.
+ */
+const getScale = ({ width, height, bounds: { x, y } }: PlotViewport): { x: number; y: number } => ({
+  x: (x.max - x.min) / width,
+  y: (y.max - y.min) / height,
+});
+
+const ZOOM_THRESHOLD_PERCENT = 0.2;
+
+const isPartialState = (state: PathState) => state.isPartial;
+
+/**
+ * Get the portion of TypedData[] that falls within `bounds`.
+ */
+const sliceBounds = (data: TypedData[], bounds: Bounds1D): TypedData[] => {
+  let start = -1;
+  let end = -1;
+  for (const { index, x } of iterateTyped(data)) {
+    if (x > bounds.min && start === -1) {
+      start = index;
+    }
+    if (x >= bounds.max && end === -1) {
+      end = index;
+      break;
+    }
+  }
+
+  return sliceTyped(data, start, end === -1 ? undefined : end);
+};
+
+const getVisibleBounds = (
+  blockData: TypedDataSet | undefined,
+  currentData: TypedDataSet | undefined,
+): Bounds1D | undefined => {
+  if (blockData == undefined || currentData == undefined) {
+    if (blockData != undefined) {
+      return getXBounds(blockData.data);
+    }
+
+    if (currentData != undefined) {
+      return getXBounds(currentData.data);
+    }
+
+    return undefined;
+  }
+
+  const blockBounds = getXBounds(blockData.data);
+  const currentBounds = getXBounds(currentData.data);
+  if (blockBounds == undefined || currentBounds == undefined) {
+    return undefined;
+  }
+
+  return combineBounds([blockBounds, currentBounds]);
+};
+
 /**
  * updateSource processes new points for one path and one source (either block
  * or current data), doing a partial downsample of any new points.
@@ -323,22 +384,6 @@ function resolveDataset(
   return undefined;
 }
 
-function sliceBounds(data: TypedData[], bounds: Bounds1D): TypedData[] {
-  let start = -1;
-  let end = -1;
-  for (const { index, x } of iterateTyped(data)) {
-    if (x > bounds.min && start === -1) {
-      start = index;
-    }
-    if (x >= bounds.max && end === -1) {
-      end = index;
-      break;
-    }
-  }
-
-  return sliceTyped(data, start, end === -1 ? undefined : end);
-}
-
 function updatePartialView(
   blockData: TypedDataSet | undefined,
   currentData: TypedDataSet | undefined,
@@ -362,32 +407,7 @@ function updatePartialView(
   };
 }
 
-function getVisibleBounds(
-  blockData: TypedDataSet | undefined,
-  currentData: TypedDataSet | undefined,
-): Bounds1D | undefined {
-  if (blockData == undefined || currentData == undefined) {
-    if (blockData != undefined) {
-      return getXBounds(blockData.data);
-    }
-
-    if (currentData != undefined) {
-      return getXBounds(currentData.data);
-    }
-
-    return undefined;
-  }
-
-  const blockBounds = getXBounds(blockData.data);
-  const currentBounds = getXBounds(currentData.data);
-  if (blockBounds == undefined || currentBounds == undefined) {
-    return undefined;
-  }
-
-  return combineBounds([blockBounds, currentBounds]);
-}
-
-function updatePath(
+export function updatePath(
   path: PlotPath,
   blockData: TypedDataSet | undefined,
   currentData: TypedDataSet | undefined,
@@ -440,19 +460,6 @@ function updatePath(
     dataset: resolveDataset(newBlocks.dataset, newCurrent.dataset),
   };
 }
-
-const getBoundsRange = ({ max, min }: Bounds1D): number => Math.abs(max - min);
-
-const MAX_POINTS = 3_000;
-
-const getScale = ({ width, height, bounds: { x, y } }: PlotViewport): { x: number; y: number } => ({
-  x: (x.max - x.min) / width,
-  y: (y.max - y.min) / height,
-});
-
-const ZOOM_THRESHOLD_PERCENT = 0.2;
-
-const isPartialState = (state: PathState) => state.isPartial;
 
 function shouldResetViewport(
   pathStates: PathState[],

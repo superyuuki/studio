@@ -2,7 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { updateSource, initSource } from "./downsample";
+import { updateSource, initSource, updatePath, initPath } from "./downsample";
 import { createPath, createDataset, FAKE_PATH } from "./testing";
 import { Bounds1D } from "@foxglove/studio-base/components/TimeBasedChart/types";
 
@@ -150,5 +150,67 @@ describe("updateSource", () => {
       before,
     );
     expect(after.cursor).toEqual(100);
+  });
+});
+
+describe("updatePath", () => {
+  it("returns a partial view", () => {
+    const before = initPath();
+    const after = updatePath(
+      createPath(FAKE_PATH),
+      createDataset(100),
+      undefined,
+      createBounds(0, 50),
+      MAX_POINTS,
+      before,
+    );
+    expect(after.isPartial).toEqual(true);
+  });
+
+  it("goes back to non-partial when viewport expands", () => {
+    const before = updatePath(
+      createPath(FAKE_PATH),
+      createDataset(100),
+      undefined,
+      createBounds(0, 50),
+      MAX_POINTS,
+      initPath(),
+    );
+    const after = updatePath(
+      createPath(FAKE_PATH),
+      createDataset(100),
+      undefined,
+      createBounds(0, 110),
+      MAX_POINTS,
+      before,
+    );
+    expect(after.isPartial).toEqual(false);
+  });
+
+  it("ignores current data when block data exceeds it", () => {
+    const before = initPath();
+    const after = updatePath(
+      createPath(FAKE_PATH),
+      FAKE_DATASET,
+      createDataset(2),
+      createBounds(0, 15),
+      MAX_POINTS,
+      before,
+    );
+    expect(after.current).toEqual(initSource());
+  });
+
+  it("updates both data sources", () => {
+    const before = initPath();
+    const after = updatePath(
+      createPath(FAKE_PATH),
+      FAKE_DATASET,
+      createDataset(15),
+      createBounds(0, 15),
+      MAX_POINTS,
+      before,
+    );
+    expect(after.current.cursor).toEqual(15);
+    expect(after.blocks.cursor).toEqual(10);
   });
 });
