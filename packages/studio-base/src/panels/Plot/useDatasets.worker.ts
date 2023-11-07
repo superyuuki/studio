@@ -37,7 +37,7 @@ import {
   compressClients,
   mutateClient,
 } from "./processor";
-import { updateDownsample } from './processor/downsample'
+import { updateDownsample } from "./processor/downsample";
 
 type Setter = ProviderStateSetter<TypedData[]>;
 
@@ -110,17 +110,12 @@ function rebuild(id: string) {
     return;
   }
 
-  const newDownsampled = updateDownsample(
-    view,
-    blocks.data,
-    current.data,
-    downsampled,
-  )
+  const newDownsampled = updateDownsample(view, blocks.data, current.data, downsampled);
 
   state = mutateClient(state, id, {
     ...client,
     downsampled: newDownsampled,
-  })
+  });
 
   if (!newDownsampled.isValid) {
     return;
@@ -160,7 +155,7 @@ setInterval(() => {
 
 export const service = {
   addBlock(block: Messages, resetTopics: string[]): void {
-    handleEffects(addBlock(strPack(block), resetTopics, state))
+    handleEffects(addBlock(strPack(block), resetTopics, state));
   },
   addCurrent(events: readonly MessageEvent[]): void {
     handleEffects(addCurrent(events, state));

@@ -32,14 +32,14 @@ type PathState = {
   isPartial: boolean;
 };
 
-const initSource = (): SourceState => ({
+export const initSource = (): SourceState => ({
   cursor: 0,
   chunkSize: 0,
   numBuckets: 0,
   dataset: undefined,
 });
 
-const initPath = (): PathState => ({
+export const initPath = (): PathState => ({
   blocks: initSource(),
   current: initSource(),
   dataset: undefined,
@@ -54,14 +54,14 @@ export type Downsampled = {
   data: PlotData;
 };
 
-export function initDownsampled(): Downsampled {
+export const initDownsampled = (): Downsampled => {
   return {
     isValid: false,
     view: undefined,
     paths: new Map(),
     data: EmptyPlotData,
   };
-}
+};
 
 const downsampleDataset = (
   data: TypedData[],
@@ -159,7 +159,11 @@ const getPlotBounds = (data: PlotData): Bounds1D | undefined => {
   )([...datasets.values()]);
 };
 
-function updateSource(
+/**
+ * updateSource processes new points for one path and one source (either block
+ * or current data), doing a partial downsample of any new points.
+ */
+export function updateSource(
   path: PlotPath,
   raw: TypedDataSet | undefined,
   viewBounds: Bounds1D,
@@ -174,6 +178,13 @@ function updateSource(
   }
 
   const newCursor = getTypedLength(raw.data);
+  if (newCursor === 0) {
+    return initSource();
+  }
+  // the input data regressed for some reason, handle this gracefully
+  if (newCursor < oldCursor) {
+    return updateSource(path, raw, viewBounds, maxPoints, minSize, initSource());
+  }
   if (newCursor === oldCursor) {
     return state;
   }
@@ -184,10 +195,12 @@ function updateSource(
     return state;
   }
 
+  // we wait around until we have greater than `minSize` data so that we can
+  // guess how much of the visual range the full plot might occupy
+  //
+  // this is just a guess, but mostly works, and if the plot gets too dense we
+  // will downsample again anyway
   const newRange = getBoundsRange(newBounds);
-
-  // We haven't generated data yet, cannot use chunkSize
-  // Only proceed if we have enough data
   if (previous == undefined || chunkSize === 0) {
     const proportion = newRange / viewportRange;
     if (proportion < minSize) {
@@ -216,6 +229,19 @@ function updateSource(
   }
 
   const numNewPoints = newCursor - oldCursor;
+  // in order for the downsampled signal to maintain the same visual density
+  // over the entire plot, the number of points we downsample needs to stay the
+  // same; this is what `chunkSize` does.
+  //
+  // most of the time, however, we receive new points in quantities far smaller
+  // than `chunkSize`, so to get around this (but still retain visual density)
+  // we reuse raw points that already exist in the dataset and start our
+  // downsample a few buckets _before_ the points we're adding. this is because
+  // the point we choose for each bucket depends on the point we chose in the
+  // previous bucket, and so on.
+  //
+  // we then append any new _downsampled_ points to our accumulated downsampled
+  // dataset.
   if (numNewPoints < chunkSize) {
     const numOldPoints = chunkSize - numNewPoints;
     const rawStart = newCursor - numOldPoints;
@@ -256,12 +282,14 @@ function updateSource(
     };
   }
 
+  // the `chunkSize` is also the upper bound for the number of points we
+  // process in one go (again to maintain similar visual density)
   const downsampled = downsampleDataset(sliceTyped(newData, 0, chunkSize), numBuckets);
   if (downsampled == undefined) {
     return state;
   }
 
-  // We go around again and consume all the data we can
+  // we go around again and consume all the data we can
   return updateSource(path, raw, viewBounds, maxPoints, minSize, {
     ...state,
     cursor: oldCursor + chunkSize,
@@ -311,7 +339,7 @@ function sliceBounds(data: TypedData[], bounds: Bounds1D): TypedData[] {
   return sliceTyped(data, start, end === -1 ? undefined : end);
 }
 
-function calculatePartial(
+function updatePartialView(
   blockData: TypedDataSet | undefined,
   currentData: TypedDataSet | undefined,
   viewBounds: Bounds1D,
@@ -332,16 +360,6 @@ function calculatePartial(
       data: downsampled,
     },
   };
-}
-
-function updatePartialView(
-  blockData: TypedDataSet | undefined,
-  currentData: TypedDataSet | undefined,
-  viewBounds: Bounds1D,
-  maxPoints: number,
-  state: PathState,
-): PathState {
-  return calculatePartial(blockData, currentData, viewBounds, maxPoints, state);
 }
 
 function getVisibleBounds(
