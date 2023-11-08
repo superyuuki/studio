@@ -391,6 +391,43 @@ describe("MessagePipelineProvider/useMessagePipeline", () => {
     ]);
   });
 
+  it("should not deduplicate subscriptions so that they can be passed to the underlying player to perform backfill for new subscriptions", async () => {
+    const player = new FakePlayer();
+    const { Hook, Wrapper } = makeTestHook({ player });
+    const { result } = renderHook(Hook, {
+      wrapper: Wrapper,
+    });
+
+    await doubleAct(async () => {
+      await player.emit({
+        activeData: {
+          messages: [],
+          currentTime: { sec: 0, nsec: 0 },
+          startTime: { sec: 0, nsec: 0 },
+          endTime: { sec: 1, nsec: 0 },
+          isPlaying: true,
+          speed: 0.2,
+          lastSeekTime: 1234,
+          topics: [{ name: "/input/foo", schemaName: "foo" }],
+          topicStats: new Map<string, TopicStats>([["/input/foo", { numMessages: 1 }]]),
+          datatypes: new Map(Object.entries({ foo: { definitions: [] } })),
+          totalBytesReceived: 1234,
+        },
+      });
+    });
+
+    act(() => {
+      result.current.setSubscriptions("custom-id", [
+        { topic: "/input/foo" },
+        { topic: "/input/foo" },
+      ]);
+    });
+    expect(result.current.subscriptions).toEqual([
+      { topic: "/input/foo" },
+      { topic: "/input/foo" },
+    ]);
+  });
+
   it("does not duplicate messages if a panel subscribes to a topic twice", async () => {
     const player = new FakePlayer();
     const { Hook, Wrapper } = makeTestHook({ player });
@@ -422,7 +459,10 @@ describe("MessagePipelineProvider/useMessagePipeline", () => {
         { topic: "/input/foo" },
       ]);
     });
-    expect(result.current.subscriptions).toEqual([{ topic: "/input/foo" }]);
+    expect(result.current.subscriptions).toEqual([
+      { topic: "/input/foo" },
+      { topic: "/input/foo" },
+    ]);
 
     // Emit empty player state to process new subscriptions
     await doubleAct(async () => {

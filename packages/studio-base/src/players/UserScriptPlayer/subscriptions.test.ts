@@ -55,14 +55,14 @@ describe("remapVirtualSubscriptions", () => {
       call(
         [
           {
-            topic: "/test",
+            topic: "/real",
           },
         ],
         {},
       ),
     ).toEqual([
       {
-        topic: "/test",
+        topic: "/real",
       },
     ]);
   });
@@ -72,11 +72,11 @@ describe("remapVirtualSubscriptions", () => {
       call(
         [
           {
-            topic: "/test",
+            topic: "/output",
           },
         ],
         {
-          "/test": [],
+          "/output": [],
         },
       ),
     ).toEqual([]);
@@ -87,101 +87,106 @@ describe("remapVirtualSubscriptions", () => {
       call(
         [
           {
-            topic: "/test",
+            topic: "/output",
             preloadType: "full",
           },
           {
-            topic: "/test",
+            topic: "/output",
             preloadType: "partial",
           },
         ],
         {
-          "/test": ["/test2"],
+          "/output": ["/input"],
         },
       ),
     ).toEqual([
       {
-        topic: "/test2",
+        topic: "/input",
         preloadType: "full",
       },
       {
-        topic: "/test2",
+        topic: "/input",
         preloadType: "partial",
       },
     ]);
   });
 
-  it("upgrades to a whole-message subscription from fields", () => {
+  it("remaps and upgrades subscriptions with fields to output to a whole-message input subscription", () => {
     expect(
       call(
         [
           {
-            topic: "/test",
+            topic: "/output",
             fields: ["one", "two"],
           },
         ],
         {
-          "/test": ["/test2"],
+          "/output": ["/input"],
         },
       ),
     ).toEqual([
       {
-        topic: "/test2",
+        topic: "/input",
         preloadType: "partial",
       },
     ]);
   });
 
-  it("upgrades to a full subscription from fields even when user also subscribes to input", () => {
+  it("maps output to input with fields and leaves other input sub as is", () => {
     expect(
       call(
         [
           {
-            topic: "/test",
+            topic: "/output",
             fields: ["one", "two"],
           },
           {
-            topic: "/test2",
+            topic: "/input",
             fields: ["one", "two"],
           },
         ],
         {
-          "/test": ["/test2"],
+          "/output": ["/input2"],
         },
       ),
     ).toEqual([
       {
-        topic: "/test2",
+        topic: "/input2",
         preloadType: "partial",
+      },
+      {
+        topic: "/input",
+        fields: ["one", "two"],
       },
     ]);
   });
-  it("should not coalesce sliced input subscriptions and whole message input subscriptions across preload types", () => {
-    const subscriptions: SubscribePayload[] = [
-      {
-        topic: "/output",
-        preloadType: "partial",
-      },
-      {
-        topic: "/input",
-        preloadType: "full",
-        fields: ["one", "two"],
-      },
-    ];
-    const inputsByOutputTopic = {
-      "/output": ["/input"],
-    };
-    const expected = [
-      {
-        topic: "/input",
-        preloadType: "full",
-        fields: ["one", "two"],
-      },
+
+  it("maps output to input with fields and leaves other input sub as is. Does not deduplicate so that underlying player can perform backfill on any new subscriptions.", () => {
+    expect(
+      call(
+        [
+          {
+            topic: "/output",
+            fields: ["one", "two"],
+          },
+          {
+            topic: "/input",
+            fields: ["one", "two"],
+          },
+        ],
+        {
+          "/output": ["/input"],
+        },
+      ),
+    ).toEqual([
       {
         topic: "/input",
         preloadType: "partial",
       },
-    ];
-    expect(call(subscriptions, inputsByOutputTopic)).toEqual(expected);
+      {
+        topic: "/input",
+        fields: ["one", "two"],
+      },
+    ]);
   });
 });

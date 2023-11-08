@@ -608,7 +608,7 @@ describe("UserScriptPlayer", () => {
       expect(fakePlayer.subscriptions).toEqual([{ topic: "/np_input" }]);
     });
 
-    it("does not subscribe to all fields when user node is unused", async () => {
+    it("does not subscribe to all fields when user script is unused", async () => {
       const fakePlayer = new FakePlayer();
       const userScriptPlayer = new UserScriptPlayer(fakePlayer, defaultUserScriptActions);
       const topicNames = ["/np_input"];
@@ -622,7 +622,7 @@ describe("UserScriptPlayer", () => {
       expect(fakePlayer.subscriptions).toEqual([{ topic: "/np_input", fields: ["a"] }]);
     });
 
-    it("requests full subscriptions for input topics", async () => {
+    it("should not merge subscriptions for underlying player, only remap output topics to input topic subs", async () => {
       const fakePlayer = new FakePlayer();
       const userScriptPlayer = new UserScriptPlayer(fakePlayer, defaultUserScriptActions);
 
@@ -644,9 +644,10 @@ describe("UserScriptPlayer", () => {
 
       // Subscribe to a slice of the output topic and a slice of the input topic.
       userScriptPlayer.setSubscriptions([
-        { topic: "/np_input", fields: ["a"] },
-        { topic: `${DEFAULT_STUDIO_SCRIPT_PREFIX}1`, fields: ["a"], preloadType: "partial" },
-        { topic: `${DEFAULT_STUDIO_SCRIPT_PREFIX}1`, fields: ["a"], preloadType: "full" },
+        { topic: "/np_input", fields: ["a"] }, // input topic
+        { topic: `${DEFAULT_STUDIO_SCRIPT_PREFIX}1`, preloadType: "partial" }, // output topics
+        { topic: `${DEFAULT_STUDIO_SCRIPT_PREFIX}1`, preloadType: "full" },
+        { topic: `${DEFAULT_STUDIO_SCRIPT_PREFIX}1`, preloadType: "full" },
       ]);
 
       // Wait for subscriptions to take effect.
@@ -655,8 +656,10 @@ describe("UserScriptPlayer", () => {
       // The underlying player subscription should not be sliced since we don't know which fields of
       // the message the script will use.
       expect(fakePlayer.subscriptions).toEqual([
+        { topic: "/np_input", fields: ["a"] },
+        { topic: "/np_input", preloadType: "partial" },
         { topic: "/np_input", preloadType: "full" },
-        { topic: "/np_input" },
+        { topic: "/np_input", preloadType: "full" },
       ]);
     });
 
