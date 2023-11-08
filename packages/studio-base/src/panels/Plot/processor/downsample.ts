@@ -318,6 +318,7 @@ export function updateSource(
       numBuckets: bestGuessBuckets,
       dataset: {
         ...raw,
+        pointRadius: 0,
         data: downsampled,
       },
     };
@@ -349,7 +350,7 @@ export function updateSource(
     return updateSource(path, raw, viewBounds, maxPoints, minSize, {
       ...state,
       cursor: oldCursor + chunkSize,
-      dataset: concatDataset(previous, { data: downsampled }),
+      dataset: concatDataset(previous, { ...previous, data: downsampled }),
     });
   }
 
@@ -427,6 +428,19 @@ function updatePartialView(
   state: PathState,
 ): PathState {
   const data = sliceBounds(mergeTyped(blockData?.data ?? [], currentData?.data ?? []), viewBounds);
+  const numSliced = getTypedLength(data);
+  if (numSliced <= maxPoints) {
+    return {
+      ...state,
+      isPartial: true,
+      dataset: {
+        ...blockData,
+        // pointRadius will be default
+        data,
+      },
+    };
+  }
+
   const downsampled = downsampleDataset(applyTransforms(data, path), maxPoints);
   if (downsampled == undefined) {
     return state;
@@ -437,6 +451,7 @@ function updatePartialView(
     isPartial: true,
     dataset: {
       ...blockData,
+      pointRadius: 0,
       data: downsampled,
     },
   };
