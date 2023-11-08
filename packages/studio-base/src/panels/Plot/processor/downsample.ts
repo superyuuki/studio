@@ -10,6 +10,7 @@ import {
   getTypedLength,
 } from "@foxglove/studio-base/components/Chart/datasets";
 import { downsampleLTTB } from "@foxglove/studio-base/components/TimeBasedChart/lttb";
+import { downsampleScatter } from "@foxglove/studio-base/components/TimeBasedChart/downsample";
 import { PlotViewport, Bounds1D } from "@foxglove/studio-base/components/TimeBasedChart/types";
 
 import {
@@ -245,6 +246,7 @@ const applyTransforms = (data: TypedData[], path: PlotPath): TypedData[] =>
 export function updateSource(
   path: PlotPath,
   raw: TypedDataSet | undefined,
+  view: PlotViewport,
   viewBounds: Bounds1D,
   maxPoints: number,
   minSize: number,
@@ -262,7 +264,7 @@ export function updateSource(
   }
   // the input data regressed for some reason, handle this gracefully
   if (newCursor < oldCursor) {
-    return updateSource(path, raw, viewBounds, maxPoints, minSize, initSource());
+    return updateSource(path, raw, view, viewBounds, maxPoints, minSize, initSource());
   }
   if (newCursor === oldCursor) {
     return state;
@@ -279,6 +281,26 @@ export function updateSource(
       dataset: {
         ...raw,
         data: downsampled,
+      },
+    };
+  }
+
+  // same with this, but for different reasons
+  if (path.showLine === false) {
+    const indices = downsampleScatter(iterateTyped(raw.data), view);
+    const resolved = resolveTypedIndices(raw.data, indices);
+    if (resolved == undefined) {
+      return {
+        ...initSource(),
+        dataset: raw,
+      };
+    }
+
+    return {
+      ...initSource(),
+      dataset: {
+        ...raw,
+        data: resolved,
       },
     };
   }
@@ -346,7 +368,7 @@ export function updateSource(
     }
 
     // we go around again and consume all the data we can
-    return updateSource(path, raw, viewBounds, maxPoints, minSize, {
+    return updateSource(path, raw, view, viewBounds, maxPoints, minSize, {
       ...state,
       cursor: oldCursor + chunkSize,
       dataset: concatDataset(previous, { ...previous, data: downsampled }),
@@ -460,6 +482,7 @@ export function updatePath(
   path: PlotPath,
   blockData: TypedDataSet | undefined,
   currentData: TypedDataSet | undefined,
+  view: PlotViewport,
   viewBounds: Bounds1D,
   maxPoints: number,
   state: PathState,
@@ -473,11 +496,11 @@ export function updatePath(
 
     // If we're not partial anymore, we need to start over
     if (isPartial) {
-      return updatePath(path, blockData, currentData, viewBounds, maxPoints, initPath());
+      return updatePath(path, blockData, currentData, view, viewBounds, maxPoints, initPath());
     }
   }
 
-  const newBlocks = updateSource(path, blockData, viewBounds, maxPoints, 0.05, blocks);
+  const newBlocks = updateSource(path, blockData, view, viewBounds, maxPoints, 0.05, blocks);
 
   // Skip computing current entirely if block data is bigger than it
   if (blockData != undefined && currentData != undefined) {
@@ -497,7 +520,7 @@ export function updatePath(
     }
   }
 
-  const newCurrent = updateSource(path, currentData, viewBounds, maxPoints, 0, current);
+  const newCurrent = updateSource(path, currentData, view, viewBounds, maxPoints, 0, current);
   const newState: PathState = {
     ...state,
     blocks: newBlocks,
@@ -584,9 +607,10 @@ export function updateDownsample(
   const currentPaths = [...current.datasets.keys()];
   const paths = blockPaths.length > currentPaths.length ? blockPaths : currentPaths;
 
+  const stableView = downsampled.view ?? view;
   const {
     bounds: { x: viewBounds },
-  } = downsampled.view ?? view;
+  } = stableView;
   const { view: downsampledView, data: previous, paths: oldPaths } = downsampled;
 
   const previousBounds = getPlotBounds(previous);
@@ -631,6 +655,7 @@ export function updateDownsample(
       path,
       blocks.datasets.get(path),
       current.datasets.get(path),
+      stableView,
       viewBounds,
       pointsPerDataset,
       oldState,
