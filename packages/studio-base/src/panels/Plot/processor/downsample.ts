@@ -9,8 +9,8 @@ import {
   lookupIndices,
   getTypedLength,
 } from "@foxglove/studio-base/components/Chart/datasets";
-import { downsampleLTTB } from "@foxglove/studio-base/components/TimeBasedChart/lttb";
 import { downsampleScatter } from "@foxglove/studio-base/components/TimeBasedChart/downsample";
+import { downsampleLTTB } from "@foxglove/studio-base/components/TimeBasedChart/lttb";
 import { PlotViewport, Bounds1D } from "@foxglove/studio-base/components/TimeBasedChart/types";
 
 import {
