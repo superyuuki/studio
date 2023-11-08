@@ -304,7 +304,7 @@ export const applyDerivativeToPlotData = createPlotMapping((dataset, path) => {
   };
 });
 
-export const sortDataByHeaderStamp = (data: TypedData[]) => {
+export const sortDataByHeaderStamp = (data: TypedData[]): TypedData[] => {
   const indices: [index: number, timestamp: number][] = [];
   for (const datum of iterateTyped(data)) {
     indices.push([datum.index, datum.x]);
@@ -316,7 +316,6 @@ export const sortDataByHeaderStamp = (data: TypedData[]) => {
     data,
     indices.map(([index]) => index),
   );
-
   if (resolved == undefined) {
     return data;
   }

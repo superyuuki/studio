@@ -4,8 +4,8 @@
 
 import * as R from "ramda";
 
-import type { TypedData } from "@foxglove/studio-base/components/Chart/types";
 import { findIndices } from "@foxglove/studio-base/components/Chart/datasets";
+import type { TypedData } from "@foxglove/studio-base/components/Chart/types";
 
 /**
  * Choose a subset of points from the provided dataset that retain its visual properties. The output of this algorithm is only well-defined for datasets where the x-axis is sorted and is plotted as a contiguous line.
@@ -43,7 +43,7 @@ export function downsampleLTTB(
     sliceIndex = dest[0];
     sliceOffset = dest[1];
 
-    let slice = data[dest[0]];
+    const slice = data[dest[0]];
     if (slice != undefined) {
       xBuffer = slice.x;
       yBuffer = slice.y;
@@ -99,7 +99,7 @@ export function downsampleLTTB(
     // Next, get the average of the following bucket
     avgX = 0;
     avgY = 0;
-    for (let i = nextStart; i < nextEnd; i++, advance()) {
+    for (let i = nextStart; i < nextEnd; i++) {
       if (xBuffer == undefined || yBuffer == undefined) {
         return undefined;
       }
@@ -107,6 +107,7 @@ export function downsampleLTTB(
       y = yBuffer[sliceOffset]!;
       avgX += x;
       avgY += y;
+      advance()
     }
     avgX /= numNext;
     avgY /= numNext;
@@ -116,7 +117,7 @@ export function downsampleLTTB(
     maxIndex = -1;
     maxArea = 0;
     // Choose the triangle with the maximum area
-    for (let i = bucketStart; i < bucketEnd; i++, advance()) {
+    for (let i = bucketStart; i < bucketEnd; i++) {
       if (xBuffer == undefined || yBuffer == undefined) {
         return undefined;
       }
@@ -130,6 +131,7 @@ export function downsampleLTTB(
       maxIndex = i;
       prevX = x;
       prevY = y;
+      advance()
     }
 
     if (maxIndex === -1) {

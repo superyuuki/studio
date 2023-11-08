@@ -103,7 +103,7 @@ export function* iterateTyped<T extends { [key: string]: Array<any> | Float32Arr
   }
 }
 
-type Indices = [slice: number, offset: number];
+export type Indices = [slice: number, offset: number];
 /**
  * Given a dataset and an index inside of that dataset, return the index of the
  * slice and offset inside of that slice.
@@ -134,3 +134,57 @@ export function findIndices(dataset: TypedData[], index: number): Indices | unde
 
   return undefined;
 }
+
+/**
+ * lookupIndices returns a faster version of findIndices in exchange for doing
+ * some compute ahead of time.
+ */
+export const lookupIndices = (dataset: TypedData[]): ((offset: number) => Indices | undefined) => {
+  const offsets: number[] = R.pipe(
+    R.map(({ x: { length } }: TypedData) => length),
+    R.reduce(
+      (lengths: number[], length: number): number[] => [
+        ...lengths,
+        (R.last(lengths) ?? 0) + length,
+      ],
+      [],
+    ),
+    // remove the last one (can't resolve to greater than end of dataset)
+    (v) => v.slice(0, -1),
+  )(dataset);
+
+  const getBinary = (index: number): Indices | undefined => {
+    const slice = _.sortedIndex(offsets, index);
+    if (slice === dataset.length) {
+      return undefined;
+    }
+
+    if (offsets[slice] === index) {
+      return [slice + 1, 0];
+    }
+
+    return [slice, index - (offsets[slice - 1] ?? 0)];
+  };
+
+  let last: [number, Indices] = [0, [0, 0]];
+  return (offset: number): Indices | undefined => {
+    const [lastOffset, lastIndices] = last;
+    if (offset - 1 === lastOffset) {
+      const [slice, sliceOffset] = lastIndices;
+      const sliceLength = offsets[slice];
+      if (sliceLength != undefined && offset + 1 < sliceLength) {
+        const result: Indices = [slice, sliceOffset + 1];
+        last = [offset, result];
+        return result;
+      }
+    }
+
+    const result = getBinary(offset);
+    if (result == undefined) {
+      return undefined;
+    }
+
+    last = [offset, result];
+    return result;
+  };
+};

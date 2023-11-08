@@ -4,7 +4,11 @@
 
 import * as R from "ramda";
 
-import { iterateTyped, getTypedLength } from "@foxglove/studio-base/components/Chart/datasets";
+import {
+  iterateTyped,
+  lookupIndices,
+  getTypedLength,
+} from "@foxglove/studio-base/components/Chart/datasets";
 import { downsampleLTTB } from "@foxglove/studio-base/components/TimeBasedChart/lttb";
 import { PlotViewport } from "@foxglove/studio-base/components/TimeBasedChart/types";
 import { Bounds1D } from "@foxglove/studio-base/components/TimeBasedChart/types";
@@ -154,23 +158,50 @@ const ZOOM_THRESHOLD_PERCENT = 0.2;
 
 const isPartialState = (state: PathState) => state.isPartial;
 
+const findPointBinary = (
+  lookup: ReturnType<typeof lookupIndices>,
+  data: TypedData[],
+  start: number,
+  end: number,
+  value: number,
+): number | undefined => {
+  if (start >= end) {
+    return start;
+  }
+
+  const mid = Math.trunc((start + end) / 2);
+  const pivotLocation = lookup(mid);
+  if (pivotLocation == undefined) {
+    return undefined;
+  }
+
+  const pivot = data[pivotLocation[0]]?.x[pivotLocation[1]];
+  if (pivot == undefined) {
+    return undefined;
+  }
+
+  if (value === pivot) {
+    return mid;
+  }
+
+  return value < pivot
+    ? findPointBinary(lookup, data, start, mid - 1, value)
+    : findPointBinary(lookup, data, mid + 1, end, value);
+};
+
 /**
  * Get the portion of TypedData[] that falls within `bounds`.
  */
 const sliceBounds = (data: TypedData[], bounds: Bounds1D): TypedData[] => {
-  let start = -1;
-  let end = -1;
-  for (const { index, x } of iterateTyped(data)) {
-    if (x > bounds.min && start === -1) {
-      start = index;
-    }
-    if (x >= bounds.max && end === -1) {
-      end = index;
-      break;
-    }
+  const lookup = lookupIndices(data);
+  const length = getTypedLength(data);
+  const start = findPointBinary(lookup, data, 0, length, bounds.min);
+  const end = findPointBinary(lookup, data, 0, length, bounds.max);
+  if (start == undefined) {
+    return data;
   }
 
-  return sliceTyped(data, start, end === -1 ? undefined : end);
+  return sliceTyped(data, start, end);
 };
 
 const getVisibleBounds = (
@@ -420,8 +451,6 @@ export function updatePath(
   state: PathState,
 ): PathState {
   const { blocks, current, isPartial } = state;
-  const newBlocks = updateSource(path, blockData, viewBounds, maxPoints, 0.05, blocks);
-
   const combinedBounds = getVisibleBounds(blockData, currentData);
   if (combinedBounds != undefined) {
     if (viewBounds.max < combinedBounds.max) {
@@ -433,6 +462,8 @@ export function updatePath(
       return updatePath(path, blockData, currentData, viewBounds, maxPoints, initPath());
     }
   }
+
+  const newBlocks = updateSource(path, blockData, viewBounds, maxPoints, 0.05, blocks);
 
   // Skip computing current entirely if block data is bigger than it
   if (blockData != undefined && currentData != undefined) {
