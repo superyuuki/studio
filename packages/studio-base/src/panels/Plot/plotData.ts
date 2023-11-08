@@ -96,7 +96,7 @@ function findXRanges(data: Im<PlotData>): {
   return { all: { start, end }, byPath };
 }
 
-export function mapDatasets(
+function mapDatasets(
   map: (dataset: TypedDataSet, path: PlotPath) => TypedDataSet,
   datasets: DatasetsByPath,
 ): DatasetsByPath {
