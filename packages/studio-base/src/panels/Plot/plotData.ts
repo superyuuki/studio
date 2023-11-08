@@ -342,7 +342,7 @@ export const sortPlotDataByHeaderStamp = createPlotMapping((dataset: TypedDataSe
   return {
     ...dataset,
     data: sortDataByHeaderStamp(dataset.data),
-  }
+  };
 });
 
 export function getProvidedData(data: PlotData): ProviderState<TypedData[]> {

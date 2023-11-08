@@ -107,7 +107,7 @@ export function downsampleLTTB(
       y = yBuffer[sliceOffset]!;
       avgX += x;
       avgY += y;
-      advance()
+      advance();
     }
     avgX /= numNext;
     avgY /= numNext;
@@ -131,7 +131,7 @@ export function downsampleLTTB(
       maxIndex = i;
       prevX = x;
       prevY = y;
-      advance()
+      advance();
     }
 
     if (maxIndex === -1) {

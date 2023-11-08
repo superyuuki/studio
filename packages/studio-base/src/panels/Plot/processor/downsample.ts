@@ -10,8 +10,7 @@ import {
   getTypedLength,
 } from "@foxglove/studio-base/components/Chart/datasets";
 import { downsampleLTTB } from "@foxglove/studio-base/components/TimeBasedChart/lttb";
-import { PlotViewport } from "@foxglove/studio-base/components/TimeBasedChart/types";
-import { Bounds1D } from "@foxglove/studio-base/components/TimeBasedChart/types";
+import { PlotViewport, Bounds1D } from "@foxglove/studio-base/components/TimeBasedChart/types";
 
 import {
   derivative,
