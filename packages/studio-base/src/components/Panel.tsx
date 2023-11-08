@@ -615,6 +615,7 @@ export default function Panel<
             id: childId,
             title,
             config: panelComponentConfig,
+            isSelected: isSelected || (isDragging && isValidTarget && isOver),
             saveConfig: saveConfig as SaveConfig<PanelConfig>,
             updatePanelConfigs,
             openSiblingPanel,
@@ -648,7 +649,6 @@ export default function Panel<
                 hasFullscreenDescendant={hasFullscreenDescendant}
                 fullscreenState={fullscreenState}
                 sourceRect={fullscreenSourceRect}
-                selected={isSelected || (isDragging && isValidTarget && isOver)}
                 data-testid={cx("panel-mouseenter-container", childId)}
                 ref={(el) => {
                   panelRootRef.current = el;

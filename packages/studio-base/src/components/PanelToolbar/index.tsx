@@ -13,6 +13,7 @@
 
 import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import { Typography } from "@mui/material";
+import { alpha } from "@mui/material";
 import { useContext, useMemo, CSSProperties } from "react";
 import { makeStyles } from "tss-react/mui";
 
@@ -47,6 +48,9 @@ const useStyles = makeStyles()((theme) => ({
     width: "100%",
     left: 0,
     zIndex: theme.zIndex.appBar,
+  },
+  selected: {
+    backgroundColor: alpha(theme.palette.primary.main, 0.1),
   },
 }));
 
@@ -103,9 +107,14 @@ export default React.memo<Props>(function PanelToolbar({
       : defaultPanelTitle;
 
   const title = customPanelTitle ?? panelContext?.title;
+
+  const classNames = cx(classes.root, className, {
+    [classes.selected]: panelContext?.isSelected,
+  });
+
   return (
     <header
-      className={cx(classes.root, className)}
+      className={classNames}
       data-testid="mosaic-drag-handle"
       ref={rootDragRef}
       style={{ backgroundColor, cursor: rootDragRef != undefined ? "grab" : "auto" }}

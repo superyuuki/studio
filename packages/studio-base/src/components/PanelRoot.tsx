@@ -2,7 +2,6 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { alpha } from "@mui/material";
 import { forwardRef, HTMLAttributes, PropsWithChildren } from "react";
 import { TransitionStatus } from "react-transition-group";
 import { makeStyles } from "tss-react/mui";
@@ -13,7 +12,6 @@ export const PANEL_ROOT_CLASS_NAME = "FoxglovePanelRoot-root";
 
 type PanelRootProps = {
   fullscreenState: TransitionStatus;
-  selected: boolean;
   sourceRect: DOMRectReadOnly | undefined;
   hasFullscreenDescendant: boolean;
 } & HTMLAttributes<HTMLDivElement>;
@@ -33,31 +31,6 @@ const useStyles = makeStyles<Omit<PanelRootProps, "fullscreenState" | "selected"
       flex: "1 1 auto",
       overflow: "hidden",
       backgroundColor: palette.background.default,
-      border: `0px solid ${alpha(palette.primary.main, 0.67)}`,
-      transition: transitions.create("border-width", {
-        duration, // match to timeout duration inside Panel component
-      }),
-
-      "::after": {
-        content: "''",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        inset: 1,
-        opacity: 0,
-        border: `1px solid ${palette.primary.main}`,
-        position: "absolute",
-        pointerEvents: "none",
-        transition: "opacity 0.05s ease-out",
-        zIndex: 10000 + 1,
-      },
-    },
-    rootSelected: {
-      "::after": {
-        opacity: 1,
-        transition: "opacity 0.125s ease-out",
-      },
     },
     entering: {
       position: "fixed",
@@ -107,8 +80,7 @@ const useStyles = makeStyles<Omit<PanelRootProps, "fullscreenState" | "selected"
 
 export const PanelRoot = forwardRef<HTMLDivElement, PropsWithChildren<PanelRootProps>>(
   function PanelRoot(props, ref): JSX.Element {
-    const { className, fullscreenState, hasFullscreenDescendant, selected, sourceRect, ...rest } =
-      props;
+    const { className, fullscreenState, hasFullscreenDescendant, sourceRect, ...rest } = props;
     const { classes, cx } = useStyles({ sourceRect, hasFullscreenDescendant });
 
     const classNames = cx(PANEL_ROOT_CLASS_NAME, className, classes.root, {
@@ -116,7 +88,6 @@ export const PanelRoot = forwardRef<HTMLDivElement, PropsWithChildren<PanelRootP
       [classes.entered]: fullscreenState === "entered",
       [classes.exiting]: fullscreenState === "exiting",
       [classes.exited]: fullscreenState === "exited",
-      [classes.rootSelected]: selected,
     });
 
     return (
