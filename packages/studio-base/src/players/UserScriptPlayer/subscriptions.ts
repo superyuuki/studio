@@ -5,7 +5,6 @@
 import * as R from "ramda";
 
 import { Immutable } from "@foxglove/studio";
-import { mergeSubscriptions } from "@foxglove/studio-base/components/MessagePipeline/subscriptions";
 import { SubscribePayload } from "@foxglove/studio-base/players/types";
 
 // A mapping from the subscription to the input topics needed to satisfy
@@ -69,6 +68,5 @@ export function remapVirtualSubscriptions(
         preloadType,
       }));
     }),
-    mergeSubscriptions,
   )(payloadInputsPairs);
 }

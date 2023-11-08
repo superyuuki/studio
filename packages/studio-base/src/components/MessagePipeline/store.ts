@@ -9,10 +9,7 @@ import { createStore, StoreApi } from "zustand";
 
 import { Condvar } from "@foxglove/den/async";
 import { Immutable, MessageEvent } from "@foxglove/studio";
-import {
-  makeSubscriptionMemoizer,
-  mergeSubscriptions,
-} from "@foxglove/studio-base/components/MessagePipeline/subscriptions";
+import { makeSubscriptionMemoizer } from "@foxglove/studio-base/components/MessagePipeline/subscriptions";
 import {
   AdvertiseOptions,
   Player,
@@ -257,7 +254,7 @@ function updateSubscriberAction(
     }
   }
 
-  const subscriptions = mergeSubscriptions(Array.from(newSubscriptionsById.values()).flat());
+  const subscriptions = Array.from(newSubscriptionsById.values()).flat();
 
   return {
     ...prevState,

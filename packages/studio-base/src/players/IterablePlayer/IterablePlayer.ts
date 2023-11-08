@@ -20,6 +20,7 @@ import {
   toString,
 } from "@foxglove/rostime";
 import { MessageEvent, ParameterValue } from "@foxglove/studio";
+import { mergeSubscriptions } from "@foxglove/studio-base/components/MessagePipeline/subscriptions";
 import NoopMetricsCollector from "@foxglove/studio-base/players/NoopMetricsCollector";
 import PlayerProblemManager from "@foxglove/studio-base/players/PlayerProblemManager";
 import {
@@ -300,26 +301,30 @@ export class IterablePlayer implements Player {
 
   public setSubscriptions(newSubscriptions: SubscribePayload[]): void {
     log.debug("set subscriptions", newSubscriptions);
-    this.#subscriptions = newSubscriptions;
-    this.#metricsCollector.setSubscriptions(newSubscriptions);
+    // get stable array of all subscriptions (including duplicates)
+    const sortedSubs = newSubscriptions.sort((a, b) => a.topic.localeCompare(b.topic));
+    // If there are no changes to topics there's no reason to perform a "seek" to trigger loading
+    if (_.isEqual(sortedSubs, this.#subscriptions)) {
+      return;
+    }
+    this.#subscriptions = sortedSubs;
+    this.#metricsCollector.setSubscriptions(sortedSubs);
+    const mergedSubscriptions = mergeSubscriptions(sortedSubs) as SubscribePayload[];
 
-    const allTopics: TopicSelection = new Map(
-      this.#subscriptions.map((subscription) => [subscription.topic, subscription]),
+    this.#allTopics = new Map(
+      mergedSubscriptions.map((subscription) => [subscription.topic, subscription]),
     );
+
     const preloadTopics = new Map(
       filterMap(this.#subscriptions, (sub) =>
         sub.preloadType === "full" ? [sub.topic, sub] : undefined,
       ),
     );
 
-    // If there are no changes to topics there's no reason to perform a "seek" to trigger loading
-    if (_.isEqual(allTopics, this.#allTopics) && _.isEqual(preloadTopics, this.#preloadTopics)) {
-      return;
+    if (!_.isEqual(this.#preloadTopics, preloadTopics)) {
+      this.#preloadTopics = preloadTopics;
+      this.#blockLoader?.setTopics(this.#preloadTopics);
     }
-
-    this.#allTopics = allTopics;
-    this.#preloadTopics = preloadTopics;
-    this.#blockLoader?.setTopics(this.#preloadTopics);
 
     // If the player is playing, the playing state will detect any subscription changes and adjust
     // iterators accordingly. However if we are idle or already seeking then we need to manually
