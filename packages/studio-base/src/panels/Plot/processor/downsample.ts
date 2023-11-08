@@ -4,11 +4,7 @@
 
 import * as R from "ramda";
 
-import {
-  iterateTyped,
-  lookupIndices,
-  getTypedLength,
-} from "@foxglove/studio-base/components/Chart/datasets";
+import { iterateTyped, getTypedLength } from "@foxglove/studio-base/components/Chart/datasets";
 import { downsampleLTTB } from "@foxglove/studio-base/components/TimeBasedChart/lttb";
 import { PlotViewport } from "@foxglove/studio-base/components/TimeBasedChart/types";
 import { Bounds1D } from "@foxglove/studio-base/components/TimeBasedChart/types";
@@ -75,32 +71,7 @@ const downsampleDataset = (
   numPoints: number,
   startBucket?: number,
 ): TypedData[] | undefined => {
-  const lookup = lookupIndices(data);
-  const indices = downsampleLTTB(
-    (index) => {
-      const offsets = lookup(index);
-      if (offsets == undefined) {
-        return undefined;
-      }
-
-      const slice = data[offsets[0]];
-      if (slice == undefined) {
-        return undefined;
-      }
-
-      const {
-        x: { [offsets[1]]: x },
-        y: { [offsets[1]]: y },
-      } = slice;
-      if (x == undefined || y == undefined) {
-        return undefined;
-      }
-      return [x, y];
-    },
-    getTypedLength(data),
-    numPoints,
-    startBucket,
-  );
+  const indices = downsampleLTTB(data, getTypedLength(data), numPoints, startBucket);
   if (indices == undefined) {
     return undefined;
   }

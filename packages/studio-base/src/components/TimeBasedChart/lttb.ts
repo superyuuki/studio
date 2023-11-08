@@ -4,16 +4,8 @@
 
 import * as R from "ramda";
 
-type Point = [x: number, y: number];
-
-const getAverage = (data: Float64Array): number => {
-  let total = 0;
-  for (const value of data) {
-    total += value;
-  }
-
-  return total / data.length;
-};
+import type { TypedData } from "@foxglove/studio-base/components/Chart/types";
+import { findIndices } from "@foxglove/studio-base/components/Chart/datasets";
 
 /**
  * Choose a subset of points from the provided dataset that retain its visual properties. The output of this algorithm is only well-defined for datasets where the x-axis is sorted and is plotted as a contiguous line.
@@ -24,7 +16,7 @@ const getAverage = (data: Float64Array): number => {
  * Some insight derived from this native JavaScript implementation (license MIT): https://github.com/joshcarr/largest-triangle-three-buckets.js/blob/master/lib/largest-triangle-three-buckets.js
  */
 export function downsampleLTTB(
-  get: (index: number) => Point | undefined,
+  data: TypedData[],
   numPoints: number,
   numBuckets: number,
   startBucket?: number,
@@ -34,106 +26,110 @@ export function downsampleLTTB(
   }
 
   const bucketSize = (numPoints - 2) / (numBuckets - 2);
+  const getBucketStart = (index: number): number => Math.floor(index * bucketSize);
+  const getBucketEnd = (index: number): number => Math.floor((index + 1) * bucketSize);
 
-  const getBucket = (index: number): [start: number, end: number] => [
-    Math.floor(index * bucketSize),
-    Math.floor((index + 1) * bucketSize),
-  ];
+  let sliceIndex: number = 0;
+  let sliceOffset: number = 0;
+  let xBuffer: Float32Array | undefined;
+  let yBuffer: Float32Array | undefined;
+  let sliceLength: number | undefined;
 
-  const xValues = new Float64Array(numPoints);
-  const yValues = new Float64Array(numPoints);
-  for (let i = 0; i < numPoints; i++) {
-    const point = get(i);
-    if (point == undefined) {
-      return undefined;
+  const setIndex = (index: number) => {
+    const dest = findIndices(data, index);
+    if (dest == undefined) {
+      return;
     }
-    xValues[i] = point[0];
-    yValues[i] = point[1];
-  }
+    sliceIndex = dest[0];
+    sliceOffset = dest[1];
 
-  const getPoints = (start: number, end: number): [x: Float64Array, y: Float64Array] => {
-    return [xValues.subarray(start, end), yValues.subarray(start, end)];
+    let slice = data[dest[0]];
+    if (slice != undefined) {
+      xBuffer = slice.x;
+      yBuffer = slice.y;
+    }
   };
 
-  let next: number = 0;
+  const advance = () => {
+    sliceOffset += 1;
+    if (sliceLength != undefined && sliceOffset < sliceLength) {
+      return;
+    }
+    sliceLength = data[sliceIndex]?.x.length;
+    while (sliceLength != undefined && (sliceOffset === sliceLength || sliceLength === 0)) {
+      sliceIndex++;
+      sliceOffset = 0;
+      sliceLength = data[sliceIndex]?.x.length;
+      xBuffer = data[sliceIndex]?.x;
+      yBuffer = data[sliceIndex]?.y;
+    }
+  };
+
+  let prevX: number = 0;
+  let prevY: number = 0;
   let points: number[] = [0];
+  let maxIndex: number = -1;
+  let maxArea: number = 0;
+
+  let bucketStart: number = 0;
+  let bucketEnd: number = 0;
+
+  let nextBucket: number = 0;
+  let nextStart: number = 0;
+  let nextEnd: number = 0;
+  let numNext: number = 0;
+  let x: number | undefined = 0;
+  let y: number | undefined = 0;
+  let avgX: number = 0;
+  let avgY: number = 0;
 
   if (startBucket != undefined) {
     points = [];
   }
 
   for (const bucketIndex of R.range(startBucket ?? 0, numBuckets - 2)) {
-    const [bucketStart, bucketEnd] = getBucket(bucketIndex);
-    // First, get all of the points for this bucket so we can check for
-    // nullity and/or NaN
-    const [bucketX, bucketY] = getPoints(bucketStart, bucketEnd);
+    bucketStart = getBucketStart(bucketIndex);
+    bucketEnd = getBucketEnd(bucketIndex);
+    nextBucket = bucketIndex + 1;
+    nextStart = getBucketStart(nextBucket);
+    nextEnd = Math.min(getBucketEnd(nextBucket), numPoints);
+    numNext = nextEnd - nextStart;
+    setIndex(nextStart);
 
     // Next, get the average of the following bucket
-    const [nextStart, nextEnd] = getBucket(bucketIndex + 1);
-    const end = Math.min(nextEnd, numPoints);
-    const [nextX, nextY] = getPoints(nextStart, end);
-
-    const [combinedX, combinedY] = getPoints(bucketStart, end);
-
-    // Check all points under consideration for NaN. We use NaN to imply a
-    // break in the plot; this has to be given special treatment so that we
-    // downsample both parts of the plot separately.
-    let nanIndex = -1;
-    for (let i = 0; i < combinedX.length; i++) {
-      if (isNaN(combinedX[i] ?? 0) || isNaN(combinedY[i] ?? 0)) {
-        nanIndex = i;
-        break;
-      }
-    }
-    if (nanIndex !== -1) {
-      // Attempt to add the last point before the NaN
-      if (nanIndex - 1 >= bucketStart) {
-        points.push(nanIndex - 1);
-      }
-
-      // If NaN comes at the very end, there's no point in continuing
-      const remainingPoints = numPoints - (nanIndex + 1);
-      if (remainingPoints <= 0) {
-        return points;
-      }
-
-      // Downsample the rest of the dataset separately
-      const rest = downsampleLTTB(
-        (index) => get(index + nanIndex + 1),
-        remainingPoints,
-        numBuckets - bucketIndex,
-      );
-      if (rest == undefined) {
+    avgX = 0;
+    avgY = 0;
+    for (let i = nextStart; i < nextEnd; i++, advance()) {
+      if (xBuffer == undefined || yBuffer == undefined) {
         return undefined;
       }
-
-      return points.concat(rest);
+      x = xBuffer[sliceOffset]!;
+      y = yBuffer[sliceOffset]!;
+      avgX += x;
+      avgY += y;
     }
+    avgX /= numNext;
+    avgY /= numNext;
 
-    const avgX = getAverage(nextX);
-    const avgY = getAverage(nextY);
-    const a = get(next);
-    if (a == undefined) {
-      return undefined;
-    }
-    const [aX, aY] = a;
+    setIndex(getBucketStart(bucketIndex));
 
+    maxIndex = -1;
+    maxArea = 0;
     // Choose the triangle with the maximum area
-    let maxIndex = -1;
-    let maxArea = 0;
-    for (let index = 0; index < bucketX.length; index++) {
-      const realIndex = bucketStart + index;
-      const x = bucketX[index];
-      const y = bucketY[index];
-      if (x == undefined || y == undefined) {
-        continue;
+    for (let i = bucketStart; i < bucketEnd; i++, advance()) {
+      if (xBuffer == undefined || yBuffer == undefined) {
+        return undefined;
       }
-      const area = Math.abs((aX - avgX) * (y - aY) - (aX - x) * (avgY - aY)) * 0.5;
+      x = xBuffer[sliceOffset]!;
+      y = yBuffer[sliceOffset]!;
+      const area = Math.abs((prevX - avgX) * (y - prevY) - (prevX - x) * (avgY - prevY)) * 0.5;
       if (area < maxArea) {
         continue;
       }
       maxArea = area;
-      maxIndex = realIndex;
+      maxIndex = i;
+      prevX = x;
+      prevY = y;
     }
 
     if (maxIndex === -1) {
@@ -141,7 +137,6 @@ export function downsampleLTTB(
     }
 
     points.push(maxIndex);
-    next = maxIndex;
   }
 
   points.push(numPoints - 1);
