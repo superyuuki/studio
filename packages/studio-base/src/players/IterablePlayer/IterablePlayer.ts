@@ -316,7 +316,7 @@ export class IterablePlayer implements Player {
     );
 
     const preloadTopics = new Map(
-      filterMap(this.#subscriptions, (sub) =>
+      filterMap(mergedSubscriptions, (sub) =>
         sub.preloadType === "full" ? [sub.topic, sub] : undefined,
       ),
     );
