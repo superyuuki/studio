@@ -382,11 +382,7 @@ export function updateSource(
     (numOldPoints - (numOldPoints % pointsPerBucket)) / pointsPerBucket - 2,
     0,
   );
-  const downsampled = downsampleDataset(
-    sliceTyped(raw.data, rawStart),
-    numBuckets,
-    lastRawBucket,
-  );
+  const downsampled = downsampleDataset(sliceTyped(raw.data, rawStart), numBuckets, lastRawBucket);
   const lastPoint = getLastPoint(previous.data);
   if (downsampled == undefined || lastPoint == undefined) {
     return state;
