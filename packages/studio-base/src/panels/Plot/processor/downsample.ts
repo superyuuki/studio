@@ -383,7 +383,7 @@ export function updateSource(
     0,
   );
   const downsampled = downsampleDataset(
-    concatTyped(sliceTyped(raw.data, rawStart), newData),
+    sliceTyped(raw.data, rawStart),
     numBuckets,
     lastRawBucket,
   );
