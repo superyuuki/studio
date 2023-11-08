@@ -22,6 +22,7 @@ const createViewport = (width: number, height: number, min: number, max: number)
 });
 
 const FAKE_BOUNDS = createBounds(0, 100);
+const FAKE_VIEWPORT = createViewport(800, 600, 0, 100);
 const MAX_POINTS = 1024;
 const MIN_SIZE = 0.05;
 
@@ -33,6 +34,7 @@ describe("updateSource", () => {
     const result = updateSource(
       createPath(FAKE_PATH),
       undefined,
+      FAKE_VIEWPORT,
       FAKE_BOUNDS,
       MAX_POINTS,
       MIN_SIZE,
@@ -54,6 +56,7 @@ describe("updateSource", () => {
     const after = updateSource(
       createPath(FAKE_PATH),
       createDataset(10),
+      FAKE_VIEWPORT,
       FAKE_BOUNDS,
       MAX_POINTS,
       MIN_SIZE,
@@ -71,6 +74,7 @@ describe("updateSource", () => {
     const after = updateSource(
       createPath(FAKE_PATH),
       EMPTY_DATASET,
+      FAKE_VIEWPORT,
       FAKE_BOUNDS,
       MAX_POINTS,
       MIN_SIZE,
@@ -88,6 +92,7 @@ describe("updateSource", () => {
     const after = updateSource(
       createPath(FAKE_PATH),
       FAKE_DATASET,
+      FAKE_VIEWPORT,
       FAKE_BOUNDS,
       MAX_POINTS,
       MIN_SIZE,
@@ -101,6 +106,7 @@ describe("updateSource", () => {
     const first = updateSource(
       createPath(FAKE_PATH),
       createDataset(1),
+      FAKE_VIEWPORT,
       FAKE_BOUNDS,
       MAX_POINTS,
       MIN_SIZE,
@@ -112,6 +118,7 @@ describe("updateSource", () => {
     const second = updateSource(
       createPath(FAKE_PATH),
       createDataset(50),
+      FAKE_VIEWPORT,
       FAKE_BOUNDS,
       MAX_POINTS,
       MIN_SIZE,
@@ -126,6 +133,7 @@ describe("updateSource", () => {
     const before = updateSource(
       createPath(FAKE_PATH),
       FAKE_DATASET,
+      FAKE_VIEWPORT,
       FAKE_BOUNDS,
       MAX_POINTS,
       MIN_SIZE,
@@ -134,6 +142,7 @@ describe("updateSource", () => {
     const after = updateSource(
       createPath(FAKE_PATH),
       createDataset(11), // ie less than the chunk size
+      FAKE_VIEWPORT,
       FAKE_BOUNDS,
       MAX_POINTS,
       MIN_SIZE,
@@ -146,6 +155,7 @@ describe("updateSource", () => {
     const before = updateSource(
       createPath(FAKE_PATH),
       FAKE_DATASET,
+      FAKE_VIEWPORT,
       FAKE_BOUNDS,
       MAX_POINTS,
       MIN_SIZE,
@@ -154,6 +164,7 @@ describe("updateSource", () => {
     const after = updateSource(
       createPath(FAKE_PATH),
       createDataset(100),
+      FAKE_VIEWPORT,
       FAKE_BOUNDS,
       MAX_POINTS,
       MIN_SIZE,
@@ -170,6 +181,7 @@ describe("updatePath", () => {
       createPath(FAKE_PATH),
       createDataset(100),
       undefined,
+      createViewport(800, 600, 0, 50),
       createBounds(0, 50),
       MAX_POINTS,
       before,
@@ -182,6 +194,7 @@ describe("updatePath", () => {
       createPath(FAKE_PATH),
       createDataset(100),
       undefined,
+      createViewport(800, 600, 0, 50),
       createBounds(0, 50),
       MAX_POINTS,
       initPath(),
@@ -190,6 +203,7 @@ describe("updatePath", () => {
       createPath(FAKE_PATH),
       createDataset(100),
       undefined,
+      createViewport(800, 600, 0, 110),
       createBounds(0, 110),
       MAX_POINTS,
       before,
@@ -203,6 +217,7 @@ describe("updatePath", () => {
       createPath(FAKE_PATH),
       FAKE_DATASET,
       createDataset(2),
+      createViewport(800, 600, 0, 15),
       createBounds(0, 15),
       MAX_POINTS,
       before,
@@ -216,6 +231,7 @@ describe("updatePath", () => {
       createPath(FAKE_PATH),
       FAKE_DATASET,
       createDataset(15),
+      createViewport(800, 600, 0, 15),
       createBounds(0, 15),
       MAX_POINTS,
       before,
