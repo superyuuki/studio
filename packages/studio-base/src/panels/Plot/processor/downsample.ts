@@ -624,7 +624,7 @@ export function updateDownsample(
   const numDatasets = Math.max(blocks.datasets.size, current.datasets.size);
   // We don't have any data
   if (numDatasets === 0) {
-    return downsampled;
+    return initDownsampled();
   }
 
   // The "maximum" number of buckets each dataset can have

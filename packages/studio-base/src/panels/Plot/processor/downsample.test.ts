@@ -2,10 +2,20 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+import { getTypedLength } from "@foxglove/studio-base/components/Chart/datasets";
 import { Bounds1D, PlotViewport } from "@foxglove/studio-base/components/TimeBasedChart/types";
 
-import { shouldResetViewport, updateSource, initSource, updatePath, initPath } from "./downsample";
-import { createPath, createDataset, FAKE_PATH } from "./testing";
+import {
+  shouldResetViewport,
+  updateSource,
+  initSource,
+  updatePath,
+  initPath,
+  updateDownsample,
+  initDownsampled,
+} from "./downsample";
+import { createPath, createDataset, createData, createDataMany, FAKE_PATH } from "./testing";
+import { EmptyPlotData } from "../plotData";
 
 const createBounds = (min: number, max: number): Bounds1D => ({
   min,
@@ -172,6 +182,29 @@ describe("updateSource", () => {
     );
     expect(after.cursor).toEqual(100);
   });
+
+  it("uses scatter plot algorithm on scatter dataset", () => {
+    const before = initSource();
+    const after = updateSource(
+      {
+        ...createPath(FAKE_PATH),
+        showLine: false,
+      },
+      createDataset(50),
+      FAKE_VIEWPORT,
+      FAKE_BOUNDS,
+      MAX_POINTS,
+      MIN_SIZE,
+      before,
+    );
+
+    const { dataset } = after;
+    if (dataset == undefined) {
+      throw new Error("can't happen");
+    }
+    expect(dataset.pointRadius).toEqual(undefined);
+    expect(getTypedLength(dataset.data)).toEqual(50);
+  });
 });
 
 describe("updatePath", () => {
@@ -290,5 +323,43 @@ describe("shouldResetViewport", () => {
         createBounds(0, 100),
       ),
     ).toEqual(true);
+  });
+});
+
+describe("updateDownsample", () => {
+  it("resets if no data", () => {
+    const before = {
+      ...initDownsampled(),
+      isValid: true,
+    };
+    const after = updateDownsample(FAKE_VIEWPORT, EmptyPlotData, EmptyPlotData, before);
+    expect(after).toEqual(initDownsampled());
+  });
+
+  it("resets if too many points", () => {
+    const path = createPath(FAKE_PATH);
+    const before = {
+      ...initDownsampled(),
+      data: createData(path, 5000),
+    };
+    const after = updateDownsample(
+      createViewport(800, 600, 0, 2500),
+      createData(path, 2500),
+      createData(path, 2500),
+      before,
+    );
+    expect(after.data.datasets.get(path)).not.toEqual(before.data.datasets.get(path));
+  });
+
+  it("ignores disabled path", () => {
+    const exists = createPath(FAKE_PATH);
+    const missing = {
+      ...createPath(FAKE_PATH),
+      enabled: false,
+    };
+    const data = createDataMany(100, exists, missing);
+    const before = initDownsampled();
+    const after = updateDownsample(createViewport(800, 600, 0, 2500), data, data, before);
+    expect(after.data.datasets.get(missing)).toEqual(undefined);
   });
 });

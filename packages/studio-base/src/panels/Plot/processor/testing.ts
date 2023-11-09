@@ -108,6 +108,24 @@ export const createData = (path: PlotPath, count: number): PlotData => {
 };
 
 /**
+ * Initialize a PlotData with fake data for the given `path`.
+ */
+export const createDataMany = (count: number, ...paths: PlotPath[]): PlotData => {
+  const datasets = new Map<PlotPath, TypedDataSet>();
+  for (const path of paths) {
+    datasets.set(path, createDataset(count));
+  }
+  return {
+    datasets,
+    bounds: {
+      x: { min: 0, max: 0 },
+      y: { min: 0, max: 0 },
+    },
+    pathsWithMismatchedDataLengths: [],
+  };
+};
+
+/**
  * Create a Client that plots all of the given message paths.
  */
 export const createClient = (...paths: string[]): Client => {
