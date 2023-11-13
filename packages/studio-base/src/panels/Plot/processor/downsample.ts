@@ -503,6 +503,11 @@ function updatePartialView(
   };
 }
 
+/**
+ * Update the state of a single plot path by observing how block and current
+ * data have changed and downsampling the new data as necessary. Both data
+ * sources (block and current) are updated independently with updateSource.
+ */
 export function updatePath(
   path: PlotPath,
   blockData: TypedDataSet | undefined,
@@ -515,6 +520,9 @@ export function updatePath(
   const { blocks, current, isPartial } = state;
   const combinedBounds = getVisibleBounds(blockData, currentData);
   if (combinedBounds != undefined) {
+    // When the user's viewport ends before the end of the dataset, we only
+    // show the data that is immediately visible and do not need to
+    // incrementally downsample.
     if (viewBounds.max < combinedBounds.max) {
       return updatePartialView(path, blockData, currentData, viewBounds, maxPoints, state);
     }
@@ -622,6 +630,11 @@ export function shouldResetViewport(
   return didZoom;
 }
 
+/**
+ * updateDownsample efficiently produces a downsampled dataset fit for
+ * rendering by keeping track of the ways in which the user's viewport, block
+ * data, and current data change.
+ */
 export function updateDownsample(
   view: PlotViewport,
   blocks: PlotData,
