@@ -412,7 +412,7 @@ export function updateSource(
   }
 
   const numOldPoints = chunkSize - numNewPoints;
-  const rawStart = newCursor - numOldPoints;
+  const rawStart = newCursor - chunkSize;
   const pointsPerBucket = Math.trunc(chunkSize / numBuckets);
   const lastRawBucket = Math.max(
     (numOldPoints - (numOldPoints % pointsPerBucket)) / pointsPerBucket - 2,
