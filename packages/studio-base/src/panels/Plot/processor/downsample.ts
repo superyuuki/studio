@@ -70,6 +70,24 @@ export const initDownsampled = (): Downsampled => {
   };
 };
 
+// This is the desired number of data points for each plot across all signals
+// and data sources. Beyond this threshold, ChartJS can no longer render at
+// 60FPS.
+//
+// Since the total number of buckets is an estimate and can be wrong, we may
+// actually end up with more points than this, but we reset when the number of
+// points in a plot exceeds MAX_POINTS.
+const DESIRED_POINTS = 3_000;
+const MAX_POINTS = DESIRED_POINTS * 1.2;
+
+// This factor is used for two related things:
+// * When the viewport's x-axis shrinks or grows by this amount (as a
+//   proportion of the previous viewport) since the last downsample, we
+//   redownsample.
+// * When the viewport's x-axis moves by this amount in either direction, we
+//   redownsample.
+const ZOOM_RESET_FACTOR = 0.2;
+
 const downsampleDataset = (
   data: TypedData[],
   numPoints: number,
@@ -143,18 +161,14 @@ const getPlotBounds = (data: PlotData): Bounds1D | undefined => {
 
 const getBoundsRange = ({ max, min }: Bounds1D): number => Math.abs(max - min);
 
-const MAX_POINTS = 3_000;
-
 /**
- * Get the visual scale of the `PlotViewport`, or the ratio of a point in
- * viewport space to pixels.
+ * Get the ratio of one unit in viewport space to the number of pixels it
+ * occupies.
  */
 const getScale = ({ width, height, bounds: { x, y } }: PlotViewport): { x: number; y: number } => ({
   x: (x.max - x.min) / width,
   y: (y.max - y.min) / height,
 });
-
-const ZOOM_THRESHOLD_PERCENT = 0.2;
 
 const isPartialState = (state: PathState) => state.isPartial;
 
@@ -561,8 +575,8 @@ export function shouldResetViewport(
         }
 
         const maxRange = pathBounds.max - pathBounds.min;
-        const innerStart = pathBounds.min + maxRange * ZOOM_THRESHOLD_PERCENT;
-        const innerEnd = pathBounds.min + maxRange * (1 - ZOOM_THRESHOLD_PERCENT);
+        const innerStart = pathBounds.min + maxRange * ZOOM_RESET_FACTOR;
+        const innerEnd = pathBounds.min + maxRange * (1 - ZOOM_RESET_FACTOR);
 
         return (
           viewBounds.min < pathBounds.min ||
@@ -576,7 +590,7 @@ export function shouldResetViewport(
 
   const { x: oldX } = getScale(oldViewport);
   const { x: newX } = getScale(newViewport);
-  const didZoom = Math.abs(newX / oldX - 1) > ZOOM_THRESHOLD_PERCENT;
+  const didZoom = Math.abs(newX / oldX - 1) > ZOOM_RESET_FACTOR;
 
   const {
     bounds: { x: newBounds },
@@ -622,23 +636,23 @@ export function updateDownsample(
   }
 
   const numDatasets = Math.max(blocks.datasets.size, current.datasets.size);
-  // We don't have any data
   if (numDatasets === 0) {
     return {
       ...initDownsampled(),
+      // An empty plot is valid in this scenario, and should be rendered
       isValid: true,
     };
   }
 
   // The "maximum" number of buckets each dataset can have
-  const pointsPerDataset = MAX_POINTS / numDatasets;
+  const pointsPerDataset = DESIRED_POINTS / numDatasets;
 
   // Check whether this dataset has gotten too big
   const numPreviousPoints = R.pipe(
     R.map((dataset: TypedDataSet) => getTypedLength(dataset.data)),
     R.sum,
   )([...previous.datasets.values()]);
-  const didExceedMax = previous.datasets.size > 0 && numPreviousPoints > MAX_POINTS * 1.2;
+  const didExceedMax = previous.datasets.size > 0 && numPreviousPoints > MAX_POINTS;
   if (didExceedMax) {
     return updateDownsample(view, blocks, current, initDownsampled());
   }

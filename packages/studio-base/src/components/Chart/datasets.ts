@@ -139,8 +139,12 @@ export function findIndices(dataset: TypedData[], index: number): Indices | unde
  * lookupIndices returns a faster version of findIndices in exchange for doing
  * some compute ahead of time.
  */
-export const lookupIndices = (dataset: TypedData[]): ((offset: number) => Indices | undefined) => {
-  const offsets: number[] = R.pipe(
+export const lookupIndices = (dataset: TypedData[]): ((index: number) => Indices | undefined) => {
+  // Calculate the first index of each slice in `dataset`.
+  // For example, with two slices of 10 points each, this produces:
+  // [0, 10]
+  // In other words, the second slice begins at point index=10.
+  const sliceOffsets: number[] = R.pipe(
     R.map(({ x: { length } }: TypedData) => length),
     R.reduce(
       (lengths: number[], length: number): number[] => [
@@ -150,41 +154,47 @@ export const lookupIndices = (dataset: TypedData[]): ((offset: number) => Indice
       [],
     ),
     // remove the last one (can't resolve to greater than end of dataset)
-    (v) => v.slice(0, -1),
+    (offsets) => offsets.slice(0, -1),
   )(dataset);
 
+  // Given the index of a point, use binary search to find its slice and offset
+  // inside of that slice.
   const getBinary = (index: number): Indices | undefined => {
-    const slice = _.sortedIndex(offsets, index);
+    const slice = _.sortedIndex(sliceOffsets, index);
     if (slice === dataset.length) {
       return undefined;
     }
 
-    if (offsets[slice] === index) {
+    if (sliceOffsets[slice] === index) {
       return [slice + 1, 0];
     }
 
-    return [slice, index - (offsets[slice - 1] ?? 0)];
+    return [slice, index - (sliceOffsets[slice - 1] ?? 0)];
   };
 
-  let last: [number, Indices] = [0, [0, 0]];
+  // Keep track of the last point this lookup returned. If the caller is just
+  // getting the next index in the sequence, we do not need to do any more
+  // expensive lookups.
+  let lastPoint: [index: number, location: Indices] = [0, [0, 0]];
   return (offset: number): Indices | undefined => {
-    const [lastOffset, lastIndices] = last;
+    const [lastOffset, lastIndices] = lastPoint;
     if (offset - 1 === lastOffset) {
       const [slice, sliceOffset] = lastIndices;
-      const sliceLength = offsets[slice];
+      const sliceLength = sliceOffsets[slice];
       if (sliceLength != undefined && offset + 1 < sliceLength) {
         const result: Indices = [slice, sliceOffset + 1];
-        last = [offset, result];
+        lastPoint = [offset, result];
         return result;
       }
     }
 
+    // Fall back to binary search if that optimization did not work
     const result = getBinary(offset);
     if (result == undefined) {
       return undefined;
     }
 
-    last = [offset, result];
+    lastPoint = [offset, result];
     return result;
   };
 };

@@ -185,6 +185,10 @@ export function reducePlotData(data: PlotData[]): PlotData {
   return reduced;
 }
 
+/**
+ * Intelligently merge block and current data, which is excluded completely if
+ * block data already includes that portion of the dataset.
+ */
 export function mergeAllData(blockData: PlotData, currentData: PlotData): PlotData {
   const { bounds: blockBounds } = blockData;
   const { bounds: currentBounds } = currentData;
