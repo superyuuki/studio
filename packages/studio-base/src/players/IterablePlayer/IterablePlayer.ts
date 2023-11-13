@@ -19,7 +19,7 @@ import {
   toRFC3339String,
   toString,
 } from "@foxglove/rostime";
-import { MessageEvent, ParameterValue } from "@foxglove/studio";
+import { Immutable, MessageEvent, ParameterValue } from "@foxglove/studio";
 import { mergeSubscriptions } from "@foxglove/studio-base/components/MessagePipeline/subscriptions";
 import NoopMetricsCollector from "@foxglove/studio-base/players/NoopMetricsCollector";
 import PlayerProblemManager from "@foxglove/studio-base/players/PlayerProblemManager";
@@ -134,8 +134,8 @@ export class IterablePlayer implements Player {
   #profile: string | undefined;
   #metricsCollector: PlayerMetricsCollectorInterface;
   #subscriptions: SubscribePayload[] = [];
-  #allTopics: TopicSelection = new Map();
-  #preloadTopics: TopicSelection = new Map();
+  #allTopics: Immutable<TopicSelection> = new Map();
+  #preloadTopics: Immutable<TopicSelection> = new Map();
 
   #progress: Progress = {};
   #id: string = uuidv4();
@@ -309,7 +309,7 @@ export class IterablePlayer implements Player {
     }
     this.#subscriptions = sortedSubs;
     this.#metricsCollector.setSubscriptions(sortedSubs);
-    const mergedSubscriptions = mergeSubscriptions(sortedSubs) as SubscribePayload[];
+    const mergedSubscriptions = mergeSubscriptions(sortedSubs);
 
     this.#allTopics = new Map(
       mergedSubscriptions.map((subscription) => [subscription.topic, subscription]),

@@ -29,7 +29,7 @@ export type Initalization = {
 
 export type MessageIteratorArgs = {
   /** Which topics to return from the iterator */
-  topics: TopicSelection;
+  topics: Immutable<TopicSelection>;
 
   /**
    * The start time of the iterator (inclusive). If no start time is specified, the iterator will start
@@ -91,7 +91,7 @@ export type IteratorResult =
     };
 
 export type GetBackfillMessagesArgs = {
-  topics: TopicSelection;
+  topics: Immutable<TopicSelection>;
   time: Time;
 
   abortSignal?: AbortSignal;

@@ -54,7 +54,7 @@ export class BlockLoader {
   #start: Time;
   #end: Time;
   #blockDurationNanos: number;
-  #topics: TopicSelection = new Map();
+  #topics: Immutable<TopicSelection> = new Map();
   #maxCacheSize: number = 0;
   #problemManager: PlayerProblemManager;
   #stopped: boolean = false;
@@ -84,7 +84,7 @@ export class BlockLoader {
     this.#blocks = Array.from({ length: blockCount });
   }
 
-  public setTopics(topics: TopicSelection): void {
+  public setTopics(topics: Immutable<TopicSelection>): void {
     if (_.isEqual(topics, this.#topics)) {
       return;
     }
@@ -356,7 +356,7 @@ export class BlockLoader {
     }
   }
 
-  #calculateProgress(topics: TopicSelection): Progress {
+  #calculateProgress(topics: Immutable<TopicSelection>): Progress {
     const fullyLoadedFractionRanges = simplify(
       filterMap(this.#blocks, (thisBlock, blockIndex) => {
         if (!thisBlock) {

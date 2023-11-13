@@ -259,7 +259,7 @@ export type MessageBlock = {
    * Indicates which topics are yet to be fully loaded for this block. Can be used to track the
    * progress of block loading. For a fully loaded block this will be empty or undefined.
    */
-  needTopics?: TopicSelection;
+  needTopics?: Immutable<TopicSelection>;
   readonly sizeInBytes: number;
 };
 
