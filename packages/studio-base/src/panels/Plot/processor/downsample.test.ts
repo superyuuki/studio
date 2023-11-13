@@ -43,11 +43,13 @@ describe("updateSource", () => {
   it("ignores missing raw data", () => {
     const result = updateSource(
       createPath(FAKE_PATH),
-      undefined,
-      FAKE_VIEWPORT,
-      FAKE_BOUNDS,
-      MAX_POINTS,
-      MIN_SIZE,
+      {
+        raw: undefined,
+        view: FAKE_VIEWPORT,
+        viewBounds: FAKE_BOUNDS,
+        maxPoints: MAX_POINTS,
+        minSize: MIN_SIZE,
+      },
       // we want to ensure it returns a new, initialized source
       {
         ...initSource(),
@@ -65,11 +67,13 @@ describe("updateSource", () => {
     };
     const after = updateSource(
       createPath(FAKE_PATH),
-      createDataset(10),
-      FAKE_VIEWPORT,
-      FAKE_BOUNDS,
-      MAX_POINTS,
-      MIN_SIZE,
+      {
+        raw: createDataset(10),
+        view: FAKE_VIEWPORT,
+        viewBounds: FAKE_BOUNDS,
+        maxPoints: MAX_POINTS,
+        minSize: MIN_SIZE,
+      },
       before,
     );
 
@@ -83,11 +87,13 @@ describe("updateSource", () => {
     };
     const after = updateSource(
       createPath(FAKE_PATH),
-      EMPTY_DATASET,
-      FAKE_VIEWPORT,
-      FAKE_BOUNDS,
-      MAX_POINTS,
-      MIN_SIZE,
+      {
+        raw: EMPTY_DATASET,
+        view: FAKE_VIEWPORT,
+        viewBounds: FAKE_BOUNDS,
+        maxPoints: MAX_POINTS,
+        minSize: MIN_SIZE,
+      },
       before,
     );
 
@@ -101,11 +107,13 @@ describe("updateSource", () => {
     };
     const after = updateSource(
       createPath(FAKE_PATH),
-      FAKE_DATASET,
-      FAKE_VIEWPORT,
-      FAKE_BOUNDS,
-      MAX_POINTS,
-      MIN_SIZE,
+      {
+        raw: FAKE_DATASET,
+        view: FAKE_VIEWPORT,
+        viewBounds: FAKE_BOUNDS,
+        maxPoints: MAX_POINTS,
+        minSize: MIN_SIZE,
+      },
       before,
     );
     expect(after.cursor).toEqual(10);
@@ -115,11 +123,13 @@ describe("updateSource", () => {
     const initial = initSource();
     const first = updateSource(
       createPath(FAKE_PATH),
-      createDataset(1),
-      FAKE_VIEWPORT,
-      FAKE_BOUNDS,
-      MAX_POINTS,
-      MIN_SIZE,
+      {
+        raw: createDataset(1),
+        view: FAKE_VIEWPORT,
+        viewBounds: FAKE_BOUNDS,
+        maxPoints: MAX_POINTS,
+        minSize: MIN_SIZE,
+      },
       initial,
     );
     expect(first).toEqual(initial);
@@ -127,11 +137,13 @@ describe("updateSource", () => {
 
     const second = updateSource(
       createPath(FAKE_PATH),
-      createDataset(50),
-      FAKE_VIEWPORT,
-      FAKE_BOUNDS,
-      MAX_POINTS,
-      MIN_SIZE,
+      {
+        raw: createDataset(50),
+        view: FAKE_VIEWPORT,
+        viewBounds: FAKE_BOUNDS,
+        maxPoints: MAX_POINTS,
+        minSize: MIN_SIZE,
+      },
       initial,
     );
     expect(second.cursor).toEqual(50);
@@ -142,20 +154,24 @@ describe("updateSource", () => {
   it("incorporates new points smaller than chunkSize", () => {
     const before = updateSource(
       createPath(FAKE_PATH),
-      FAKE_DATASET,
-      FAKE_VIEWPORT,
-      FAKE_BOUNDS,
-      MAX_POINTS,
-      MIN_SIZE,
+      {
+        raw: FAKE_DATASET,
+        view: FAKE_VIEWPORT,
+        viewBounds: FAKE_BOUNDS,
+        maxPoints: MAX_POINTS,
+        minSize: MIN_SIZE,
+      },
       initSource(),
     );
     const after = updateSource(
       createPath(FAKE_PATH),
-      createDataset(11), // ie less than the chunk size
-      FAKE_VIEWPORT,
-      FAKE_BOUNDS,
-      MAX_POINTS,
-      MIN_SIZE,
+      {
+        raw: createDataset(11), // ie less than the chunk size
+        view: FAKE_VIEWPORT,
+        viewBounds: FAKE_BOUNDS,
+        maxPoints: MAX_POINTS,
+        minSize: MIN_SIZE,
+      },
       before,
     );
     expect(after.cursor).toEqual(11);
@@ -164,20 +180,24 @@ describe("updateSource", () => {
   it("incorporates new points greater than chunkSize", () => {
     const before = updateSource(
       createPath(FAKE_PATH),
-      FAKE_DATASET,
-      FAKE_VIEWPORT,
-      FAKE_BOUNDS,
-      MAX_POINTS,
-      MIN_SIZE,
+      {
+        raw: FAKE_DATASET,
+        view: FAKE_VIEWPORT,
+        viewBounds: FAKE_BOUNDS,
+        maxPoints: MAX_POINTS,
+        minSize: MIN_SIZE,
+      },
       initSource(),
     );
     const after = updateSource(
       createPath(FAKE_PATH),
-      createDataset(100),
-      FAKE_VIEWPORT,
-      FAKE_BOUNDS,
-      MAX_POINTS,
-      MIN_SIZE,
+      {
+        raw: createDataset(100),
+        view: FAKE_VIEWPORT,
+        viewBounds: FAKE_BOUNDS,
+        maxPoints: MAX_POINTS,
+        minSize: MIN_SIZE,
+      },
       before,
     );
     expect(after.cursor).toEqual(100);
@@ -190,11 +210,13 @@ describe("updateSource", () => {
         ...createPath(FAKE_PATH),
         showLine: false,
       },
-      createDataset(50),
-      FAKE_VIEWPORT,
-      FAKE_BOUNDS,
-      MAX_POINTS,
-      MIN_SIZE,
+      {
+        raw: createDataset(50),
+        view: FAKE_VIEWPORT,
+        viewBounds: FAKE_BOUNDS,
+        maxPoints: MAX_POINTS,
+        minSize: MIN_SIZE,
+      },
       before,
     );
 
@@ -212,11 +234,13 @@ describe("updatePath", () => {
     const before = initPath();
     const after = updatePath(
       createPath(FAKE_PATH),
-      createDataset(100),
-      undefined,
-      createViewport(800, 600, 0, 50),
-      createBounds(0, 50),
-      MAX_POINTS,
+      {
+        blockData: createDataset(100),
+        currentData: undefined,
+        view: createViewport(800, 600, 0, 50),
+        viewBounds: createBounds(0, 50),
+        maxPoints: MAX_POINTS,
+      },
       before,
     );
     expect(after.isPartial).toEqual(true);
@@ -225,20 +249,24 @@ describe("updatePath", () => {
   it("goes back to non-partial when viewport expands", () => {
     const before = updatePath(
       createPath(FAKE_PATH),
-      createDataset(100),
-      undefined,
-      createViewport(800, 600, 0, 50),
-      createBounds(0, 50),
-      MAX_POINTS,
+      {
+        blockData: createDataset(100),
+        currentData: undefined,
+        view: createViewport(800, 600, 0, 50),
+        viewBounds: createBounds(0, 50),
+        maxPoints: MAX_POINTS,
+      },
       initPath(),
     );
     const after = updatePath(
       createPath(FAKE_PATH),
-      createDataset(100),
-      undefined,
-      createViewport(800, 600, 0, 110),
-      createBounds(0, 110),
-      MAX_POINTS,
+      {
+        blockData: createDataset(100),
+        currentData: undefined,
+        view: createViewport(800, 600, 0, 110),
+        viewBounds: createBounds(0, 110),
+        maxPoints: MAX_POINTS,
+      },
       before,
     );
     expect(after.isPartial).toEqual(false);
@@ -248,11 +276,13 @@ describe("updatePath", () => {
     const before = initPath();
     const after = updatePath(
       createPath(FAKE_PATH),
-      FAKE_DATASET,
-      createDataset(2),
-      createViewport(800, 600, 0, 15),
-      createBounds(0, 15),
-      MAX_POINTS,
+      {
+        blockData: FAKE_DATASET,
+        currentData: createDataset(2),
+        view: createViewport(800, 600, 0, 15),
+        viewBounds: createBounds(0, 15),
+        maxPoints: MAX_POINTS,
+      },
       before,
     );
     expect(after.current).toEqual(initSource());
@@ -262,11 +292,13 @@ describe("updatePath", () => {
     const before = initPath();
     const after = updatePath(
       createPath(FAKE_PATH),
-      FAKE_DATASET,
-      createDataset(15),
-      createViewport(800, 600, 0, 15),
-      createBounds(0, 15),
-      MAX_POINTS,
+      {
+        blockData: FAKE_DATASET,
+        currentData: createDataset(15),
+        view: createViewport(800, 600, 0, 15),
+        viewBounds: createBounds(0, 15),
+        maxPoints: MAX_POINTS,
+      },
       before,
     );
     expect(after.current.cursor).toEqual(15);

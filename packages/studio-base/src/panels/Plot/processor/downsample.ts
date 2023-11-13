@@ -253,19 +253,26 @@ const applyTransforms = (data: TypedData[], path: PlotPath): TypedData[] =>
     isHeaderStamp(path) ? sortDataByHeaderStamp : noop,
   )(data);
 
+type SourceParams = {
+  raw: TypedDataSet | undefined;
+  view: PlotViewport;
+  viewBounds: Bounds1D;
+  maxPoints: number;
+  // We do not decide on a number of buckets until after we have enough data to
+  // fill this proportion of the viewport.
+  minSize: number; // [0..1]
+};
+
 /**
  * updateSource processes new points for one path and one source (either block
  * or current data), doing a partial downsample of any new points.
  */
 export function updateSource(
   path: PlotPath,
-  raw: TypedDataSet | undefined,
-  view: PlotViewport,
-  viewBounds: Bounds1D,
-  maxPoints: number,
-  minSize: number,
+  params: SourceParams,
   state: SourceState,
 ): SourceState {
+  const { raw, view, viewBounds, maxPoints, minSize } = params;
   const viewportRange = getBoundsRange(viewBounds);
   const { cursor: oldCursor, dataset: previous, chunkSize, numBuckets } = state;
   if (raw == undefined) {
@@ -278,7 +285,7 @@ export function updateSource(
   }
   // the input data regressed for some reason, handle this gracefully
   if (newCursor < oldCursor) {
-    return updateSource(path, raw, view, viewBounds, maxPoints, minSize, initSource());
+    return updateSource(path, params, initSource());
   }
   if (newCursor === oldCursor) {
     return state;
@@ -397,7 +404,7 @@ export function updateSource(
     }
 
     // we go around again and consume all the data we can
-    return updateSource(path, raw, view, viewBounds, maxPoints, minSize, {
+    return updateSource(path, params, {
       ...state,
       cursor: oldCursor + chunkSize,
       dataset: concatDataset(previous, { ...previous, data: downsampled }),
@@ -465,14 +472,20 @@ function resolveDataset(
   return undefined;
 }
 
-function updatePartialView(
-  path: PlotPath,
-  blockData: TypedDataSet | undefined,
-  currentData: TypedDataSet | undefined,
-  viewBounds: Bounds1D,
-  maxPoints: number,
-  state: PathState,
-): PathState {
+type PathParameters = {
+  blockData: TypedDataSet | undefined;
+  currentData: TypedDataSet | undefined;
+  view: PlotViewport;
+  viewBounds: Bounds1D;
+  maxPoints: number;
+};
+
+/**
+ * When the dataset is only partially visible, we cut off the occluded portions
+ * and downsample what's left.
+ */
+function updatePartialView(path: PlotPath, params: PathParameters, state: PathState): PathState {
+  const { blockData, currentData, viewBounds, maxPoints } = params;
   const data = sliceBounds(mergeTyped(blockData?.data ?? [], currentData?.data ?? []), viewBounds);
   const numSliced = getTypedLength(data);
   if (numSliced <= maxPoints) {
@@ -508,15 +521,8 @@ function updatePartialView(
  * data have changed and downsampling the new data as necessary. Both data
  * sources (block and current) are updated independently with updateSource.
  */
-export function updatePath(
-  path: PlotPath,
-  blockData: TypedDataSet | undefined,
-  currentData: TypedDataSet | undefined,
-  view: PlotViewport,
-  viewBounds: Bounds1D,
-  maxPoints: number,
-  state: PathState,
-): PathState {
+export function updatePath(path: PlotPath, params: PathParameters, state: PathState): PathState {
+  const { blockData, currentData, view, viewBounds, maxPoints } = params;
   const { blocks, current, isPartial } = state;
   const combinedBounds = getVisibleBounds(blockData, currentData);
   if (combinedBounds != undefined) {
@@ -524,16 +530,20 @@ export function updatePath(
     // show the data that is immediately visible and do not need to
     // incrementally downsample.
     if (viewBounds.max < combinedBounds.max) {
-      return updatePartialView(path, blockData, currentData, viewBounds, maxPoints, state);
+      return updatePartialView(path, params, state);
     }
 
     // If we're not partial anymore, we need to start over
     if (isPartial) {
-      return updatePath(path, blockData, currentData, view, viewBounds, maxPoints, initPath());
+      return updatePath(path, params, initPath());
     }
   }
 
-  const newBlocks = updateSource(path, blockData, view, viewBounds, maxPoints, 0.05, blocks);
+  const newBlocks = updateSource(
+    path,
+    { raw: blockData, view, viewBounds, maxPoints, minSize: 0.05 },
+    blocks,
+  );
 
   // Skip computing current entirely if block data is bigger than it
   if (blockData != undefined && currentData != undefined) {
@@ -553,7 +563,11 @@ export function updatePath(
     }
   }
 
-  const newCurrent = updateSource(path, currentData, view, viewBounds, maxPoints, 0, current);
+  const newCurrent = updateSource(
+    path,
+    { raw: currentData, view, viewBounds, maxPoints, minSize: 0 },
+    current,
+  );
   const newState: PathState = {
     ...state,
     blocks: newBlocks,
@@ -694,11 +708,13 @@ export function updateDownsample(
     const oldState = oldPaths.get(path) ?? initPath();
     const newState = updatePath(
       path,
-      blocks.datasets.get(path),
-      current.datasets.get(path),
-      stableView,
-      viewBounds,
-      pointsPerDataset,
+      {
+        blockData: blocks.datasets.get(path),
+        currentData: current.datasets.get(path),
+        view: stableView,
+        viewBounds,
+        maxPoints: pointsPerDataset,
+      },
       oldState,
     );
     newPaths.set(path, newState);
