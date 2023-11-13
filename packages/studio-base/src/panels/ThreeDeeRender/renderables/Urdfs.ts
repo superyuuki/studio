@@ -889,7 +889,11 @@ export class Urdfs extends SceneExtension<UrdfRenderable> {
 
     // Parse the URDF
     const loadedRenderable = renderable;
-    parseUrdf(urdf, async (uri) => await this.#getFileFetch(uri), framePrefix)
+    parseUrdf(
+      urdf,
+      async (uri) => await this.#getFileFetch(maybeResolvePackageUrl(uri, baseUrl)),
+      framePrefix,
+    )
       .then((parsed) => {
         this.#loadRobot(loadedRenderable, parsed, baseUrl);
         this.renderer.settings.errors.remove(
@@ -1134,6 +1138,39 @@ function createMarker(
   };
 }
 
+/**
+ * Attempt to resolve a package:// url relative to the URDF URL.
+ *
+ * URDF / Xacro files typically contain references to assets (meshes, xacro includes, ...) using
+ * `package://<pkg_name>/<path>` URLs. Often, these assets are part of the same package as the
+ * actual URDF file. When the URDF is loaded via an URL, we may be able to derive the asset URL
+ * with the same URL schema (http(s)://, file://) if the base URL contains `<pkg_name>`.
+ *
+ * Example:
+ *  url: `package://robot_description/meshes/torso.dae`
+ *  baseUrl: `http://example.com/robot_description/urdf/robot.urdf`
+ *  resolvedUrl: `http://example.com/robot_description/meshes/torso.dae`
+ *
+ * @param url - URL of the URDF asset (mesh filepath, xacro include, ...)
+ * @param urdfUrl - URL of the URDF
+ * @returns Original `url` or resolved URL with the same schema as `baseUrl`
+ */
+function maybeResolvePackageUrl(url: string, urdfUrl: string | undefined): string {
+  const pkgUriProtocol = "package://";
+  if (
+    urdfUrl != undefined &&
+    !urdfUrl.startsWith(pkgUriProtocol) &&
+    url.startsWith(pkgUriProtocol)
+  ) {
+    const pkgPath = url.slice(pkgUriProtocol.length);
+    const pkgName = pkgPath.split("/")[0];
+    if (pkgName && urdfUrl.includes(pkgName)) {
+      return urdfUrl.slice(0, urdfUrl.lastIndexOf(pkgName)) + pkgPath;
+    }
+  }
+  return url;
+}
+
 function createMeshMarker(
   frameId: string,
   pose: Pose,
@@ -1157,7 +1194,7 @@ function createMeshMarker(
     points: [],
     colors: [],
     text: "",
-    mesh_resource: new URL(mesh.filename, baseUrl).toString(),
+    mesh_resource: maybeResolvePackageUrl(new URL(mesh.filename, baseUrl).toString(), baseUrl),
     mesh_use_embedded_materials: embeddedMaterialUsage === EmbeddedMaterialUsage.Use,
   };
 }
