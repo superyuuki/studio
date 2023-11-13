@@ -330,10 +330,13 @@ describe("updateDownsample", () => {
   it("resets if no data", () => {
     const before = {
       ...initDownsampled(),
-      isValid: true,
+      data: createData(createPath(FAKE_PATH), 5000),
     };
     const after = updateDownsample(FAKE_VIEWPORT, EmptyPlotData, EmptyPlotData, before);
-    expect(after).toEqual(initDownsampled());
+    expect(after).toEqual({
+      ...initDownsampled(),
+      isValid: true,
+    });
   });
 
   it("resets if too many points", () => {
