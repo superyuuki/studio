@@ -284,7 +284,20 @@ export function updateSource(
     return state;
   }
 
-  // it's game over, these do not yet have optimizations
+  // We cannot downsample incrementally in these two scenarios, so we have to
+  // fall back to doing it on every iteration.
+  // 1. If the path uses `@derivative`, we need to calculate the derivative at
+  // each point in the dataset. In order to avoid doing that from scratch every
+  // time, we need to store the result of that calculation, which this state
+  // machine currently cannot handle.
+  // 2. When a path uses header stamps, we must sort the data points by their
+  // header stamps before we can present them. This means that new points can
+  // appear out-of-order and must be merged correctly into an existing, sorted
+  // dataset that we hold on to, similar to what we would have to do for
+  // derivatives.
+  //
+  // Both present serious drawbacks for memory, since we would have to store an
+  // additional copy of the entire dataset with these transformations applied.
   if (isDerivative(path) || isHeaderStamp(path)) {
     const downsampled = downsampleDataset(applyTransforms(raw.data, path), maxPoints);
     if (downsampled == undefined) {
@@ -299,7 +312,9 @@ export function updateSource(
     };
   }
 
-  // same with this, but for different reasons
+  // The LTTB downsampling algorithm only works for series plots, not scatter
+  // plots. We must fall back to using our existing downsampleScatter
+  // algorithm.
   if (path.showLine === false) {
     const indices = downsampleScatter(iterateTyped(raw.data), view);
     const resolved = resolveTypedIndices(raw.data, indices);
