@@ -134,14 +134,14 @@ describe("useMessageReducer", () => {
   });
 
   it("calls addMessage for messages added later", async () => {
-    const message1: MessageEvent = {
+    const messageFoo: MessageEvent = {
       topic: "/foo",
       receiveTime: { sec: 0, nsec: 0 },
       message: { value: 2 },
       schemaName: "foo",
       sizeInBytes: 0,
     };
-    const message2: MessageEvent = {
+    const messageBar: MessageEvent = {
       topic: "/bar",
       receiveTime: { sec: 0, nsec: 0 },
       message: { value: 3 },
@@ -152,7 +152,7 @@ describe("useMessageReducer", () => {
     const restore = jest.fn().mockReturnValue(1);
     const addMessage = jest.fn().mockImplementation((_, msg) => msg.message.value);
 
-    let messages: (typeof message1)[] = [];
+    let messages: (typeof messageFoo)[] = [];
     const { result, rerender } = renderHook(
       ({ topics }) =>
         PanelAPI.useMessageReducer({
@@ -168,27 +168,27 @@ describe("useMessageReducer", () => {
       },
     );
 
-    messages = [message1];
+    messages = [messageFoo];
     rerender({ topics: ["/foo"] });
 
     expect(restore.mock.calls).toEqual([[undefined]]);
-    expect(addMessage.mock.calls).toEqual([[1, message1]]);
+    expect(addMessage.mock.calls).toEqual([[1, messageFoo]]);
     expect(result.current).toEqual(2);
 
     // Subscribe to a new topic, then receive a message on that topic
     rerender({ topics: ["/foo", "/bar"] });
 
     expect(restore.mock.calls).toEqual([[undefined]]);
-    expect(addMessage.mock.calls).toEqual([[1, message1]]);
+    expect(addMessage.mock.calls).toEqual([[1, messageFoo]]);
     expect(result.current).toEqual(2);
 
-    messages = [message2];
+    messages = [messageBar];
     rerender({ topics: ["/foo", "/bar"] });
 
     expect(restore.mock.calls).toEqual([[undefined]]);
     expect(addMessage.mock.calls).toEqual([
-      [1, message1],
-      [2, message2],
+      [1, messageFoo],
+      [2, messageBar],
     ]);
     expect(result.current).toEqual(3);
   });
