@@ -9,7 +9,10 @@ import {
   lookupIndices,
   getTypedLength,
 } from "@foxglove/studio-base/components/Chart/datasets";
-import { downsampleScatter } from "@foxglove/studio-base/components/TimeBasedChart/downsample";
+import {
+  downsampleScatter,
+  downsampleTimeseries,
+} from "@foxglove/studio-base/components/TimeBasedChart/downsample";
 import { downsampleLTTB } from "@foxglove/studio-base/components/TimeBasedChart/lttb";
 import { PlotViewport, Bounds1D } from "@foxglove/studio-base/components/TimeBasedChart/types";
 
@@ -356,7 +359,22 @@ export function updateSource(
   if (previous == undefined || chunkSize === 0) {
     const proportion = newRange / viewportRange;
     if (proportion < minSize) {
-      return state;
+      // Before we can infer a reasonable bucket size, we still want to show
+      // data, so we fall back to the previous algorithm
+      const indices = downsampleTimeseries(iterateTyped(raw.data), view);
+      const resolved = resolveTypedIndices(raw.data, indices);
+      if (resolved == undefined) {
+        return state;
+      }
+
+      return {
+        ...state,
+        dataset: {
+          ...raw,
+          pointRadius: 0,
+          data: resolved,
+        },
+      };
     }
 
     const bestGuessBuckets = Math.min(
