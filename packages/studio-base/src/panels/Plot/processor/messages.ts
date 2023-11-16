@@ -67,14 +67,9 @@ export function addBlock(block: Messages, resetTopics: string[], state: State): 
 
   return mapClients((client, { blocks: newBlocks }): [Client, SideEffects] => {
     const { id, params } = client;
-    const relevantTopics = R.intersection(topics, client.topics);
+    const relevantTopics = R.intersection(blockTopics, client.topics);
     const shouldReset = R.intersection(relevantTopics, resetTopics).length > 0;
-    if (
-      view == undefined ||
-      params == undefined ||
-      isSingleMessage(params) ||
-      relevantTopics.length === 0
-    ) {
+    if (params == undefined || isSingleMessage(params) || relevantTopics.length === 0) {
       return [client, []];
     }
 
