@@ -132,8 +132,8 @@ describe("updateSource", () => {
       },
       initial,
     );
-    expect(first).toEqual(initial);
-    expect(first.dataset).toEqual(undefined);
+    expect(first.cursor).toEqual(0);
+    expect(first.dataset).not.toEqual(undefined);
 
     const second = updateSource(
       createPath(FAKE_PATH),
@@ -144,7 +144,7 @@ describe("updateSource", () => {
         maxPoints: MAX_POINTS,
         minSize: MIN_SIZE,
       },
-      initial,
+      first,
     );
     expect(second.cursor).toEqual(50);
     expect(second.numBuckets).not.toEqual(0);
@@ -244,6 +244,22 @@ describe("updatePath", () => {
       before,
     );
     expect(after.isPartial).toEqual(true);
+  });
+
+  it("returns a non-partial view when viewport is zero", () => {
+    const before = initPath();
+    const after = updatePath(
+      createPath(FAKE_PATH),
+      {
+        blockData: createDataset(100),
+        currentData: undefined,
+        view: createViewport(800, 600, 0, 0),
+        viewBounds: createBounds(0, 0),
+        maxPoints: MAX_POINTS,
+      },
+      before,
+    );
+    expect(after.isPartial).toEqual(false);
   });
 
   it("goes back to non-partial when viewport expands", () => {

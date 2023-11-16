@@ -547,7 +547,8 @@ export function updatePath(path: PlotPath, params: PathParameters, state: PathSt
     // When the user's viewport ends before the end of the dataset, we only
     // show the data that is immediately visible and do not need to
     // incrementally downsample.
-    if (viewBounds.max < combinedBounds.max) {
+    const { min, max } = viewBounds;
+    if (max !== min && max < combinedBounds.max) {
       return updatePartialView(path, params, state);
     }
 
