@@ -112,7 +112,11 @@ function rebuild(id: string) {
   }
 
   const downsampled = mapDatasets((dataset) => {
-    const indices = downsample(dataset, iterateTyped(dataset.data), view);
+    const { downsampled: indices, didDownsample } = downsample(
+      dataset,
+      iterateTyped(dataset.data),
+      view,
+    );
     const resolved = resolveTypedIndices(dataset.data, indices);
     if (resolved == undefined) {
       return dataset;
@@ -120,6 +124,7 @@ function rebuild(id: string) {
 
     return {
       ...dataset,
+      pointRadius: didDownsample ? 0 : dataset.pointRadius,
       data: resolved,
     };
   }, newData.datasets);

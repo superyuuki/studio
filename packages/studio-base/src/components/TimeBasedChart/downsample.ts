@@ -32,7 +32,10 @@ type Dataset<T> = ChartDataset<"scatter", T>;
  * dataset, and the interval connects to the next interval with the same slope line as the original
  * data. The min/max entries preserve spikes within the data.
  */
-export function downsampleTimeseries(points: Iterable<Point>, view: PlotViewport): number[] {
+export function downsampleTimeseries(
+  points: Iterable<Point>,
+  view: PlotViewport,
+): { downsampled: number[]; didDownsample: boolean } {
   const { bounds, width, height } = view;
 
   const pixelPerXValue = width / (bounds.x.max - bounds.x.min);
@@ -55,6 +58,8 @@ export function downsampleTimeseries(points: Iterable<Point>, view: PlotViewport
   const maxX = bounds.x.max + xRange * 0.5;
 
   let firstPastBounds: number | undefined = undefined;
+
+  let didDownsample = false;
 
   for (const datum of points) {
     const { index, label } = datum;
@@ -109,6 +114,9 @@ export function downsampleTimeseries(points: Iterable<Point>, view: PlotViewport
       continue;
     }
 
+    // if we get here, we skipped the data point which means we downsampled
+    didDownsample = true;
+
     intLast ??= { xPixel: x, yPixel: y, index, label };
     intLast.xPixel = x;
     intLast.yPixel = y;
@@ -147,10 +155,13 @@ export function downsampleTimeseries(points: Iterable<Point>, view: PlotViewport
     downsampled.push(firstPastBounds);
   }
 
-  return downsampled;
+  return { downsampled, didDownsample };
 }
 
-export function downsampleScatter(points: Iterable<Point>, view: PlotViewport): number[] {
+export function downsampleScatter(
+  points: Iterable<Point>,
+  view: PlotViewport,
+): { downsampled: number[]; didDownsample: boolean } {
   const { bounds, width, height } = view;
 
   const pixelPerXValue = width / (bounds.x.max - bounds.x.min);
@@ -182,7 +193,8 @@ export function downsampleScatter(points: Iterable<Point>, view: PlotViewport): 
     downsampled.push(datum.index);
   }
 
-  return downsampled;
+  // fixme - don't hard-code
+  return { downsampled, didDownsample: false };
 }
 
 /**
@@ -193,7 +205,7 @@ export function downsample<T>(
   dataset: Dataset<T>,
   points: Iterable<Point>,
   view: PlotViewport,
-): number[] {
+): { downsampled: number[]; didDownsample: boolean } {
   return dataset.showLine !== true
     ? downsampleScatter(points, view)
     : downsampleTimeseries(points, view);
