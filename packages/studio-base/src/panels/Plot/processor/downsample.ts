@@ -6,7 +6,7 @@ import * as R from "ramda";
 
 import {
   iterateTyped,
-  lookupIndices,
+  fastFindIndices,
   getTypedLength,
 } from "@foxglove/studio-base/components/Chart/datasets";
 import {
@@ -176,7 +176,7 @@ const getScale = ({ width, height, bounds: { x, y } }: PlotViewport): { x: numbe
 const isPartialState = (state: PathState) => state.isPartial;
 
 const findPointBinary = (
-  lookup: ReturnType<typeof lookupIndices>,
+  lookup: ReturnType<typeof fastFindIndices>,
   data: TypedData[],
   start: number,
   end: number,
@@ -210,7 +210,7 @@ const findPointBinary = (
  * Get the portion of TypedData[] that falls within `bounds`.
  */
 const sliceBounds = (data: TypedData[], bounds: Bounds1D): TypedData[] => {
-  const lookup = lookupIndices(data);
+  const lookup = fastFindIndices(data);
   const length = getTypedLength(data);
   const start = findPointBinary(lookup, data, 0, length, bounds.min);
   const end = findPointBinary(lookup, data, 0, length, bounds.max);

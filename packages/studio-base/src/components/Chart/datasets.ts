@@ -136,10 +136,10 @@ export function findIndices(dataset: TypedData[], index: number): Indices | unde
 }
 
 /**
- * lookupIndices returns a faster version of findIndices in exchange for doing
- * some compute ahead of time.
+ * fastFindIndices returns a faster version of findIndices in exchange for
+ * doing some compute ahead of time.
  */
-export const lookupIndices = (dataset: TypedData[]): ((index: number) => Indices | undefined) => {
+export const fastFindIndices = (dataset: TypedData[]): ((index: number) => Indices | undefined) => {
   // Calculate the first index of each slice in `dataset`.
   // For example, with two slices of 10 points each, this produces:
   // [0, 10]

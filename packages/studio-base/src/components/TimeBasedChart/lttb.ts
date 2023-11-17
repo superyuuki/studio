@@ -14,6 +14,13 @@ import type { TypedData } from "@foxglove/studio-base/components/Chart/types";
  * More information and other implementations: https://github.com/sveinn-steinarsson/flot-downsample
  * The thesis: http://hdl.handle.net/1946/15343
  * Some insight derived from this native JavaScript implementation (license MIT): https://github.com/joshcarr/largest-triangle-three-buckets.js/blob/master/lib/largest-triangle-three-buckets.js
+ *
+ * Parameters:
+ * * data: the raw dataset to downsample
+ * * numPoints: the total number of points in `data`
+ * * numBuckets: the number of desired output points
+ * * startBucket: (optional) the bucket at which to start downsampling (to
+ *   allow you to skip some work)
  */
 export function downsampleLTTB(
   data: TypedData[],
@@ -67,7 +74,7 @@ export function downsampleLTTB(
 
   let prevX: number = 0;
   let prevY: number = 0;
-  let points: number[] = [0];
+  let indices: number[] = [0];
   let maxIndex: number = -1;
   let maxArea: number = 0;
 
@@ -84,7 +91,7 @@ export function downsampleLTTB(
   let avgY: number = 0;
 
   if (startBucket != undefined) {
-    points = [];
+    indices = [];
   }
 
   for (const bucketIndex of R.range(startBucket ?? 0, numBuckets - 2)) {
@@ -123,7 +130,7 @@ export function downsampleLTTB(
       }
       x = xBuffer[sliceOffset]!;
       y = yBuffer[sliceOffset]!;
-      const area = Math.abs((prevX - avgX) * (y - prevY) - (prevX - x) * (avgY - prevY)) * 0.5;
+      const area = Math.abs((prevX - avgX) * (y - prevY) - (prevX - x) * (avgY - prevY));
       if (area < maxArea) {
         continue;
       }
@@ -138,9 +145,9 @@ export function downsampleLTTB(
       return undefined;
     }
 
-    points.push(maxIndex);
+    indices.push(maxIndex);
   }
 
-  points.push(numPoints - 1);
-  return points;
+  indices.push(numPoints - 1);
+  return indices;
 }
