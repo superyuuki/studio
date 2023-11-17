@@ -29,16 +29,27 @@ import { EmptyPlotData, PlotData, sortDataByHeaderStamp } from "../plotData";
 
 type PathMap<T> = Map<PlotPath, T>;
 
+// SourceState represents the downsample state of a signal from a signal
+// source--current or blocks.
 type SourceState = {
+  // The number of data points we have downsampled
   cursor: number;
+  // The minimum number of points we need in order to downsample
   chunkSize: number;
+  // The number of buckets (points) this source has used so far
   numBuckets: number;
+  // The downsampled dataset for this source
   dataset: TypedDataSet | undefined;
 };
+
+// PathState represents the downsample state for a single signal, including the
+// merged state of both sources.
 type PathState = {
   blocks: SourceState;
   current: SourceState;
   dataset: TypedDataSet | undefined;
+  // Whether the viewport contains only a portion of the dataset, which is
+  // downsampled independently
   isPartial: boolean;
 };
 
@@ -57,6 +68,7 @@ export const initPath = (): PathState => ({
 });
 
 export type Downsampled = {
+  // Indicates that this dataset can be sent to the rendering thread
   isValid: boolean;
   // the viewport when we started accumulating downsampled data
   view: PlotViewport | undefined;
@@ -132,8 +144,8 @@ const combineBounds = (bounds: Bounds1D[]): Bounds1D | undefined => {
     return undefined;
   }
 
-  let min = Number.MAX_SAFE_INTEGER;
-  let max = Number.MIN_SAFE_INTEGER;
+  let min = +Infinity;
+  let max = -Infinity;
   for (const bound of bounds) {
     const { min: dataMin, max: dataMax } = bound;
     min = Math.min(dataMin, min);
