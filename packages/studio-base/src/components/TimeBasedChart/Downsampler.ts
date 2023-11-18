@@ -73,12 +73,18 @@ export class Downsampler {
       bounds: dataBounds,
     };
 
+    const numSeries = this.#datasets.length;
     return this.#datasets.map((dataset) => {
       if (!bounds) {
         return dataset;
       }
 
-      const downsampled = downsample(dataset, iterateObjects(dataset.data), view);
+      const { downsampled, didDownsample } = downsample(
+        dataset,
+        iterateObjects(dataset.data),
+        view,
+        numSeries,
+      );
       const resolved = downsampled.map((i) => dataset.data[i]);
 
       // NaN item values create gaps in the line
@@ -89,7 +95,11 @@ export class Downsampler {
         return item;
       });
 
-      return { ...dataset, data: undefinedToNanData };
+      return {
+        ...dataset,
+        pointRadius: didDownsample ? 0 : dataset.pointRadius,
+        data: undefinedToNanData,
+      };
     });
   }
 }

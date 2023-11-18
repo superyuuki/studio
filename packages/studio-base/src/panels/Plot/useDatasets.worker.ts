@@ -111,16 +111,26 @@ function rebuild(id: string) {
     return;
   }
 
+  const numSeries = newData.datasets.size;
+  //let totalInPoints = 0;
+  //let totalOutPoints = 0;
   const downsampled = mapDatasets((dataset) => {
     const { downsampled: indices, didDownsample } = downsample(
       dataset,
       iterateTyped(dataset.data),
       view,
+      numSeries,
     );
     const resolved = resolveTypedIndices(dataset.data, indices);
     if (resolved == undefined) {
       return dataset;
     }
+
+    //const origPoints = getTypedLength(dataset.data);
+    //const downsampledPoints = getTypedLength(resolved);
+    //console.log(dataset.label, origPoints, downsampledPoints);
+    //totalInPoints += origPoints;
+    //totalOutPoints += downsampledPoints;
 
     return {
       ...dataset,
@@ -128,6 +138,8 @@ function rebuild(id: string) {
       data: resolved,
     };
   }, newData.datasets);
+
+  //console.log({ totalInPoints, totalOutPoints });
 
   sendPlotData(clientCallbacks, {
     ...newData,

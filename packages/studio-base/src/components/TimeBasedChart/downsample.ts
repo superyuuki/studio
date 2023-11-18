@@ -35,11 +35,27 @@ type Dataset<T> = ChartDataset<"scatter", T>;
 export function downsampleTimeseries(
   points: Iterable<Point>,
   view: PlotViewport,
+  numSeries: number,
 ): { downsampled: number[]; didDownsample: boolean } {
   const { bounds, width, height } = view;
 
-  const pixelPerXValue = width / (bounds.x.max - bounds.x.min);
-  const pixelPerYValue = height / (bounds.y.max - bounds.y.min);
+  // fixme - why?
+  // the y-value bounds are _wrong_
+  // the min is 0 and max is 1 but that is not what is in the data
+  //console.log({ bounds, width, height });
+
+  // We do not want to allow the total number of points on our chart to exceed 5000 (picked
+  // empirically) This means we need to pretend like the chart is smaller (has fewer intervals) when
+  // there are more series.
+  //
+  // We do this by capping the allowed pixel width of the chart to 5k/numSeries which gives every
+  // series an equal number of maximum data points
+  const cappedWidth = Math.min(width, 5000 / numSeries);
+
+  // Having points at each pixel is visual overkill so we further divide by 3 to end up
+  // with data not more than every 3 pixels.
+  const pixelPerXValue = cappedWidth / (bounds.x.max - bounds.x.min) / 3;
+  const pixelPerYValue = height / (bounds.y.max - bounds.y.min) / 3;
 
   const downsampled: number[] = [];
 
@@ -193,7 +209,8 @@ export function downsampleScatter(
     downsampled.push(datum.index);
   }
 
-  // fixme - don't hard-code
+  // Technically a lie because this may have downsampled but we say it did not
+  // so the points are still rendered
   return { downsampled, didDownsample: false };
 }
 
@@ -205,8 +222,9 @@ export function downsample<T>(
   dataset: Dataset<T>,
   points: Iterable<Point>,
   view: PlotViewport,
+  numSeries: number,
 ): { downsampled: number[]; didDownsample: boolean } {
   return dataset.showLine !== true
     ? downsampleScatter(points, view)
-    : downsampleTimeseries(points, view);
+    : downsampleTimeseries(points, view, numSeries);
 }
