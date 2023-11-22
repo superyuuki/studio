@@ -5,7 +5,7 @@
 import { iterateObjects } from "@foxglove/studio-base/components/Chart/datasets";
 import { RpcScales } from "@foxglove/studio-base/components/Chart/types";
 
-import { downsample } from "./downsample";
+import { downsample, MAX_POINTS } from "./downsample";
 import { ChartDatasets, PlotViewport } from "./types";
 
 type UpdateParams = {
@@ -73,12 +73,13 @@ export class Downsampler {
       bounds: dataBounds,
     };
 
+    const numPoints = MAX_POINTS / Math.max(this.#datasets.length, 1);
     return this.#datasets.map((dataset) => {
       if (!bounds) {
         return dataset;
       }
 
-      const downsampled = downsample(dataset, iterateObjects(dataset.data), view);
+      const downsampled = downsample(dataset, iterateObjects(dataset.data), view, numPoints);
       const resolved = downsampled.map((i) => dataset.data[i]);
 
       // NaN item values create gaps in the line

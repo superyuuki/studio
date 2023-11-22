@@ -12,8 +12,8 @@ import {
 import {
   downsampleScatter,
   downsampleTimeseries,
+  MAX_POINTS as DESIRED_POINTS,
 } from "@foxglove/studio-base/components/TimeBasedChart/downsample";
-import { downsampleLTTB } from "@foxglove/studio-base/components/TimeBasedChart/lttb";
 import { PlotViewport, Bounds1D } from "@foxglove/studio-base/components/TimeBasedChart/types";
 
 import {
@@ -85,14 +85,9 @@ export const initDownsampled = (): Downsampled => {
   };
 };
 
-// This is the desired number of data points for each plot across all signals
-// and data sources. Beyond this threshold, ChartJS can no longer render at
-// 60FPS.
-//
 // Since the total number of buckets is an estimate and can be wrong, we may
 // actually end up with more points than this, but we reset when the number of
 // points in a plot exceeds MAX_POINTS.
-const DESIRED_POINTS = 3_000;
 const MAX_POINTS = DESIRED_POINTS * 1.2;
 
 // This factor is used for two related things:
@@ -105,13 +100,10 @@ const ZOOM_RESET_FACTOR = 0.2;
 
 const downsampleDataset = (
   data: TypedData[],
-  numPoints: number,
-  startBucket?: number,
+  view: PlotViewport,
+  numPoints?: number,
 ): TypedData[] | undefined => {
-  const indices = downsampleLTTB(data, getTypedLength(data), numPoints, startBucket);
-  if (indices == undefined) {
-    return undefined;
-  }
+  const indices = downsampleTimeseries(iterateTyped(data), view, numPoints);
   const resolved = resolveTypedIndices(data, indices);
   if (resolved == undefined) {
     return undefined;
@@ -321,7 +313,7 @@ export function updateSource(
   // Both present serious drawbacks for memory, since we would have to store an
   // additional copy of the entire dataset with these transformations applied.
   if (isDerivative(path) || isHeaderStamp(path)) {
-    const downsampled = downsampleDataset(applyTransforms(raw.data, path), maxPoints);
+    const downsampled = downsampleDataset(applyTransforms(raw.data, path), view, maxPoints);
     if (downsampled == undefined) {
       return state;
     }
@@ -334,9 +326,7 @@ export function updateSource(
     };
   }
 
-  // The LTTB downsampling algorithm only works for series plots, not scatter
-  // plots. We must fall back to using our existing downsampleScatter
-  // algorithm.
+  // The downsampling algorithm only works for series plots, not scatter plots.
   if (path.showLine === false) {
     const indices = downsampleScatter(iterateTyped(raw.data), view);
     const resolved = resolveTypedIndices(raw.data, indices);
@@ -371,11 +361,10 @@ export function updateSource(
   if (previous == undefined || chunkSize === 0) {
     const proportion = newRange / viewportRange;
     if (proportion < minSize) {
-      // Before we can infer a reasonable bucket size, we still want to show
+      // Before we can infer a reasonable chunk size, we still want to show
       // data, so we fall back to the previous algorithm
-      const indices = downsampleTimeseries(iterateTyped(raw.data), view);
-      const resolved = resolveTypedIndices(raw.data, indices);
-      if (resolved == undefined) {
+      const downsampled = downsampleDataset(newData, view, maxPoints);
+      if (downsampled == undefined) {
         return state;
       }
 
@@ -384,16 +373,12 @@ export function updateSource(
         dataset: {
           ...raw,
           pointRadius: 0,
-          data: resolved,
+          data: downsampled,
         },
       };
     }
 
-    const bestGuessBuckets = Math.min(
-      Math.floor((newRange / viewportRange) * maxPoints),
-      maxPoints,
-    );
-    const downsampled = downsampleDataset(newData, bestGuessBuckets);
+    const downsampled = downsampleDataset(newData, view, maxPoints);
     if (downsampled == undefined) {
       return state;
     }
@@ -402,7 +387,7 @@ export function updateSource(
       ...state,
       cursor: newCursor,
       chunkSize: newCursor,
-      numBuckets: bestGuessBuckets,
+      numBuckets: maxPoints,
       dataset: {
         ...raw,
         pointRadius: 0,
@@ -428,7 +413,7 @@ export function updateSource(
   if (numNewPoints >= chunkSize) {
     // the `chunkSize` is also the upper bound for the number of points we
     // process in one go (again to maintain similar visual density)
-    const downsampled = downsampleDataset(sliceTyped(newData, 0, chunkSize), numBuckets);
+    const downsampled = downsampleDataset(sliceTyped(newData, 0, chunkSize), view, numBuckets);
     if (downsampled == undefined) {
       return state;
     }
@@ -441,14 +426,8 @@ export function updateSource(
     });
   }
 
-  const numOldPoints = chunkSize - numNewPoints;
   const rawStart = newCursor - chunkSize;
-  const pointsPerBucket = Math.trunc(chunkSize / numBuckets);
-  const lastRawBucket = Math.max(
-    (numOldPoints - (numOldPoints % pointsPerBucket)) / pointsPerBucket - 2,
-    0,
-  );
-  const downsampled = downsampleDataset(sliceTyped(raw.data, rawStart), numBuckets, lastRawBucket);
+  const downsampled = downsampleDataset(sliceTyped(raw.data, rawStart), view, numBuckets);
   const lastPoint = getLastPoint(previous.data);
   if (downsampled == undefined || lastPoint == undefined) {
     return state;
@@ -515,7 +494,7 @@ type PathParameters = {
  * and downsample what's left.
  */
 function updatePartialView(path: PlotPath, params: PathParameters, state: PathState): PathState {
-  const { blockData, currentData, viewBounds, maxPoints } = params;
+  const { blockData, currentData, viewBounds, view, maxPoints } = params;
   const data = sliceBounds(mergeTyped(blockData?.data ?? [], currentData?.data ?? []), viewBounds);
   const numSliced = getTypedLength(data);
   if (numSliced <= maxPoints) {
@@ -530,7 +509,7 @@ function updatePartialView(path: PlotPath, params: PathParameters, state: PathSt
     };
   }
 
-  const downsampled = downsampleDataset(applyTransforms(data, path), maxPoints);
+  const downsampled = downsampleDataset(applyTransforms(data, path), view, maxPoints);
   if (downsampled == undefined) {
     return state;
   }
