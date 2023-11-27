@@ -43,12 +43,25 @@ export function useRendererEvent<K extends keyof RendererEvents>(
     return () => void renderer?.removeListener(eventName, listener);
   }, [listener, eventName, renderer]);
 }
+
+/**
+ * Returns a property from the Renderer instance. Updates when the event is called
+ *
+ * @param key - Property key to subscribe to
+ * @param event - Event name that should trigger a re-render to read the property again
+ * @param fallback - Fallback value to use if the property is not available or undefined
+ * @param rendererInstance - Optional Renderer instance to subscribe to instead of the reference returned by useRenderer()
+ * @returns
+ */
 export function useRendererProperty<K extends keyof IRenderer>(
-  renderer: IRenderer | undefined,
   key: K,
   event: keyof RendererEvents,
   fallback: () => IRenderer[K],
+  rendererInstance?: IRenderer | undefined,
 ): IRenderer[K] {
+  const usedRenderer = useRenderer();
+  const renderer = rendererInstance ?? usedRenderer;
+
   const [value, setValue] = useState<IRenderer[K]>(() => renderer?.[key] ?? fallback());
   useEffect(() => {
     if (!renderer) {

@@ -207,16 +207,16 @@ export function ThreeDeeRender(props: {
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
 
   const schemaSubscriptions = useRendererProperty(
-    renderer,
     "schemaSubscriptions",
     "schemaSubscriptionsChanged",
     () => new Map(),
+    renderer,
   );
   const topicSubscriptions = useRendererProperty(
-    renderer,
     "topicSubscriptions",
     "topicSubscriptionsChanged",
     () => new Map(),
+    renderer,
   );
 
   // Config cameraState

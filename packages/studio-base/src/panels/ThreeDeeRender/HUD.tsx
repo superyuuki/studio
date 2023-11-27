@@ -29,10 +29,10 @@ type HUDProps = {
 export function HUD(props: HUDProps): React.ReactElement {
   const { classes } = useStyles();
   const hudItems: HUDItem[] = useRendererProperty(
-    props.renderer,
     "hudItems",
     "hudItemsChanged",
     () => [],
+    props.renderer,
   );
   return (
     <div className={classes.hud}>
