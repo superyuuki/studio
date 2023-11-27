@@ -27,6 +27,7 @@ import PublishGoalIcon from "@foxglove/studio-base/components/PublishGoalIcon";
 import PublishPointIcon from "@foxglove/studio-base/components/PublishPointIcon";
 import PublishPoseEstimateIcon from "@foxglove/studio-base/components/PublishPoseEstimateIcon";
 import { usePanelMousePresence } from "@foxglove/studio-base/hooks/usePanelMousePresence";
+import { HUD } from "@foxglove/studio-base/panels/ThreeDeeRender/HUD";
 
 import { InteractionContextMenu, Interactions, SelectionObject, TabType } from "./Interactions";
 import type { PickedRenderable } from "./Picker";
@@ -369,6 +370,7 @@ export function RendererOverlay(props: Props): JSX.Element {
           }}
         />
       )}
+      <HUD renderer={renderer} />
       {stats}
       {resetViewButton}
     </>

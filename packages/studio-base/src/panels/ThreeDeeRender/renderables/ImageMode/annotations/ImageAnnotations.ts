@@ -8,8 +8,13 @@ import * as THREE from "three";
 import { PinholeCameraModel } from "@foxglove/den/image";
 import { ImageAnnotations as FoxgloveImageAnnotations } from "@foxglove/schemas";
 import { Immutable, MessageEvent, SettingsTreeAction, Topic } from "@foxglove/studio";
+import { HUDItemManager } from "@foxglove/studio-base/panels/ThreeDeeRender/HUDManager";
 import { Path } from "@foxglove/studio-base/panels/ThreeDeeRender/LayerErrors";
 import { onlyLastByTopicMessage } from "@foxglove/studio-base/panels/ThreeDeeRender/SceneExtension";
+import {
+  IMAGE_MODE_HUD_KEYS,
+  IMAGE_MODE_HUD_ITEMS,
+} from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/ImageMode/ImageMode";
 import {
   ImageMarker as RosImageMarker,
   ImageMarkerArray as RosImageMarkerArray,
@@ -35,6 +40,7 @@ interface ImageAnnotationsContext {
   initialCanvasWidth: number;
   initialCanvasHeight: number;
   initialPixelRatio: number;
+  hud: HUDItemManager;
   topics(): readonly Topic[];
   config(): Immutable<ImageModeConfig>;
   updateConfig(updateHandler: (draft: ImageModeConfig) => void): void;
@@ -159,6 +165,7 @@ export class ImageAnnotations extends THREE.Object3D {
           ["imageAnnotations", originalMessage.topic],
           MISSING_SYNCHRONIZED_ANNOTATION,
         );
+        this.#context.hud.removeHUDItem(IMAGE_MODE_HUD_KEYS.WAITING_FOR_SYNC);
       }
     }
     for (const topic of newState.presentAnnotationTopics ?? []) {
@@ -167,6 +174,7 @@ export class ImageAnnotations extends THREE.Object3D {
         ["imageAnnotations", topic],
         MISSING_SYNCHRONIZED_ANNOTATION,
       );
+      this.#context.hud.removeHUDItem(IMAGE_MODE_HUD_KEYS.WAITING_FOR_SYNC);
     }
     for (const topic of newState.missingAnnotationTopics ?? []) {
       this.#context.addSettingsError(
@@ -174,6 +182,7 @@ export class ImageAnnotations extends THREE.Object3D {
         MISSING_SYNCHRONIZED_ANNOTATION,
         "Waiting for annotation message with timestamp matching image. Turn off “Sync annotations” to display annotations regardless of timestamp.",
       );
+      this.#context.hud.addHUDItem(IMAGE_MODE_HUD_ITEMS[IMAGE_MODE_HUD_KEYS.WAITING_FOR_SYNC]);
     }
   };
 

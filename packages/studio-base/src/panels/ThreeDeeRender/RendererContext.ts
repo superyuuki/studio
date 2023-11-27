@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import EventEmitter from "eventemitter3";
-import { createContext, useContext, useEffect } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 import type { IRenderer, RendererEvents } from "./IRenderer";
 
@@ -42,4 +42,27 @@ export function useRendererEvent<K extends keyof RendererEvents>(
     renderer?.addListener(eventName, listener);
     return () => void renderer?.removeListener(eventName, listener);
   }, [listener, eventName, renderer]);
+}
+export function useRendererProperty<K extends keyof IRenderer>(
+  renderer: IRenderer | undefined,
+  key: K,
+  event: keyof RendererEvents,
+  fallback: () => IRenderer[K],
+): IRenderer[K] {
+  const [value, setValue] = useState<IRenderer[K]>(() => renderer?.[key] ?? fallback());
+  useEffect(() => {
+    if (!renderer) {
+      return;
+    }
+    const onChange = () => {
+      setValue(() => renderer[key]);
+    };
+    onChange();
+
+    renderer.addListener(event, onChange);
+    return () => {
+      renderer.removeListener(event, onChange);
+    };
+  }, [renderer, event, key]);
+  return value;
 }

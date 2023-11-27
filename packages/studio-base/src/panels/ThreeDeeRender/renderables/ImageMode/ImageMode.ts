@@ -168,6 +168,7 @@ export class ImageMode
           updateHandler(draft.imageMode);
         });
       },
+      hud: this.hud,
       updateSettingsTree: () => {
         this.updateSettingsTree();
       },
@@ -308,7 +309,9 @@ export class ImageMode
         this.imageRenderable?.dispose();
         this.imageRenderable?.removeFromParent();
         this.imageRenderable = undefined;
+        this.hud.addHUDItem(IMAGE_MODE_HUD_ITEMS[IMAGE_MODE_HUD_KEYS.WAITING_FOR_IMAGES]);
         this.#clearCameraModel();
+        this.renderer.queueAnimationFrame();
       }, REMOVE_IMAGE_TIMEOUT_MS);
     }
     this.#annotations.removeAllRenderables();
@@ -330,8 +333,10 @@ export class ImageMode
       topicIsConvertibleToSchema(topic, this.supportedImageSchemas),
     );
     if (imageTopic == undefined) {
+      this.hud.addHUDItem(IMAGE_MODE_HUD_ITEMS[IMAGE_MODE_HUD_KEYS.NO_IMAGE_TOPICS]);
       return;
     }
+    this.hud.removeHUDItem(IMAGE_MODE_HUD_KEYS.NO_IMAGE_TOPICS);
 
     this.setImageTopic(imageTopic);
   };
@@ -353,6 +358,7 @@ export class ImageMode
     if (matchingCalibrationTopic) {
       this.renderer.disableImageOnlySubscriptionMode();
     }
+    this.hud.addHUDItem(IMAGE_MODE_HUD_ITEMS[IMAGE_MODE_HUD_KEYS.WAITING_FOR_IMAGES]);
   }
 
   /** Choose a calibration topic that best matches the given `imageTopic`. */
@@ -550,6 +556,7 @@ export class ImageMode
         maxValue: config.maxValue,
       });
       if (config.synchronize !== prevImageModeConfig.synchronize) {
+        this.hud.removeGroup(ImageMode.extensionId);
         this.removeAllRenderables();
       }
       this.messageHandler.setConfig(config);
@@ -624,6 +631,7 @@ export class ImageMode
     const topic = messageEvent.topic;
     const receiveTime = toNanoSec(messageEvent.receiveTime);
     const frameId = "header" in image ? image.header.frame_id : image.frame_id;
+    this.hud.removeHUDItem(IMAGE_MODE_HUD_KEYS.WAITING_FOR_IMAGES);
 
     if (this.#removeImageTimeout != undefined) {
       clearTimeout(this.#removeImageTimeout);
@@ -980,3 +988,27 @@ const createFallbackCameraInfoForImage = (options: {
   });
   return cameraInfo;
 };
+
+export const IMAGE_MODE_HUD_KEYS = {
+  WAITING_FOR_IMAGES: "WAITING_FOR_IMAGES",
+  NO_IMAGE_TOPICS: "NO_IMAGE_TOPICS",
+  WAITING_FOR_SYNC: "WAITING_FOR_SYNC",
+} as const;
+
+export const IMAGE_MODE_HUD_ITEMS = {
+  [IMAGE_MODE_HUD_KEYS.WAITING_FOR_IMAGES]: {
+    id: IMAGE_MODE_HUD_KEYS.WAITING_FOR_IMAGES,
+    group: ImageMode.extensionId,
+    message: "Waiting for image messages...",
+  },
+  [IMAGE_MODE_HUD_KEYS.NO_IMAGE_TOPICS]: {
+    id: IMAGE_MODE_HUD_KEYS.NO_IMAGE_TOPICS,
+    group: ImageMode.extensionId,
+    message: "No image topics available.",
+  },
+  [IMAGE_MODE_HUD_KEYS.WAITING_FOR_SYNC]: {
+    id: IMAGE_MODE_HUD_KEYS.WAITING_FOR_SYNC,
+    group: ImageMode.extensionId,
+    message: "Awaiting synced annotations...",
+  },
+} as const;
