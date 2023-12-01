@@ -413,6 +413,7 @@ export class ImageMode
     // add unselected camera calibration option
     calibrationTopics.unshift({ label: "None", value: undefined });
 
+    let bothTopicsDoNotExist = true;
     if (imageTopic && !imageTopics.some((topic) => topic.value === imageTopic)) {
       this.renderer.settings.errors.add(
         IMAGE_TOPIC_PATH,
@@ -420,6 +421,7 @@ export class ImageMode
         `${imageTopic} is not available`,
       );
     } else {
+      bothTopicsDoNotExist = false;
       this.renderer.settings.errors.remove(IMAGE_TOPIC_PATH, IMAGE_TOPIC_UNAVAILABLE);
     }
 
@@ -430,7 +432,20 @@ export class ImageMode
         `${calibrationTopic} is not available`,
       );
     } else {
+      bothTopicsDoNotExist = false;
       this.renderer.settings.errors.remove(CALIBRATION_TOPIC_PATH, CALIBRATION_TOPIC_UNAVAILABLE);
+    }
+
+    if (bothTopicsDoNotExist) {
+      this.hud.addHUDItem({
+        // TODO: add to keys
+        id: "BOTH_TOPICS_DO_NOT_EXIST",
+        displayType: "empty",
+        group: "IMAGE_MODE",
+        message: "Image and calibration topics do not exist.",
+      });
+    } else {
+      this.hud.removeHUDItem("BOTH_TOPICS_DO_NOT_EXIST");
     }
 
     const imageTopicError = this.renderer.settings.errors.errors.errorAtPath(IMAGE_TOPIC_PATH);

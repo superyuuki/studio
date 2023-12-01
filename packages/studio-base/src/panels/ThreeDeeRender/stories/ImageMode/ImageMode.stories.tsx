@@ -1101,3 +1101,56 @@ export const RationalPolynomialDistortion: StoryObj = {
     });
   },
 };
+
+const ImageModeEmptyLayout = ({ type }: { type: "no-topics" | "no-messages" }): JSX.Element => {
+  let fixture: Fixture | undefined;
+  switch (type) {
+    case "no-topics":
+      fixture = {
+        topics: [],
+        frame: {},
+        capabilities: [],
+        activeData: {
+          currentTime: { sec: 0, nsec: 0 },
+        },
+      };
+      break;
+    case "no-messages":
+      fixture = {
+        topics: [
+          { name: "calibration", schemaName: "foxglove.CameraCalibration" },
+          { name: "camera", schemaName: "foxglove.RawImage" },
+        ],
+        frame: {},
+        capabilities: [],
+        activeData: {
+          currentTime: { sec: 0, nsec: 0 },
+        },
+      };
+      break;
+  }
+  return (
+    <PanelSetup fixture={fixture} includeSettings={true}>
+      <ImagePanel
+        overrideConfig={{
+          ...ImagePanel.defaultConfig,
+          imageMode: {
+            calibrationTopic: "calibration",
+            imageTopic: "camera",
+          },
+        }}
+      />
+    </PanelSetup>
+  );
+};
+
+export const ImageModeEmptyNoTopics: StoryObj<React.ComponentProps<typeof ImageModeEmptyLayout>> = {
+  render: ImageModeEmptyLayout,
+  args: { type: "no-topics" },
+};
+
+export const ImageModeEmptyNoMessages: StoryObj<React.ComponentProps<typeof ImageModeEmptyLayout>> =
+  {
+    render: ImageModeEmptyLayout,
+    args: { type: "no-messages" },
+  };
