@@ -32,6 +32,7 @@ export const MuiDataGrid: OverrideComponentReturn<"MuiDataGrid"> = {
   },
   styleOverrides: {
     root: {
+      fontVariantLigatures: "none",
       // Disable focus outline by default since most of our grids are used
       // as non-interactive display tables
       "& .MuiDataGrid-cell:focus": {
