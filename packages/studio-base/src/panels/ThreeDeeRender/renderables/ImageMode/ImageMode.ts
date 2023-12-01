@@ -1003,16 +1003,19 @@ export const IMAGE_MODE_HUD_ITEMS = {
   [IMAGE_MODE_HUD_KEYS.WAITING_FOR_IMAGES]: {
     id: IMAGE_MODE_HUD_KEYS.WAITING_FOR_IMAGES,
     group: ImageMode.extensionId,
-    message: "Waiting for image messages...",
+    message: "Waiting for image messages…",
+    displayType: "empty",
   },
   [IMAGE_MODE_HUD_KEYS.NO_IMAGE_TOPICS]: {
     id: IMAGE_MODE_HUD_KEYS.NO_IMAGE_TOPICS,
     group: ImageMode.extensionId,
     message: "No image topics available.",
+    displayType: "empty",
   },
   [IMAGE_MODE_HUD_KEYS.WAITING_FOR_SYNC]: {
     id: IMAGE_MODE_HUD_KEYS.WAITING_FOR_SYNC,
     group: ImageMode.extensionId,
     message: "Awaiting synced annotations...",
+    displayType: "notice",
   },
 } as const;

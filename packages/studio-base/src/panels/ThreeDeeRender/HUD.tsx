@@ -2,23 +2,35 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+import { Chip } from "@mui/material";
+import * as _ from "lodash-es";
 import * as React from "react";
 import { makeStyles } from "tss-react/mui";
 
+import EmptyState from "@foxglove/studio-base/components/EmptyState";
 import { IRenderer } from "@foxglove/studio-base/panels/ThreeDeeRender/IRenderer";
 
 import { HUDItem } from "./HUDManager";
 import { useRendererProperty } from "./RendererContext";
 
 const useStyles = makeStyles()((theme) => ({
-  hud: {
+  root: {
     position: "absolute",
-    alignContent: "center",
     top: 0,
-    padding: theme.spacing(1),
-    border: "1px solid black",
-    background: "grey",
-    select: "none",
+    left: "50%",
+    transform: "translateX(-50%)",
+    pointerEvents: "none",
+    display: "flex",
+    flexDirection: "column",
+    margin: theme.spacing(1),
+    overflow: "hidden",
+    maxHeight: "100%",
+    gap: theme.spacing(1),
+  },
+  empty: {
+    backgroundColor: theme.palette.background.default,
+    position: "absolute",
+    inset: 0,
   },
 }));
 
@@ -34,11 +46,28 @@ export function HUD(props: HUDProps): React.ReactElement {
     () => [],
     props.renderer,
   );
+
+  const [emptyStates, notices] = React.useMemo(
+    () => _.partition(hudItems, (i) => i.displayType === "empty"),
+    [hudItems],
+  );
+
+  if (hudItems.length === 0) {
+    return <></>;
+  }
+
+  if (emptyStates.length > 0) {
+    return (
+      <EmptyState className={classes.empty}>
+        {emptyStates.map((item) => item.message).join("\n")}
+      </EmptyState>
+    );
+  }
+
   return (
-    <div className={classes.hud}>
-      <div>Hud Items</div>
-      {hudItems.map((item, index) => (
-        <div key={index}>{item.message}</div>
+    <div className={classes.root}>
+      {notices.map((item, index) => (
+        <Chip size="small" key={index} label={item.message} />
       ))}
     </div>
   );

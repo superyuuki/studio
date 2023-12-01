@@ -45,6 +45,16 @@ const PublishClickIcons: Record<PublishClickType, React.ReactNode> = {
 };
 
 const useStyles = makeStyles()((theme) => ({
+  root: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-end",
+    gap: 10,
+    pointerEvents: "none",
+  },
   iconButton: {
     position: "relative",
     pointerEvents: "auto",
@@ -297,19 +307,7 @@ export function RendererOverlay(props: Props): JSX.Element {
   return (
     <>
       {props.interfaceMode === "image" && <PanelContextMenu getItems={getContextMenuItems} />}
-      <div
-        ref={mousePresenceRef}
-        style={{
-          position: "absolute",
-          top: "10px",
-          right: "10px",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-end",
-          gap: 10,
-          pointerEvents: "none",
-        }}
-      >
+      <div ref={mousePresenceRef} className={classes.root}>
         {
           // Only show on hover for image panel
           (props.interfaceMode === "3d" || mousePresent) && (

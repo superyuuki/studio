@@ -48,4 +48,6 @@ export type HUDItem = {
   group: string;
   /** Message content to show on HUD */
   message: string;
+  /** Display type */
+  displayType: "empty" | "notice";
 };
