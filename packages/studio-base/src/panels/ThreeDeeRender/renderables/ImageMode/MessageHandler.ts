@@ -18,6 +18,7 @@ import {
   ImageAnnotations as FoxgloveImageAnnotations,
 } from "@foxglove/schemas";
 import { Immutable, MessageEvent } from "@foxglove/studio";
+import { HUDItem, HUDItemManager } from "@foxglove/studio-base/panels/ThreeDeeRender/HUDManager";
 import { ImageModeConfig } from "@foxglove/studio-base/panels/ThreeDeeRender/IRenderer";
 import {
   AnyImage,
@@ -37,6 +38,7 @@ import {
 
 import { normalizeAnnotations } from "./annotations/normalizeAnnotations";
 import { Annotation } from "./annotations/types";
+import { IMAGE_MODE_HUD_GROUP_ID } from "./constants";
 import { PartialMessageEvent } from "../../SceneExtension";
 import { CompressedImage as RosCompressedImage, Image as RosImage, CameraInfo } from "../../ros";
 
@@ -74,6 +76,26 @@ type RenderStateListener = (
   oldState: MessageRenderState | undefined,
 ) => void;
 
+export const WAITING_FOR_BOTH_HUD_ITEM: HUDItem = {
+  id: "WAITING_FOR_BOTH_MESSAGES",
+  group: IMAGE_MODE_HUD_GROUP_ID,
+  message: "Waiting for messages…",
+  displayType: "empty",
+};
+
+const WAITING_FOR_CALIBRATION_HUD_ITEM: HUDItem = {
+  id: "WAITING_FOR_CALIBRATION",
+  group: IMAGE_MODE_HUD_GROUP_ID,
+  message: "Waiting for calibration messages…",
+  displayType: "notice",
+};
+
+const WAITING_FOR_IMAGE_HUD_ITEM: HUDItem = {
+  id: "WAITING_FOR_IMAGES",
+  group: IMAGE_MODE_HUD_GROUP_ID,
+  message: "Waiting for image messages…",
+  displayType: "notice",
+};
 /**
  * Processes and normalizes incoming messages and manages state of
  * messages to be rendered given the ImageMode config. A large part of this responsibility
@@ -83,6 +105,9 @@ type RenderStateListener = (
 export class MessageHandler implements IMessageHandler {
   /** settings that should reflect image mode config */
   #config: Immutable<Config>;
+
+  /** Allows message handler push messages to overlay on top of the canvas */
+  #hud: HUDItemManager;
 
   /** last state passed to listeners */
   #oldRenderState: MessageRenderState | undefined;
@@ -100,8 +125,9 @@ export class MessageHandler implements IMessageHandler {
    *
    * @param config - subset of ImageMode settings required for message handling
    */
-  public constructor(config: Immutable<Config>) {
+  public constructor(config: Immutable<Config>, hud: HUDItemManager) {
     this.#config = config;
+    this.#hud = hud;
     this.#lastReceivedMessages = {
       annotationsByTopic: new Map(),
     };
@@ -139,6 +165,7 @@ export class MessageHandler implements IMessageHandler {
   };
 
   protected handleImage(message: PartialMessageEvent<AnyImage>, image: AnyImage): void {
+    this.#hud.removeHUDItem(WAITING_FOR_IMAGE_HUD_ITEM.id);
     const normalizedImageMessage: MessageEvent<AnyImage> = {
       ...message,
       message: image,
@@ -163,6 +190,7 @@ export class MessageHandler implements IMessageHandler {
   }
 
   public handleCameraInfo = (message: PartialMessageEvent<CameraInfo>): void => {
+    this.#hud.removeHUDItem(WAITING_FOR_CALIBRATION_HUD_ITEM.id);
     const cameraInfo = normalizeCameraInfo(message.message);
     this.#lastReceivedMessages.cameraInfo = cameraInfo;
     this.#emitState();
@@ -226,6 +254,7 @@ export class MessageHandler implements IMessageHandler {
         item.image = undefined;
       }
       this.#lastReceivedMessages.image = undefined;
+      this.#hud.addHUDItem(WAITING_FOR_IMAGE_HUD_ITEM);
       changed = true;
     }
 
@@ -234,6 +263,7 @@ export class MessageHandler implements IMessageHandler {
       this.#config.calibrationTopic !== newConfig.calibrationTopic
     ) {
       this.#lastReceivedMessages.cameraInfo = undefined;
+      this.#hud.addHUDItem(WAITING_FOR_CALIBRATION_HUD_ITEM);
       changed = true;
     }
 
@@ -265,6 +295,9 @@ export class MessageHandler implements IMessageHandler {
         }
       }
     }
+    const hasNotReceivedImageOrCalibrationMessages =
+      !this.#lastReceivedMessages.image && !this.#lastReceivedMessages.cameraInfo;
+    this.#hud.displayIfTrue(hasNotReceivedImageOrCalibrationMessages, WAITING_FOR_BOTH_HUD_ITEM);
 
     this.#config = {
       ...this.#config,
@@ -310,7 +343,9 @@ export class MessageHandler implements IMessageHandler {
         missingAnnotationTopics: result.missingAnnotationTopics,
       };
     }
-
+    const hasNotReceivedImageOrCalibrationMessages =
+      !this.#lastReceivedMessages.image && !this.#lastReceivedMessages.cameraInfo;
+    this.#hud.displayIfTrue(hasNotReceivedImageOrCalibrationMessages, WAITING_FOR_BOTH_HUD_ITEM);
     return { ...this.#lastReceivedMessages };
   }
 

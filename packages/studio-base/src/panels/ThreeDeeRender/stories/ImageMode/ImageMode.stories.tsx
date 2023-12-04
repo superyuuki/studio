@@ -1102,8 +1102,13 @@ export const RationalPolynomialDistortion: StoryObj = {
   },
 };
 
-const ImageModeEmptyLayout = ({ type }: { type: "no-topics" | "no-messages" }): JSX.Element => {
+const ImageModeEmptyLayout = ({
+  type,
+}: {
+  type: "no-topics" | "no-messages" | "image-topic-DNE";
+}): JSX.Element => {
   let fixture: Fixture | undefined;
+  let calibrationTopic: string | undefined = "calibration";
   switch (type) {
     case "no-topics":
       fixture = {
@@ -1115,6 +1120,18 @@ const ImageModeEmptyLayout = ({ type }: { type: "no-topics" | "no-messages" }): 
         },
       };
       break;
+    case "image-topic-DNE": {
+      calibrationTopic = undefined;
+      fixture = {
+        topics: [],
+        frame: {},
+        capabilities: [],
+        activeData: {
+          currentTime: { sec: 0, nsec: 0 },
+        },
+      };
+      break;
+    }
     case "no-messages":
       fixture = {
         topics: [
@@ -1135,7 +1152,7 @@ const ImageModeEmptyLayout = ({ type }: { type: "no-topics" | "no-messages" }): 
         overrideConfig={{
           ...ImagePanel.defaultConfig,
           imageMode: {
-            calibrationTopic: "calibration",
+            calibrationTopic,
             imageTopic: "camera",
           },
         }}
@@ -1154,3 +1171,11 @@ export const ImageModeEmptyNoMessages: StoryObj<React.ComponentProps<typeof Imag
     render: ImageModeEmptyLayout,
     args: { type: "no-messages" },
   };
+
+// when calibration == "None", then we display an empty state when only the image topic does not exist
+export const ImageModeEmptyOnlyImageTopicDNE: StoryObj<
+  React.ComponentProps<typeof ImageModeEmptyLayout>
+> = {
+  render: ImageModeEmptyLayout,
+  args: { type: "image-topic-DNE" },
+};

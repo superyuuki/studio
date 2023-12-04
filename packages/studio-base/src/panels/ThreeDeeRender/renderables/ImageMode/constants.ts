@@ -4,3 +4,5 @@
 
 export const IMAGE_TOPIC_PATH = ["imageMode", "imageTopic"];
 export const DECODE_IMAGE_ERR_KEY = "CreateBitmap";
+
+export const IMAGE_MODE_HUD_GROUP_ID = "IMAGE_MODE";

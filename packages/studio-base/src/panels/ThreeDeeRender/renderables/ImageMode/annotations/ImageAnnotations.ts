@@ -8,13 +8,9 @@ import * as THREE from "three";
 import { PinholeCameraModel } from "@foxglove/den/image";
 import { ImageAnnotations as FoxgloveImageAnnotations } from "@foxglove/schemas";
 import { Immutable, MessageEvent, SettingsTreeAction, Topic } from "@foxglove/studio";
-import { HUDItemManager } from "@foxglove/studio-base/panels/ThreeDeeRender/HUDManager";
+import { HUDItem, HUDItemManager } from "@foxglove/studio-base/panels/ThreeDeeRender/HUDManager";
 import { Path } from "@foxglove/studio-base/panels/ThreeDeeRender/LayerErrors";
 import { onlyLastByTopicMessage } from "@foxglove/studio-base/panels/ThreeDeeRender/SceneExtension";
-import {
-  IMAGE_MODE_HUD_KEYS,
-  IMAGE_MODE_HUD_ITEMS,
-} from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/ImageMode/ImageMode";
 import {
   ImageMarker as RosImageMarker,
   ImageMarkerArray as RosImageMarkerArray,
@@ -30,9 +26,18 @@ import { IMAGE_MARKER_ARRAY_DATATYPES, IMAGE_MARKER_DATATYPES } from "../../../r
 import { topicIsConvertibleToSchema } from "../../../topicIsConvertibleToSchema";
 import { sortPrefixMatchesToFront } from "../../Images/topicPrefixMatching";
 import { IMessageHandler, MessageRenderState } from "../MessageHandler";
+import { IMAGE_MODE_HUD_GROUP_ID } from "../constants";
 
 const MISSING_SYNCHRONIZED_ANNOTATION = "MISSING_SYNCHRONIZED_ANNOTATION";
 
+const WAITING_FOR_SYNC = "WAITING_FOR_SYNC";
+
+const WAITING_FOR_SYNC_HUD_ITEM: HUDItem = {
+  id: WAITING_FOR_SYNC,
+  group: IMAGE_MODE_HUD_GROUP_ID,
+  message: "Awaiting synced annotations...",
+  displayType: "notice",
+};
 type TopicName = string & { __brand: "TopicName" };
 
 interface ImageAnnotationsContext {
@@ -165,7 +170,7 @@ export class ImageAnnotations extends THREE.Object3D {
           ["imageAnnotations", originalMessage.topic],
           MISSING_SYNCHRONIZED_ANNOTATION,
         );
-        this.#context.hud.removeHUDItem(IMAGE_MODE_HUD_KEYS.WAITING_FOR_SYNC);
+        this.#context.hud.removeHUDItem(WAITING_FOR_SYNC);
       }
     }
     for (const topic of newState.presentAnnotationTopics ?? []) {
@@ -174,7 +179,7 @@ export class ImageAnnotations extends THREE.Object3D {
         ["imageAnnotations", topic],
         MISSING_SYNCHRONIZED_ANNOTATION,
       );
-      this.#context.hud.removeHUDItem(IMAGE_MODE_HUD_KEYS.WAITING_FOR_SYNC);
+      this.#context.hud.removeHUDItem(WAITING_FOR_SYNC);
     }
     for (const topic of newState.missingAnnotationTopics ?? []) {
       this.#context.addSettingsError(
@@ -182,7 +187,7 @@ export class ImageAnnotations extends THREE.Object3D {
         MISSING_SYNCHRONIZED_ANNOTATION,
         "Waiting for annotation message with timestamp matching image. Turn off “Sync annotations” to display annotations regardless of timestamp.",
       );
-      this.#context.hud.addHUDItem(IMAGE_MODE_HUD_ITEMS[IMAGE_MODE_HUD_KEYS.WAITING_FOR_SYNC]);
+      this.#context.hud.addHUDItem(WAITING_FOR_SYNC_HUD_ITEM);
     }
   };
 
@@ -209,9 +214,29 @@ export class ImageAnnotations extends THREE.Object3D {
       return;
     }
     const { value, path } = action.payload;
-    const topic = path[1]! as TopicName;
-    if (path[0] === "imageAnnotations" && path[2] === "visible" && typeof value === "boolean") {
-      this.#handleTopicVisibilityChange(topic, value);
+    const category = path[0];
+    if (category === "imageAnnotations") {
+      if (path[2] === "visible" && typeof value === "boolean") {
+        const topic = path[1]! as TopicName;
+        this.#handleTopicVisibilityChange(topic, value);
+      }
+    } else if (category === "imageMode") {
+      if (path[1] === "synchronize" && typeof value === "boolean") {
+        if (value) {
+          this.removeAllRenderables();
+
+          const annotationTopics = this.#context
+            .topics()
+            .filter((topic) => topicIsConvertibleToSchema(topic, ALL_SUPPORTED_ANNOTATION_SCHEMAS));
+          const config = this.#context.config();
+          const someAnnotationsVisible = annotationTopics.some(
+            (topic) => config.annotations?.[topic.name]?.visible,
+          );
+          this.#context.hud.displayIfTrue(someAnnotationsVisible, WAITING_FOR_SYNC_HUD_ITEM);
+        } else {
+          this.#context.hud.removeHUDItem(WAITING_FOR_SYNC);
+        }
+      }
     }
     this.#context.updateSettingsTree();
   }

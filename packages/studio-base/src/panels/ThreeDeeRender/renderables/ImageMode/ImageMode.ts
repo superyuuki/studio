@@ -19,8 +19,12 @@ import {
 } from "@foxglove/studio";
 import { PanelContextMenuItem } from "@foxglove/studio-base/components/PanelContextMenu";
 import { DraggedMessagePath } from "@foxglove/studio-base/components/PanelExtensionAdapter";
+import { HUDItem } from "@foxglove/studio-base/panels/ThreeDeeRender/HUDManager";
 import { Path } from "@foxglove/studio-base/panels/ThreeDeeRender/LayerErrors";
-import { IMAGE_TOPIC_PATH } from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/ImageMode/constants";
+import {
+  IMAGE_MODE_HUD_GROUP_ID,
+  IMAGE_TOPIC_PATH,
+} from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/ImageMode/constants";
 import {
   IMAGE_RENDERABLE_DEFAULT_SETTINGS,
   ImageRenderable,
@@ -83,6 +87,12 @@ const DEFAULT_FOCAL_LENGTH = 500;
 
 const REMOVE_IMAGE_TIMEOUT_MS = 50;
 
+const NO_IMAGE_TOPICS_HUD_ITEM: HUDItem = {
+  id: "NO_IMAGE_TOPICS",
+  group: IMAGE_MODE_HUD_GROUP_ID,
+  message: "No image topics available.",
+  displayType: "notice",
+};
 interface ImageModeEventMap extends THREE.Object3DEventMap {
   hasModifiedViewChanged: object;
 }
@@ -214,7 +224,7 @@ export class ImageMode
   }
 
   protected initMessageHandler(config: Immutable<ConfigWithDefaults>): IMessageHandler {
-    return new MessageHandler(config);
+    return new MessageHandler(config, this.hud);
   }
 
   public hasModifiedView(): boolean {
@@ -303,7 +313,6 @@ export class ImageMode
     if (this.#removeImageTimeout == undefined) {
       this.#removeImageTimeout = setTimeout(() => {
         this.#removeImageTimeout = undefined;
-        this.hud.addHUDItem(IMAGE_MODE_HUD_ITEMS[IMAGE_MODE_HUD_KEYS.WAITING_FOR_IMAGES]);
         this.#removeImageRenderable();
         this.renderer.queueAnimationFrame();
       }, REMOVE_IMAGE_TIMEOUT_MS);
@@ -335,13 +344,12 @@ export class ImageMode
     const imageTopic = this.renderer.topics?.find((topic) =>
       topicIsConvertibleToSchema(topic, this.supportedImageSchemas),
     );
-    if (imageTopic == undefined) {
-      this.hud.addHUDItem(IMAGE_MODE_HUD_ITEMS[IMAGE_MODE_HUD_KEYS.NO_IMAGE_TOPICS]);
-      return;
-    }
-    this.hud.removeHUDItem(IMAGE_MODE_HUD_KEYS.NO_IMAGE_TOPICS);
 
-    this.setImageTopic(imageTopic);
+    this.hud.displayIfTrue(imageTopic == undefined, NO_IMAGE_TOPICS_HUD_ITEM);
+
+    if (imageTopic) {
+      this.setImageTopic(imageTopic);
+    }
   };
 
   /** Sets specified image topic on the config and updates calibration topic if a match is found.
@@ -364,7 +372,6 @@ export class ImageMode
     if (matchingCalibrationTopic) {
       this.renderer.disableImageOnlySubscriptionMode();
     }
-    this.hud.addHUDItem(IMAGE_MODE_HUD_ITEMS[IMAGE_MODE_HUD_KEYS.WAITING_FOR_IMAGES]);
   }
 
   /** Choose a calibration topic that best matches the given `imageTopic`. */
@@ -413,39 +420,42 @@ export class ImageMode
     // add unselected camera calibration option
     calibrationTopics.unshift({ label: "None", value: undefined });
 
-    let bothTopicsDoNotExist = true;
-    if (imageTopic && !imageTopics.some((topic) => topic.value === imageTopic)) {
-      this.renderer.settings.errors.add(
-        IMAGE_TOPIC_PATH,
-        IMAGE_TOPIC_UNAVAILABLE,
-        `${imageTopic} is not available`,
-      );
-    } else {
-      bothTopicsDoNotExist = false;
-      this.renderer.settings.errors.remove(IMAGE_TOPIC_PATH, IMAGE_TOPIC_UNAVAILABLE);
-    }
+    const imageTopicAvailable = !(
+      imageTopic && !imageTopics.some((topic) => topic.value === imageTopic)
+    );
+    this.renderer.settings.errors.errorIfFalsey(
+      imageTopicAvailable,
+      IMAGE_TOPIC_PATH,
+      IMAGE_TOPIC_UNAVAILABLE,
+      `${imageTopic} is not available`,
+    );
 
-    if (calibrationTopic && !calibrationTopics.some((topic) => topic.value === calibrationTopic)) {
-      this.renderer.settings.errors.add(
-        CALIBRATION_TOPIC_PATH,
-        CALIBRATION_TOPIC_UNAVAILABLE,
-        `${calibrationTopic} is not available`,
-      );
-    } else {
-      bothTopicsDoNotExist = false;
-      this.renderer.settings.errors.remove(CALIBRATION_TOPIC_PATH, CALIBRATION_TOPIC_UNAVAILABLE);
-    }
+    const calibrationTopicAvailable = !(
+      calibrationTopic && !calibrationTopics.some((topic) => topic.value === calibrationTopic)
+    );
 
-    if (bothTopicsDoNotExist) {
-      this.hud.addHUDItem({
-        // TODO: add to keys
-        id: "BOTH_TOPICS_DO_NOT_EXIST",
+    this.renderer.settings.errors.errorIfFalsey(
+      calibrationTopicAvailable,
+      CALIBRATION_TOPIC_PATH,
+      CALIBRATION_TOPIC_UNAVAILABLE,
+      `${calibrationTopic} is not available`,
+    );
+
+    const bothTopicsDoNotExist = !imageTopicAvailable && !calibrationTopicAvailable;
+    this.hud.displayIfTrue(bothTopicsDoNotExist, {
+      id: "BOTH_TOPICS_DO_NOT_EXIST",
+      displayType: "empty",
+      group: "IMAGE_MODE",
+      message: "Image and calibration topics do not exist.",
+    });
+
+    if (calibrationTopic == undefined) {
+      this.hud.displayIfTrue(!imageTopicAvailable, {
+        id: "IMAGE_TOPIC_DOES_NOT_EXIST",
         displayType: "empty",
         group: "IMAGE_MODE",
-        message: "Image and calibration topics do not exist.",
+        message: "Image topic does not exist.",
       });
-    } else {
-      this.hud.removeHUDItem("BOTH_TOPICS_DO_NOT_EXIST");
     }
 
     const imageTopicError = this.renderer.settings.errors.errors.errorAtPath(IMAGE_TOPIC_PATH);
@@ -577,8 +587,8 @@ export class ImageMode
         maxValue: config.maxValue,
       });
       if (config.synchronize !== prevImageModeConfig.synchronize) {
-        this.hud.removeGroup(ImageMode.extensionId);
-        this.removeAllRenderables();
+        this.hud.removeGroup(IMAGE_MODE_HUD_GROUP_ID);
+        this.#removeImageRenderable();
       }
       this.messageHandler.setConfig(config);
 
@@ -652,7 +662,6 @@ export class ImageMode
     const topic = messageEvent.topic;
     const receiveTime = toNanoSec(messageEvent.receiveTime);
     const frameId = "header" in image ? image.header.frame_id : image.frame_id;
-    this.hud.removeHUDItem(IMAGE_MODE_HUD_KEYS.WAITING_FOR_IMAGES);
 
     if (this.#removeImageTimeout != undefined) {
       clearTimeout(this.#removeImageTimeout);
@@ -1007,30 +1016,3 @@ const createFallbackCameraInfoForImage = (options: {
   });
   return cameraInfo;
 };
-
-export const IMAGE_MODE_HUD_KEYS = {
-  WAITING_FOR_IMAGES: "WAITING_FOR_IMAGES",
-  NO_IMAGE_TOPICS: "NO_IMAGE_TOPICS",
-  WAITING_FOR_SYNC: "WAITING_FOR_SYNC",
-} as const;
-
-export const IMAGE_MODE_HUD_ITEMS = {
-  [IMAGE_MODE_HUD_KEYS.WAITING_FOR_IMAGES]: {
-    id: IMAGE_MODE_HUD_KEYS.WAITING_FOR_IMAGES,
-    group: ImageMode.extensionId,
-    message: "Waiting for image messages…",
-    displayType: "empty",
-  },
-  [IMAGE_MODE_HUD_KEYS.NO_IMAGE_TOPICS]: {
-    id: IMAGE_MODE_HUD_KEYS.NO_IMAGE_TOPICS,
-    group: ImageMode.extensionId,
-    message: "No image topics available.",
-    displayType: "empty",
-  },
-  [IMAGE_MODE_HUD_KEYS.WAITING_FOR_SYNC]: {
-    id: IMAGE_MODE_HUD_KEYS.WAITING_FOR_SYNC,
-    group: ImageMode.extensionId,
-    message: "Awaiting synced annotations...",
-    displayType: "notice",
-  },
-} as const;
