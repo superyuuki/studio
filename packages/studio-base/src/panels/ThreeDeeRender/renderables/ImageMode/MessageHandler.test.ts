@@ -14,6 +14,7 @@ import {
   TextAnnotation,
 } from "@foxglove/schemas";
 import { MessageEvent } from "@foxglove/studio";
+import { HUDItemManager } from "@foxglove/studio-base/panels/ThreeDeeRender/HUDManager";
 import { MessageHandler } from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/ImageMode/MessageHandler";
 
 import { PartialMessageEvent } from "../../SceneExtension";
@@ -33,9 +34,10 @@ function wrapInMessageEvent<T>(
   };
 }
 
+const hud = new HUDItemManager(() => {});
 describe("MessageHandler: synchronized = false", () => {
   it("should return an empty state if no messages are handled", () => {
-    const messageHandler = new MessageHandler({ synchronize: false });
+    const messageHandler = new MessageHandler({ synchronize: false }, hud);
 
     const state = messageHandler.getRenderState();
 
@@ -44,7 +46,7 @@ describe("MessageHandler: synchronized = false", () => {
     });
   });
   it("should have camera info if handled camera info", () => {
-    const messageHandler = new MessageHandler({ synchronize: false });
+    const messageHandler = new MessageHandler({ synchronize: false }, hud);
 
     const cameraInfo = wrapInMessageEvent<CameraCalibration>(
       "calibration",
@@ -57,7 +59,7 @@ describe("MessageHandler: synchronized = false", () => {
     expect(state.cameraInfo).not.toBeUndefined();
   });
   it("should have image if handled image", () => {
-    const messageHandler = new MessageHandler({ synchronize: false });
+    const messageHandler = new MessageHandler({ synchronize: false }, hud);
 
     const image = wrapInMessageEvent<RawImage>("image", "foxglove.RawImage", 0n);
     messageHandler.handleRawImage(image);
@@ -66,10 +68,13 @@ describe("MessageHandler: synchronized = false", () => {
     expect(state.image).not.toBeUndefined();
   });
   it("should have annotations if handled annotations", () => {
-    const messageHandler = new MessageHandler({
-      synchronize: false,
-      annotations: { annotations: { visible: true } },
-    });
+    const messageHandler = new MessageHandler(
+      {
+        synchronize: false,
+        annotations: { annotations: { visible: true } },
+      },
+      hud,
+    );
 
     const annotation = createCircleAnnotations([0n]);
     const annotationMessage = wrapInMessageEvent(
@@ -84,7 +89,7 @@ describe("MessageHandler: synchronized = false", () => {
     expect(state.annotationsByTopic?.get("annotations")).not.toBeUndefined();
   });
   it("clears image if image topic changed", () => {
-    const messageHandler = new MessageHandler({ synchronize: false, imageTopic: "image1" });
+    const messageHandler = new MessageHandler({ synchronize: false, imageTopic: "image1" }, hud);
 
     const image = wrapInMessageEvent<RawImage>("image1", "foxglove.RawImage", 0n);
     messageHandler.handleRawImage(image);
@@ -95,10 +100,13 @@ describe("MessageHandler: synchronized = false", () => {
     expect(state.image).toBeUndefined();
   });
   it("clears cameraInfo if calibration topic changed", () => {
-    const messageHandler = new MessageHandler({
-      synchronize: false,
-      calibrationTopic: "calibration1",
-    });
+    const messageHandler = new MessageHandler(
+      {
+        synchronize: false,
+        calibrationTopic: "calibration1",
+      },
+      hud,
+    );
 
     const cameraInfo = wrapInMessageEvent<CameraCalibration>(
       "calibration1",
@@ -112,13 +120,16 @@ describe("MessageHandler: synchronized = false", () => {
     expect(state.cameraInfo).toBeUndefined();
   });
   it("clears specific annotations if annotations subscriptions change", () => {
-    const messageHandler = new MessageHandler({
-      synchronize: false,
-      annotations: {
-        annotations1: { visible: true },
-        annotations2: { visible: true },
+    const messageHandler = new MessageHandler(
+      {
+        synchronize: false,
+        annotations: {
+          annotations1: { visible: true },
+          annotations2: { visible: true },
+        },
       },
-    });
+      hud,
+    );
 
     const annotation = createCircleAnnotations([0n]);
     const annotation1Message = wrapInMessageEvent(
@@ -146,12 +157,15 @@ describe("MessageHandler: synchronized = false", () => {
     expect(state.annotationsByTopic?.get("annotations2")).toBeUndefined();
   });
   it("listener function called whenever a message is handled or when config changes", () => {
-    const messageHandler = new MessageHandler({
-      synchronize: false,
-      imageTopic: "image",
-      calibrationTopic: "calibration",
-      annotations: { annotations: { visible: true } },
-    });
+    const messageHandler = new MessageHandler(
+      {
+        synchronize: false,
+        imageTopic: "image",
+        calibrationTopic: "calibration",
+        annotations: { annotations: { visible: true } },
+      },
+      hud,
+    );
     const listener = jest.fn();
 
     messageHandler.addListener(listener);
@@ -185,7 +199,7 @@ describe("MessageHandler: synchronized = false", () => {
 
 describe("MessageHandler: synchronized = true", () => {
   it("handles and shows camera info in state", () => {
-    const messageHandler = new MessageHandler({ synchronize: true });
+    const messageHandler = new MessageHandler({ synchronize: true }, hud);
 
     const cameraInfo = wrapInMessageEvent<CameraCalibration>(
       "calibration",
@@ -199,7 +213,7 @@ describe("MessageHandler: synchronized = true", () => {
   });
 
   it("handles and shows image in state with no active annotations", () => {
-    const messageHandler = new MessageHandler({ synchronize: true });
+    const messageHandler = new MessageHandler({ synchronize: true }, hud);
 
     const image = wrapInMessageEvent<RawImage>("image", "foxglove.RawImage", 0n);
     messageHandler.handleRawImage(image);
@@ -209,10 +223,13 @@ describe("MessageHandler: synchronized = true", () => {
   });
 
   it("does not show state with annotations if only handled annotations", () => {
-    const messageHandler = new MessageHandler({
-      synchronize: true,
-      annotations: { annotations: { visible: true } },
-    });
+    const messageHandler = new MessageHandler(
+      {
+        synchronize: true,
+        annotations: { annotations: { visible: true } },
+      },
+      hud,
+    );
 
     const annotation = createCircleAnnotations([0n]);
     const annotationMessage = wrapInMessageEvent(
@@ -230,10 +247,13 @@ describe("MessageHandler: synchronized = true", () => {
   });
 
   it("shows state with image and annotations if they have the same timestamp", () => {
-    const messageHandler = new MessageHandler({
-      synchronize: true,
-      annotations: { annotations: { visible: true } },
-    });
+    const messageHandler = new MessageHandler(
+      {
+        synchronize: true,
+        annotations: { annotations: { visible: true } },
+      },
+      hud,
+    );
     const time = 2n;
 
     const image = wrapInMessageEvent<RawImage>("image", "foxglove.RawImage", 0n, {
@@ -259,13 +279,16 @@ describe("MessageHandler: synchronized = true", () => {
   });
 
   it("shows state without image and annotations if they have different header timestamps", () => {
-    const messageHandler = new MessageHandler({
-      synchronize: true,
-      annotations: {
-        annotations1: { visible: true },
-        annotations2: { visible: true },
+    const messageHandler = new MessageHandler(
+      {
+        synchronize: true,
+        annotations: {
+          annotations1: { visible: true },
+          annotations2: { visible: true },
+        },
       },
-    });
+      hud,
+    );
     const time = 2n;
 
     const image = wrapInMessageEvent<RawImage>("image", "foxglove.RawImage", 0n, {
@@ -300,10 +323,13 @@ describe("MessageHandler: synchronized = true", () => {
   });
 
   it("shows most recent image and annotations with same timestamps", () => {
-    const messageHandler = new MessageHandler({
-      synchronize: true,
-      annotations: { annotations: { visible: true } },
-    });
+    const messageHandler = new MessageHandler(
+      {
+        synchronize: true,
+        annotations: { annotations: { visible: true } },
+      },
+      hud,
+    );
     let time = 2n;
 
     let image = wrapInMessageEvent<RawImage>("image", "foxglove.RawImage", 0n, {
@@ -346,10 +372,13 @@ describe("MessageHandler: synchronized = true", () => {
   });
 
   it("shows most older image and annotations with same timestamps if newer messages have different timestamps", () => {
-    const messageHandler = new MessageHandler({
-      synchronize: true,
-      annotations: { annotations: { visible: true } },
-    });
+    const messageHandler = new MessageHandler(
+      {
+        synchronize: true,
+        annotations: { annotations: { visible: true } },
+      },
+      hud,
+    );
 
     const time = 2n;
 
@@ -393,10 +422,13 @@ describe("MessageHandler: synchronized = true", () => {
   });
 
   it("does not show image in state if it hasn't received requisite annotations at same timestamp", () => {
-    const messageHandler = new MessageHandler({
-      synchronize: true,
-      annotations: { annotations1: { visible: true }, annotations2: { visible: true } },
-    });
+    const messageHandler = new MessageHandler(
+      {
+        synchronize: true,
+        annotations: { annotations1: { visible: true }, annotations2: { visible: true } },
+      },
+      hud,
+    );
     const time = 2n;
 
     const image = wrapInMessageEvent<RawImage>("image", "foxglove.RawImage", 0n, {
@@ -421,11 +453,14 @@ describe("MessageHandler: synchronized = true", () => {
   });
 
   it("clears image when image topic changed", () => {
-    const messageHandler = new MessageHandler({
-      imageTopic: "image1",
-      synchronize: true,
-      annotations: { annotations: { visible: true } },
-    });
+    const messageHandler = new MessageHandler(
+      {
+        imageTopic: "image1",
+        synchronize: true,
+        annotations: { annotations: { visible: true } },
+      },
+      hud,
+    );
     const time = 2n;
 
     const image = wrapInMessageEvent<RawImage>("image1", "foxglove.RawImage", 0n, {
@@ -447,15 +482,18 @@ describe("MessageHandler: synchronized = true", () => {
     expect(state.image).toBeUndefined();
   });
   it("clears specific annotations if annotations subscriptions change", () => {
-    const messageHandler = new MessageHandler({
-      synchronize: true,
-      imageTopic: "image",
-      calibrationTopic: "calibration",
-      annotations: {
-        annotations1: { visible: true },
-        annotations2: { visible: true },
+    const messageHandler = new MessageHandler(
+      {
+        synchronize: true,
+        imageTopic: "image",
+        calibrationTopic: "calibration",
+        annotations: {
+          annotations1: { visible: true },
+          annotations2: { visible: true },
+        },
       },
-    });
+      hud,
+    );
     const time = 2n;
 
     const image = wrapInMessageEvent<RawImage>("image1", "foxglove.RawImage", 0n, {
@@ -490,12 +528,15 @@ describe("MessageHandler: synchronized = true", () => {
     expect(state.annotationsByTopic?.get("annotations2")).toBeUndefined();
   });
   it("listener function called whenever a message is handled or when config changes", () => {
-    const messageHandler = new MessageHandler({
-      synchronize: true,
-      imageTopic: "image",
-      calibrationTopic: "calibration",
-      annotations: { annotations: { visible: true } },
-    });
+    const messageHandler = new MessageHandler(
+      {
+        synchronize: true,
+        imageTopic: "image",
+        calibrationTopic: "calibration",
+        annotations: { annotations: { visible: true } },
+      },
+      hud,
+    );
     const listener = jest.fn();
 
     messageHandler.addListener(listener);

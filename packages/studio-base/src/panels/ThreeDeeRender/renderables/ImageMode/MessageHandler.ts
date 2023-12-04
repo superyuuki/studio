@@ -76,7 +76,7 @@ type RenderStateListener = (
   oldState: MessageRenderState | undefined,
 ) => void;
 
-export const WAITING_FOR_BOTH_HUD_ITEM: HUDItem = {
+const WAITING_FOR_BOTH_HUD_ITEM: HUDItem = {
   id: "WAITING_FOR_BOTH_MESSAGES",
   group: IMAGE_MODE_HUD_GROUP_ID,
   message: "Waiting for messages…",
