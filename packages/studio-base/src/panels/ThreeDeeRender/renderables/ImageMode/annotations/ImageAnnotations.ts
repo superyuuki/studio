@@ -4,6 +4,7 @@
 
 import { t } from "i18next";
 import * as THREE from "three";
+import { Opaque } from "ts-essentials";
 
 import { PinholeCameraModel } from "@foxglove/den/image";
 import { ImageAnnotations as FoxgloveImageAnnotations } from "@foxglove/schemas";
@@ -38,7 +39,7 @@ const WAITING_FOR_SYNC_HUD_ITEM: HUDItem = {
   message: "Awaiting synced annotations...",
   displayType: "notice",
 };
-type TopicName = string & { __brand: "TopicName" };
+type TopicName = Opaque<string, "TopicName">;
 
 interface ImageAnnotationsContext {
   initialScale: number;
