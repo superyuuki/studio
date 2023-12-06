@@ -15,7 +15,13 @@ import {
 } from "@foxglove/schemas";
 import { MessageEvent } from "@foxglove/studio";
 import { HUDItemManager } from "@foxglove/studio-base/panels/ThreeDeeRender/HUDManager";
-import { MessageHandler } from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/ImageMode/MessageHandler";
+import {
+  MessageHandler,
+  WAITING_FOR_BOTH_HUD_ITEM,
+  WAITING_FOR_CALIBRATION_HUD_ITEM,
+  WAITING_FOR_IMAGE_HUD_ITEM,
+  WAITING_FOR_SYNC_HUD_ITEM,
+} from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/ImageMode/MessageHandler";
 
 import { PartialMessageEvent } from "../../SceneExtension";
 
@@ -34,8 +40,11 @@ function wrapInMessageEvent<T>(
   };
 }
 
-const hud = new HUDItemManager(() => {});
 describe("MessageHandler: synchronized = false", () => {
+  let hud = new HUDItemManager(() => {});
+  beforeEach(() => {
+    hud = new HUDItemManager(() => {});
+  });
   it("should return an empty state if no messages are handled", () => {
     const messageHandler = new MessageHandler({ synchronize: false }, hud);
 
@@ -44,6 +53,7 @@ describe("MessageHandler: synchronized = false", () => {
     expect(state).toEqual({
       annotationsByTopic: new Map(),
     });
+    expect(hud.getHUDItems().find((item) => item.id === WAITING_FOR_BOTH_HUD_ITEM.id)).toBeTruthy();
   });
   it("should have camera info if handled camera info", () => {
     const messageHandler = new MessageHandler({ synchronize: false }, hud);
@@ -57,15 +67,24 @@ describe("MessageHandler: synchronized = false", () => {
     const state = messageHandler.getRenderState();
 
     expect(state.cameraInfo).not.toBeUndefined();
+    expect(
+      hud.getHUDItems().find((item) => item.id === WAITING_FOR_IMAGE_HUD_ITEM.id),
+    ).toBeTruthy();
   });
   it("should have image if handled image", () => {
-    const messageHandler = new MessageHandler({ synchronize: false }, hud);
+    const messageHandler = new MessageHandler(
+      { synchronize: false, calibrationTopic: "info" },
+      hud,
+    );
 
     const image = wrapInMessageEvent<RawImage>("image", "foxglove.RawImage", 0n);
     messageHandler.handleRawImage(image);
     const state = messageHandler.getRenderState();
 
     expect(state.image).not.toBeUndefined();
+    expect(
+      hud.getHUDItems().find((item) => item.id === WAITING_FOR_CALIBRATION_HUD_ITEM.id),
+    ).toBeTruthy();
   });
   it("should have annotations if handled annotations", () => {
     const messageHandler = new MessageHandler(
@@ -98,6 +117,9 @@ describe("MessageHandler: synchronized = false", () => {
     const state = messageHandler.getRenderState();
 
     expect(state.image).toBeUndefined();
+    expect(
+      hud.getHUDItems().find((item) => item.id === WAITING_FOR_IMAGE_HUD_ITEM.id),
+    ).toBeTruthy();
   });
   it("clears cameraInfo if calibration topic changed", () => {
     const messageHandler = new MessageHandler(
@@ -118,6 +140,9 @@ describe("MessageHandler: synchronized = false", () => {
     const state = messageHandler.getRenderState();
 
     expect(state.cameraInfo).toBeUndefined();
+    expect(
+      hud.getHUDItems().find((item) => item.id === WAITING_FOR_CALIBRATION_HUD_ITEM.id),
+    ).toBeTruthy();
   });
   it("clears specific annotations if annotations subscriptions change", () => {
     const messageHandler = new MessageHandler(
@@ -198,6 +223,10 @@ describe("MessageHandler: synchronized = false", () => {
 });
 
 describe("MessageHandler: synchronized = true", () => {
+  let hud = new HUDItemManager(() => {});
+  beforeEach(() => {
+    hud = new HUDItemManager(() => {});
+  });
   it("handles and shows camera info in state", () => {
     const messageHandler = new MessageHandler({ synchronize: true }, hud);
 
@@ -210,6 +239,9 @@ describe("MessageHandler: synchronized = true", () => {
     const state = messageHandler.getRenderState();
 
     expect(state.cameraInfo).not.toBeUndefined();
+    expect(
+      hud.getHUDItems().find((item) => item.id === WAITING_FOR_IMAGE_HUD_ITEM.id),
+    ).toBeTruthy();
   });
 
   it("handles and shows image in state with no active annotations", () => {
@@ -220,6 +252,7 @@ describe("MessageHandler: synchronized = true", () => {
     const state = messageHandler.getRenderState();
 
     expect(state.image).not.toBeUndefined();
+    expect(hud.getHUDItems().length).toEqual(0);
   });
 
   it("does not show state with annotations if only handled annotations", () => {
@@ -244,6 +277,10 @@ describe("MessageHandler: synchronized = true", () => {
     expect(state.annotationsByTopic?.get("annotations")).toBeUndefined();
     expect(state.presentAnnotationTopics).toBeUndefined();
     expect(state.missingAnnotationTopics).toBeUndefined();
+    expect(
+      hud.getHUDItems().find((item) => item.id === WAITING_FOR_IMAGE_HUD_ITEM.id),
+    ).toBeTruthy();
+    expect(hud.getHUDItems().find((item) => item.id === WAITING_FOR_SYNC_HUD_ITEM.id)).toBeTruthy();
   });
 
   it("shows state with image and annotations if they have the same timestamp", () => {
@@ -276,6 +313,7 @@ describe("MessageHandler: synchronized = true", () => {
     expect(state.annotationsByTopic?.get("annotations")).not.toBeUndefined();
     expect(state.presentAnnotationTopics).toBeUndefined();
     expect(state.missingAnnotationTopics).toBeUndefined();
+    expect(hud.getHUDItems()).toHaveLength(0);
   });
 
   it("shows state without image and annotations if they have different header timestamps", () => {
@@ -320,6 +358,7 @@ describe("MessageHandler: synchronized = true", () => {
     expect(state.annotationsByTopic?.get("annotations2")).toBeUndefined();
     expect(state.presentAnnotationTopics).toEqual(["annotations1"]);
     expect(state.missingAnnotationTopics).toEqual(["annotations2"]);
+    expect(hud.getHUDItems().find((item) => item.id === WAITING_FOR_SYNC_HUD_ITEM.id)).toBeTruthy();
   });
 
   it("shows most recent image and annotations with same timestamps", () => {
@@ -480,6 +519,9 @@ describe("MessageHandler: synchronized = true", () => {
     messageHandler.setConfig({ imageTopic: "image2" });
     const state = messageHandler.getRenderState();
     expect(state.image).toBeUndefined();
+    expect(
+      hud.getHUDItems().find((item) => item.id === WAITING_FOR_IMAGE_HUD_ITEM.id),
+    ).toBeTruthy();
   });
   it("clears specific annotations if annotations subscriptions change", () => {
     const messageHandler = new MessageHandler(
