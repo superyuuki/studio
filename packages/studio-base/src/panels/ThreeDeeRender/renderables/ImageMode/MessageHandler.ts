@@ -273,10 +273,7 @@ export class MessageHandler implements IMessageHandler {
       changed = true;
     }
 
-    if (
-      "calibrationTopic" in newConfig &&
-      this.#config.calibrationTopic !== newConfig.calibrationTopic
-    ) {
+    if (this.#config.calibrationTopic !== newConfig.calibrationTopic) {
       this.#lastReceivedMessages.cameraInfo = undefined;
       changed = true;
     }
@@ -309,9 +306,6 @@ export class MessageHandler implements IMessageHandler {
         }
       }
     }
-    const hasNotReceivedImageOrCalibrationMessages =
-      !this.#lastReceivedMessages.image && !this.#lastReceivedMessages.cameraInfo;
-    this.#hud.displayIfTrue(hasNotReceivedImageOrCalibrationMessages, WAITING_FOR_BOTH_HUD_ITEM);
 
     this.#config = {
       ...this.#config,
@@ -334,14 +328,23 @@ export class MessageHandler implements IMessageHandler {
 
   #emitState() {
     const state = this.getRenderState();
+
+    const waitingForImage =
+      this.#lastReceivedMessages.image == undefined && state.image == undefined;
+    this.#hud.displayIfTrue(waitingForImage, WAITING_FOR_IMAGE_HUD_ITEM);
+
+    const waitingForCalibration =
+      this.#config.calibrationTopic != undefined && state.cameraInfo == undefined;
+
+    const waitingForBoth = waitingForImage && waitingForCalibration;
+    this.#hud.displayIfTrue(waitingForBoth, WAITING_FOR_BOTH_HUD_ITEM);
+
+    // don't show waiting for calibration if both are already missing to reduce noise
     this.#hud.displayIfTrue(
-      this.#lastReceivedMessages.image == undefined && state.image == undefined,
-      WAITING_FOR_IMAGE_HUD_ITEM,
-    );
-    this.#hud.displayIfTrue(
-      this.#config.calibrationTopic != undefined && state.cameraInfo == undefined,
+      waitingForCalibration && !waitingForBoth,
       WAITING_FOR_CALIBRATION_HUD_ITEM,
     );
+
     this.#listeners.forEach((fn) => {
       fn(state, this.#oldRenderState);
     });
@@ -368,9 +371,6 @@ export class MessageHandler implements IMessageHandler {
       };
     }
     this.#hud.removeHUDItem(WAITING_FOR_SYNC_HUD_ITEM.id);
-    const hasNotReceivedImageOrCalibrationMessages =
-      !this.#lastReceivedMessages.image && !this.#lastReceivedMessages.cameraInfo;
-    this.#hud.displayIfTrue(hasNotReceivedImageOrCalibrationMessages, WAITING_FOR_BOTH_HUD_ITEM);
     return { ...this.#lastReceivedMessages };
   }
 
