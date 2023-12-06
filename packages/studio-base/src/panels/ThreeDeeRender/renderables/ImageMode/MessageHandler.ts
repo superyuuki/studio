@@ -41,6 +41,7 @@ import { Annotation } from "./annotations/types";
 import { IMAGE_MODE_HUD_GROUP_ID } from "./constants";
 import { PartialMessageEvent } from "../../SceneExtension";
 import { CompressedImage as RosCompressedImage, Image as RosImage, CameraInfo } from "../../ros";
+import { t3D } from "../../t3D";
 
 type NormalizedAnnotations = {
   // required for setting the original message on the renderable
@@ -79,28 +80,28 @@ type RenderStateListener = (
 const WAITING_FOR_BOTH_HUD_ITEM: HUDItem = {
   id: "WAITING_FOR_BOTH_MESSAGES",
   group: IMAGE_MODE_HUD_GROUP_ID,
-  message: "Waiting for messages…",
+  message: t3D("waitingForCalibrationAndImages"),
   displayType: "empty",
 };
 
 const WAITING_FOR_CALIBRATION_HUD_ITEM: HUDItem = {
   id: "WAITING_FOR_CALIBRATION",
   group: IMAGE_MODE_HUD_GROUP_ID,
-  message: "Waiting for calibration messages…",
+  message: t3D("waitingForCalibration"),
   displayType: "notice",
 };
 
 const WAITING_FOR_IMAGE_HUD_ITEM: HUDItem = {
   id: "WAITING_FOR_IMAGES",
   group: IMAGE_MODE_HUD_GROUP_ID,
-  message: "Waiting for image messages…",
+  message: t3D("waitingForImages"),
   displayType: "notice",
 };
 
 const WAITING_FOR_SYNC_HUD_ITEM: HUDItem = {
   id: "WAITING_FOR_SYNC",
   group: IMAGE_MODE_HUD_GROUP_ID,
-  message: "Awaiting synced annotationz...",
+  message: t3D("waitingForSyncAnnotations"),
   displayType: "notice",
 };
 /**

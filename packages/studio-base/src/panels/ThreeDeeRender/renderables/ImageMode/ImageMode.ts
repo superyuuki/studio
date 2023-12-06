@@ -40,6 +40,7 @@ import {
   cameraInfosEqual,
   normalizeCameraInfo,
 } from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/projections";
+import { t3D } from "@foxglove/studio-base/panels/ThreeDeeRender/t3D";
 import { makePose } from "@foxglove/studio-base/panels/ThreeDeeRender/transforms";
 import { AppEvent } from "@foxglove/studio-base/services/IAnalytics";
 import { downloadFiles } from "@foxglove/studio-base/util/download";
@@ -90,7 +91,7 @@ const REMOVE_IMAGE_TIMEOUT_MS = 50;
 const NO_IMAGE_TOPICS_HUD_ITEM: HUDItem = {
   id: "NO_IMAGE_TOPICS",
   group: IMAGE_MODE_HUD_GROUP_ID,
-  message: "No image topics available.",
+  message: t3D("noImageTopicsAvailable"),
   displayType: "notice",
 };
 interface ImageModeEventMap extends THREE.Object3DEventMap {
@@ -446,7 +447,7 @@ export class ImageMode
       id: "BOTH_TOPICS_DO_NOT_EXIST",
       displayType: "empty",
       group: "IMAGE_MODE",
-      message: "Image and calibration topics do not exist.",
+      message: t3D("imageAndCalibrationDNE"),
     });
 
     if (calibrationTopic == undefined) {
@@ -454,7 +455,7 @@ export class ImageMode
         id: "IMAGE_TOPIC_DOES_NOT_EXIST",
         displayType: "empty",
         group: "IMAGE_MODE",
-        message: "Image topic does not exist.",
+        message: t3D("imageTopicDNE"),
       });
     }
 
@@ -464,7 +465,7 @@ export class ImageMode
 
     const fields: SettingsTreeFields = {};
     fields.imageTopic = {
-      label: "Topic",
+      label: t3D("topic"),
       input: "select",
       value: imageTopic,
       options: imageTopics,

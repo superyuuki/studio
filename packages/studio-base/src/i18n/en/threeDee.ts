@@ -150,4 +150,13 @@ export const threeDee = {
   xDeviationHelp: "The X standard deviation to publish with pose estimates",
   yDeviation: "Y deviation",
   yDeviationHelp: "The Y standard deviation to publish with pose estimates",
+
+  // HUD Items and empty states
+  noImageTopicsAvailable: "No image topics available.",
+  imageTopicDNE: "Image topic does not exist.",
+  imageAndCalibrationDNE: "Image and calibration topics do not exist.",
+  waitingForCalibrationAndImages: "Waiting for messages...",
+  waitingForCalibration: "Waiting for calibration messages...",
+  waitingForImages: "Waiting for image messages...",
+  waitingForSyncAnnotations: "Waiting for sync annotations...",
 };
