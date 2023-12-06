@@ -22,6 +22,35 @@ const POINTS_PER_INTERVAL = 4;
 export const MINIMUM_PIXEL_DISTANCE = 3;
 
 /**
+ * Calculate the size of the intervals the downsampling operation should use,
+ * expressed as a ratio of pixels to units in the coordinate frame of the plot.
+ */
+export function calculateIntervals(
+  view: PlotViewport,
+  pointsPerInterval: number,
+  maxPoints?: number,
+): {
+  pixelPerXValue: number;
+  pixelPerYValue: number;
+} {
+  const { bounds, width, height } = view;
+  const numPixelIntervals = Math.trunc(width / MINIMUM_PIXEL_DISTANCE);
+  // When maxPoints is provided, we should take either that constant or
+  // the number of pixel-defined intervals, whichever is fewer
+  const numPoints = Math.min(
+    maxPoints ?? numPixelIntervals * pointsPerInterval,
+    numPixelIntervals * pointsPerInterval,
+  );
+  // We then calculate the number of intervals based on the number of points we
+  // decided on
+  const numIntervals = Math.trunc(numPoints / pointsPerInterval);
+  return {
+    pixelPerXValue: numIntervals / (bounds.x.max - bounds.x.min),
+    pixelPerYValue: height / (bounds.y.max - bounds.y.min),
+  };
+}
+
+/**
  * Downsample a timeseries dataset by returning the indices of a subset of
  * points that are deemed to be representative of the original dataset when
  * rendered with the given viewport.
@@ -53,20 +82,12 @@ export function downsampleTimeseries(
   view: PlotViewport,
   maxPoints?: number,
 ): number[] {
-  const { bounds, width, height } = view;
-
-  const numPixelIntervals = Math.trunc(width / MINIMUM_PIXEL_DISTANCE);
-  // When maxPoints is provided, we should take either that constant or
-  // the number of pixel-defined intervals, whichever is fewer
-  const numPoints = Math.min(
-    maxPoints ?? numPixelIntervals * POINTS_PER_INTERVAL,
-    numPixelIntervals * POINTS_PER_INTERVAL,
+  const { bounds } = view;
+  const { pixelPerXValue, pixelPerYValue } = calculateIntervals(
+    view,
+    POINTS_PER_INTERVAL,
+    maxPoints,
   );
-  // We then calculate the number of intervals based on the number of points we
-  // decided on
-  const numIntervals = Math.trunc(numPoints / POINTS_PER_INTERVAL);
-  const pixelPerXValue = numIntervals / (bounds.x.max - bounds.x.min);
-  const pixelPerYValue = height / (bounds.y.max - bounds.y.min);
 
   const indices: number[] = [];
 
