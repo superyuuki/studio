@@ -126,23 +126,6 @@ export function downsampleTimeseries(
       continue;
     }
 
-    // track the first point before our bounds
-    if (datum.x < minX) {
-      if (indices.length === 0) {
-        indices.push(index);
-      } else {
-        // the first point outside our bounds will always be at index 0
-        indices[0] = index;
-      }
-      continue;
-    }
-
-    // track the first point outside of our bounds
-    if (datum.x > maxX) {
-      firstPastBounds = index;
-      continue;
-    }
-
     // Benchmarking shows, at least as of the time of this writing, that Math.trunc is
     // *much* faster than Math.round on this data.
     const x = Math.trunc(datum.x * pixelPerXValue);
