@@ -6,4 +6,4 @@ import { t } from "i18next";
 
 import { threeDee } from "@foxglove/studio-base/i18n/en";
 
-export const t3D = (threeDeeKey: keyof typeof threeDee) => t(`threeDee:${threeDeeKey}`);
+export const t3D = (threeDeeKey: keyof typeof threeDee): string => t(`threeDee:${threeDeeKey}`);
