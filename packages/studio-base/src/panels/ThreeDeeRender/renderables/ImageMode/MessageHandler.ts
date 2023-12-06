@@ -88,7 +88,7 @@ export const WAITING_FOR_CALIBRATION_HUD_ITEM: HUDItem = {
   id: "WAITING_FOR_CALIBRATION",
   group: IMAGE_MODE_HUD_GROUP_ID,
   getMessage: () => t3D("waitingForCalibration"),
-  displayType: "notice",
+  displayType: "empty",
 };
 
 export const WAITING_FOR_IMAGE_HUD_ITEM: HUDItem = {
