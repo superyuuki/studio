@@ -599,6 +599,9 @@ export class ImageMode
     if (config.synchronize !== prevImageModeConfig.synchronize) {
       this.hud.removeGroup(IMAGE_MODE_HUD_GROUP_ID);
       this.#removeImageRenderable();
+      if (config.synchronize) {
+        this.#annotations.removeAllRenderables();
+      }
     }
     this.messageHandler.setConfig(config);
 

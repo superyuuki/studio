@@ -96,6 +96,13 @@ const WAITING_FOR_IMAGE_HUD_ITEM: HUDItem = {
   message: "Waiting for image messages…",
   displayType: "notice",
 };
+
+const WAITING_FOR_SYNC_HUD_ITEM: HUDItem = {
+  id: "WAITING_FOR_SYNC",
+  group: IMAGE_MODE_HUD_GROUP_ID,
+  message: "Awaiting synced annotationz...",
+  displayType: "notice",
+};
 /**
  * Processes and normalizes incoming messages and manages state of
  * messages to be rendered given the ImageMode config. A large part of this responsibility
@@ -165,18 +172,23 @@ export class MessageHandler implements IMessageHandler {
   };
 
   protected handleImage(message: PartialMessageEvent<AnyImage>, image: AnyImage): void {
-    this.#hud.removeHUDItem(WAITING_FOR_IMAGE_HUD_ITEM.id);
     const normalizedImageMessage: MessageEvent<AnyImage> = {
       ...message,
       message: image,
     };
 
+    this.#lastReceivedMessages.image = normalizedImageMessage;
     if (this.#config.synchronize !== true) {
-      this.#lastReceivedMessages.image = normalizedImageMessage;
       this.#emitState();
       return;
     }
     // Update the image at the stamp time
+    this.#addImageToTree(normalizedImageMessage);
+    this.#emitState();
+  }
+
+  #addImageToTree(normalizedImageMessage: MessageEvent<AnyImage>) {
+    const image = normalizedImageMessage.message;
     const item = this.#tree.get(getTimestampFromImage(image));
     if (item) {
       item.image = normalizedImageMessage;
@@ -186,11 +198,9 @@ export class MessageHandler implements IMessageHandler {
         annotationsByTopic: new Map(),
       });
     }
-    this.#emitState();
   }
 
   public handleCameraInfo = (message: PartialMessageEvent<CameraInfo>): void => {
-    this.#hud.removeHUDItem(WAITING_FOR_CALIBRATION_HUD_ITEM.id);
     const cameraInfo = normalizeCameraInfo(message.message);
     this.#lastReceivedMessages.cameraInfo = cameraInfo;
     this.#emitState();
@@ -245,7 +255,12 @@ export class MessageHandler implements IMessageHandler {
     let changed = false;
 
     if (newConfig.synchronize != undefined && newConfig.synchronize !== this.#config.synchronize) {
+      this.#oldRenderState = undefined;
       this.#tree.clear();
+      if (newConfig.synchronize && this.#lastReceivedMessages.image != undefined) {
+        this.#addImageToTree(this.#lastReceivedMessages.image);
+      }
+
       changed = true;
     }
 
@@ -254,7 +269,6 @@ export class MessageHandler implements IMessageHandler {
         item.image = undefined;
       }
       this.#lastReceivedMessages.image = undefined;
-      this.#hud.addHUDItem(WAITING_FOR_IMAGE_HUD_ITEM);
       changed = true;
     }
 
@@ -263,7 +277,6 @@ export class MessageHandler implements IMessageHandler {
       this.#config.calibrationTopic !== newConfig.calibrationTopic
     ) {
       this.#lastReceivedMessages.cameraInfo = undefined;
-      this.#hud.addHUDItem(WAITING_FOR_CALIBRATION_HUD_ITEM);
       changed = true;
     }
 
@@ -320,6 +333,14 @@ export class MessageHandler implements IMessageHandler {
 
   #emitState() {
     const state = this.getRenderState();
+    this.#hud.displayIfTrue(
+      this.#lastReceivedMessages.image == undefined && state.image == undefined,
+      WAITING_FOR_IMAGE_HUD_ITEM,
+    );
+    this.#hud.displayIfTrue(
+      this.#config.calibrationTopic != undefined && state.cameraInfo == undefined,
+      WAITING_FOR_CALIBRATION_HUD_ITEM,
+    );
     this.#listeners.forEach((fn) => {
       fn(state, this.#oldRenderState);
     });
@@ -331,18 +352,21 @@ export class MessageHandler implements IMessageHandler {
     if (this.#config.synchronize === true) {
       const result = findSynchronizedSetAndRemoveOlderItems(this.#tree, this.#visibleAnnotations());
       if (result.found) {
+        this.#hud.removeHUDItem(WAITING_FOR_SYNC_HUD_ITEM.id);
         return {
           cameraInfo: this.#lastReceivedMessages.cameraInfo,
           image: result.messages.image,
           annotationsByTopic: result.messages.annotationsByTopic,
         };
       }
+      this.#hud.addHUDItem(WAITING_FOR_SYNC_HUD_ITEM);
       return {
         cameraInfo: this.#lastReceivedMessages.cameraInfo,
         presentAnnotationTopics: result.presentAnnotationTopics,
         missingAnnotationTopics: result.missingAnnotationTopics,
       };
     }
+    this.#hud.removeHUDItem(WAITING_FOR_SYNC_HUD_ITEM.id);
     const hasNotReceivedImageOrCalibrationMessages =
       !this.#lastReceivedMessages.image && !this.#lastReceivedMessages.cameraInfo;
     this.#hud.displayIfTrue(hasNotReceivedImageOrCalibrationMessages, WAITING_FOR_BOTH_HUD_ITEM);
