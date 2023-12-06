@@ -2,6 +2,19 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+export type HUDItem = {
+  /** Unique identifier for the item. Adding a message with the same id twice will result in a no-op */
+  id: string;
+  /** Designate what group this belongs to. Allows items to be cleared by group.
+   * Would allow scene extensions to only clear their own items when applicable.
+   */
+  group: string;
+  /** Message content to show on HUD */
+  message: string;
+  /** Display type */
+  displayType: "empty" | "notice";
+};
+
 export class HUDItemManager {
   #HUDItemsById = new Map<string, HUDItem>();
   #onChange: () => void;
@@ -50,14 +63,3 @@ export class HUDItemManager {
     this.#onChange();
   }
 }
-
-export type HUDItem = {
-  /** Unique identifier for the item. Adding a message with the same id twice will result in a no-op */
-  id: string;
-  /** Designate what group this belongs to. Allows items to be cleared by group */
-  group: string;
-  /** Message content to show on HUD */
-  message: string;
-  /** Display type */
-  displayType: "empty" | "notice";
-};
