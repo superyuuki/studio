@@ -59,7 +59,7 @@ export function HUD(props: HUDProps): React.ReactElement {
   if (emptyStates.length > 0) {
     return (
       <EmptyState className={classes.empty}>
-        {emptyStates.map((item) => item.message).join("\n")}
+        {emptyStates.map((item) => item.getMessage()).join("\n")}
       </EmptyState>
     );
   }
@@ -67,7 +67,7 @@ export function HUD(props: HUDProps): React.ReactElement {
   return (
     <div className={classes.root}>
       {notices.map((item, index) => (
-        <Chip size="small" key={index} label={item.message} />
+        <Chip size="small" key={index} label={item.getMessage()} />
       ))}
     </div>
   );

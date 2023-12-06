@@ -91,7 +91,7 @@ const REMOVE_IMAGE_TIMEOUT_MS = 50;
 const NO_IMAGE_TOPICS_HUD_ITEM: HUDItem = {
   id: "NO_IMAGE_TOPICS",
   group: IMAGE_MODE_HUD_GROUP_ID,
-  message: t3D("noImageTopicsAvailable"),
+  getMessage: () => t3D("noImageTopicsAvailable"),
   displayType: "notice",
 };
 interface ImageModeEventMap extends THREE.Object3DEventMap {
@@ -447,7 +447,7 @@ export class ImageMode
       id: "BOTH_TOPICS_DO_NOT_EXIST",
       displayType: "empty",
       group: "IMAGE_MODE",
-      message: t3D("imageAndCalibrationDNE"),
+      getMessage: () => t3D("imageAndCalibrationDNE"),
     });
 
     if (calibrationTopic == undefined) {
@@ -455,7 +455,7 @@ export class ImageMode
         id: "IMAGE_TOPIC_DOES_NOT_EXIST",
         displayType: "empty",
         group: "IMAGE_MODE",
-        message: t3D("imageTopicDNE"),
+        getMessage: () => t3D("imageTopicDNE"),
       });
     }
 

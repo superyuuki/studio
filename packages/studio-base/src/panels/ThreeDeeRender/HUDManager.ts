@@ -9,8 +9,8 @@ export type HUDItem = {
    * Would allow scene extensions to only clear their own items when applicable.
    */
   group: string;
-  /** Message content to show on HUD */
-  message: string;
+  /** Function to return message content to show on HUD */
+  getMessage: () => string;
   /** Display type */
   displayType: "empty" | "notice";
 };
