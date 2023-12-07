@@ -176,7 +176,6 @@ export class ImageMode
           updateHandler(draft.imageMode);
         });
       },
-      hud: this.hud,
       updateSettingsTree: () => {
         this.updateSettingsTree();
       },

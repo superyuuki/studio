@@ -9,7 +9,6 @@ import { Opaque } from "ts-essentials";
 import { PinholeCameraModel } from "@foxglove/den/image";
 import { ImageAnnotations as FoxgloveImageAnnotations } from "@foxglove/schemas";
 import { Immutable, MessageEvent, SettingsTreeAction, Topic } from "@foxglove/studio";
-import { HUDItemManager } from "@foxglove/studio-base/panels/ThreeDeeRender/HUDManager";
 import { Path } from "@foxglove/studio-base/panels/ThreeDeeRender/LayerErrors";
 import { onlyLastByTopicMessage } from "@foxglove/studio-base/panels/ThreeDeeRender/SceneExtension";
 import {
@@ -37,7 +36,6 @@ interface ImageAnnotationsContext {
   initialCanvasWidth: number;
   initialCanvasHeight: number;
   initialPixelRatio: number;
-  hud: HUDItemManager;
   topics(): readonly Topic[];
   config(): Immutable<ImageModeConfig>;
   updateConfig(updateHandler: (draft: ImageModeConfig) => void): void;

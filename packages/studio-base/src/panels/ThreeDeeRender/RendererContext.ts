@@ -51,7 +51,7 @@ export function useRendererEvent<K extends keyof RendererEvents>(
  * @param event - Event name that should trigger a re-render to read the property again
  * @param fallback - Fallback value to use if the property is not available or undefined
  * @param rendererInstance - Optional Renderer instance to subscribe to instead of the reference returned by useRenderer()
- * @returns
+ * @returns - value of renderer property or fallback if undefined
  */
 export function useRendererProperty<K extends keyof IRenderer>(
   key: K,
