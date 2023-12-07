@@ -221,9 +221,7 @@ export class ImageAnnotations extends THREE.Object3D {
       const settings = (draft.annotations[topic] ??= {});
       settings.visible = visible;
     });
-    this.#context.messageHandler.setConfig({
-      annotations: this.#context.config().annotations,
-    } as Readonly<Partial<ImageModeConfig>>);
+    this.#context.messageHandler.setConfig(this.#context.config());
     const renderable = this.#renderablesByTopic.get(topic);
     if (renderable) {
       renderable.visible = visible;
