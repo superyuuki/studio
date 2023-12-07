@@ -91,11 +91,18 @@ export const WAITING_FOR_CALIBRATION_HUD_ITEM: HUDItem = {
   displayType: "empty",
 };
 
-export const WAITING_FOR_IMAGE_HUD_ITEM: HUDItem = {
-  id: "WAITING_FOR_IMAGES",
+export const WAITING_FOR_IMAGE_NOTICE_HUD_ITEM: HUDItem = {
+  id: "WAITING_FOR_IMAGES_NOTICE",
   group: IMAGE_MODE_HUD_GROUP_ID,
   getMessage: () => t3D("waitingForImages"),
   displayType: "notice",
+};
+
+export const WAITING_FOR_IMAGE_EMPTY_HUD_ITEM: HUDItem = {
+  id: "WAITING_FOR_IMAGES_EMPTY",
+  group: IMAGE_MODE_HUD_GROUP_ID,
+  getMessage: () => t3D("waitingForImages"),
+  displayType: "empty",
 };
 
 export const WAITING_FOR_SYNC_HUD_ITEM: HUDItem = {
@@ -307,10 +314,7 @@ export class MessageHandler implements IMessageHandler {
       }
     }
 
-    this.#config = {
-      ...this.#config,
-      ...newConfig,
-    };
+    this.#config = newConfig;
 
     if (changed) {
       this.#emitState();
@@ -327,23 +331,7 @@ export class MessageHandler implements IMessageHandler {
   }
 
   #emitState() {
-    const state = this.getRenderState();
-
-    const waitingForImage =
-      this.#lastReceivedMessages.image == undefined && state.image == undefined;
-    this.#hud.displayIfTrue(waitingForImage, WAITING_FOR_IMAGE_HUD_ITEM);
-
-    const waitingForCalibration =
-      this.#config.calibrationTopic != undefined && state.cameraInfo == undefined;
-
-    const waitingForBoth = waitingForImage && waitingForCalibration;
-    this.#hud.displayIfTrue(waitingForBoth, WAITING_FOR_BOTH_HUD_ITEM);
-
-    // don't show waiting for calibration if both are already missing to reduce noise
-    this.#hud.displayIfTrue(
-      waitingForCalibration && !waitingForBoth,
-      WAITING_FOR_CALIBRATION_HUD_ITEM,
-    );
+    const state = this.getRenderStateAndUpdateHUD();
 
     this.#listeners.forEach((fn) => {
       fn(state, this.#oldRenderState);
@@ -352,25 +340,56 @@ export class MessageHandler implements IMessageHandler {
   }
 
   /** Do not use. only public for testing */
-  public getRenderState(): Readonly<Partial<MessageHandlerState>> {
+  public getRenderStateAndUpdateHUD(): Readonly<Partial<MessageHandlerState>> {
+    const state = this.#getRenderState();
+    this.#updateHUDFromState(state);
+    return state;
+  }
+
+  #updateHUDFromState(state: MessageRenderState): void {
+    const calibrationRequired = this.#config.calibrationTopic != undefined;
+
+    const waitingForImage =
+      this.#lastReceivedMessages.image == undefined && state.image == undefined;
+
+    const waitingForCalibration = calibrationRequired && state.cameraInfo == undefined;
+
+    const waitingForBoth = waitingForImage && waitingForCalibration;
+
+    this.#hud.displayIfTrue(waitingForBoth, WAITING_FOR_BOTH_HUD_ITEM);
+
+    // don't show other empty states when waiting for both to reduce noise
+    this.#hud.displayIfTrue(
+      waitingForCalibration && !waitingForBoth,
+      WAITING_FOR_CALIBRATION_HUD_ITEM,
+    );
+    this.#hud.displayIfTrue(
+      waitingForImage && !calibrationRequired && !waitingForBoth,
+      WAITING_FOR_IMAGE_EMPTY_HUD_ITEM,
+    );
+    this.#hud.displayIfTrue(
+      waitingForImage && calibrationRequired,
+      WAITING_FOR_IMAGE_NOTICE_HUD_ITEM,
+    );
+    this.#hud.displayIfTrue(state.missingAnnotationTopics?.length, WAITING_FOR_SYNC_HUD_ITEM);
+  }
+
+  #getRenderState(): Readonly<Partial<MessageHandlerState>> {
     if (this.#config.synchronize === true) {
       const result = findSynchronizedSetAndRemoveOlderItems(this.#tree, this.#visibleAnnotations());
       if (result.found) {
-        this.#hud.removeHUDItem(WAITING_FOR_SYNC_HUD_ITEM.id);
         return {
           cameraInfo: this.#lastReceivedMessages.cameraInfo,
           image: result.messages.image,
           annotationsByTopic: result.messages.annotationsByTopic,
         };
       }
-      this.#hud.addHUDItem(WAITING_FOR_SYNC_HUD_ITEM);
       return {
         cameraInfo: this.#lastReceivedMessages.cameraInfo,
         presentAnnotationTopics: result.presentAnnotationTopics,
         missingAnnotationTopics: result.missingAnnotationTopics,
       };
     }
-    this.#hud.removeHUDItem(WAITING_FOR_SYNC_HUD_ITEM.id);
     return { ...this.#lastReceivedMessages };
   }
 
@@ -398,7 +417,7 @@ export interface IMessageHandler {
   removeListener(listener: RenderStateListener): void;
   setConfig(newConfig: Immutable<Partial<ImageModeConfig>>): void;
   clear(): void;
-  getRenderState(): Readonly<Partial<MessageHandlerState>>;
+  getRenderStateAndUpdateHUD(): Readonly<Partial<MessageHandlerState>>;
 }
 
 type SynchronizationResult =
