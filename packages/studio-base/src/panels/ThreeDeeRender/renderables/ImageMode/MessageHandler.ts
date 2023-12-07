@@ -259,7 +259,7 @@ export class MessageHandler implements IMessageHandler {
     this.#emitState();
   };
 
-  public setConfig(newConfig: Immutable<Partial<ImageModeConfig>>): void {
+  public setConfig(newConfig: Immutable<ImageModeConfig>): void {
     let changed = false;
 
     if (newConfig.synchronize != undefined && newConfig.synchronize !== this.#config.synchronize) {
