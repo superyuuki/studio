@@ -447,9 +447,11 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
     {
       clearTransforms,
       resetAllFramesCursor,
-    }: { clearTransforms?: boolean; resetAllFramesCursor?: boolean } = {
+      clearImageMode,
+    }: { clearTransforms?: boolean; resetAllFramesCursor?: boolean; clearImageMode?: boolean } = {
       clearTransforms: false,
       resetAllFramesCursor: false,
+      clearImageMode: true,
     },
   ): void {
     this.#clearSubscriptionQueues();
@@ -462,6 +464,9 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
     this.settings.errors.clear();
 
     for (const extension of this.sceneExtensions.values()) {
+      if (clearImageMode !== true && extension instanceof ImageMode) {
+        continue;
+      }
       extension.removeAllRenderables();
     }
     this.queueAnimationFrame();
@@ -688,7 +693,7 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
       this.#imageModeExtension,
       "Image mode extension should be defined when calling enable Image only mode",
     );
-    this.clear({ clearTransforms: true, resetAllFramesCursor: true });
+    this.clear({ clearTransforms: true, resetAllFramesCursor: true, clearImageMode: false });
     this.#clearSubscriptions();
     this.#addSubscriptionsFromSceneExtensions(
       (extension) => extension === this.#imageModeExtension,
@@ -699,7 +704,7 @@ export class Renderer extends EventEmitter<RendererEvents> implements IRenderer 
   public disableImageOnlySubscriptionMode = (): void => {
     // .clear() will clean up remaining errors on topics
     this.settings.removeNodeValidator(this.#imageOnlyModeTopicSettingsValidator);
-    this.clear({ clearTransforms: true, resetAllFramesCursor: true });
+    this.clear({ clearTransforms: true, resetAllFramesCursor: true, clearImageMode: false });
     this.#clearSubscriptions();
     this.#addSubscriptionsFromSceneExtensions();
     this.#addTransformSubscriptions();
