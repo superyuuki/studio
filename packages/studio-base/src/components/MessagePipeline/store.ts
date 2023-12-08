@@ -166,19 +166,6 @@ export function createMessagePipelineStore({
         const { protocol } = new URL(uri);
         const player = get().player;
 
-        const builtinFetch = async (url: string, opts?: { signal?: AbortSignal }) => {
-          const response = await fetch(url, opts);
-          if (!response.ok) {
-            const errMsg = response.statusText;
-            throw new Error(`Error ${response.status}${errMsg ? ` (${errMsg})` : ``}`);
-          }
-          return {
-            uri,
-            data: new Uint8Array(await response.arrayBuffer()),
-            mediaType: response.headers.get("content-type") ?? undefined,
-          };
-        };
-
         if (protocol === "package:") {
           // For the desktop app, package:// is registered as a supported schema for builtin _fetch_ calls.
           const canBuiltinFetchPkgUri = isDesktopApp();
@@ -439,4 +426,17 @@ export function reducer(
     action,
     `Unhandled message pipeline action type ${(action as MessagePipelineStateAction).type}`,
   );
+}
+
+async function builtinFetch(url: string, opts?: { signal?: AbortSignal }) {
+  const response = await fetch(url, opts);
+  if (!response.ok) {
+    const errMsg = response.statusText;
+    throw new Error(`Error ${response.status}${errMsg ? ` (${errMsg})` : ``}`);
+  }
+  return {
+    uri: url,
+    data: new Uint8Array(await response.arrayBuffer()),
+    mediaType: response.headers.get("content-type") ?? undefined,
+  };
 }
