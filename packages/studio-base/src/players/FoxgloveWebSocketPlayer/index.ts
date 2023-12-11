@@ -389,9 +389,11 @@ export default class FoxgloveWebSocketPlayer implements Player {
         log.error(msg);
       }
 
+      
       const problem: PlayerProblem = {
         message: event.message,
         severity: statusLevelToProblemSeverity(event.level),
+        tip: event.tip
       };
 
       if (event.message === "Send buffer limit reached") {
